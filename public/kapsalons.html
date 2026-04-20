@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hondenkapsalons — Kwispelclub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green-dark:#2D5A27;--green-main:#4A7C3F;--green-light:#6B9E5E;--green-pale:#E8F0E4;
+    --orange-main:#E8913A;--orange-light:#F5A855;--orange-pale:#FFF3E0;
+    --cream:#FFF9F0;--cream-dark:#F5EDE0;--brown:#5C3D2E;
+    --text-dark:#2C2C2C;--text-mid:#5A5A5A;--text-light:#8A8A8A;--white:#FFFFFF;
+    --red:#E84E4E;
+    --shadow-sm:0 2px 8px rgba(0,0,0,0.06);--shadow-md:0 4px 20px rgba(0,0,0,0.08);
+    --shadow-lg:0 8px 40px rgba(0,0,0,0.12);--shadow-xl:0 16px 56px rgba(0,0,0,0.14);
+    --radius-sm:12px;--radius-md:20px;--radius-lg:28px;--radius-xl:36px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Nunito',sans-serif;background:var(--cream);color:var(--text-dark);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+  h1,h2,h3,h4,h5{font-family:'Fredoka',sans-serif}
+
+  /* NAVBAR */
+  .navbar{position:sticky;top:0;z-index:100;background:rgba(255,249,240,0.88);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(0,0,0,0.04);padding:0 clamp(16px,4vw,48px);transition:all 0.3s}
+  .navbar.scrolled{box-shadow:var(--shadow-md);background:rgba(255,249,240,0.96)}
+  .nav-inner{max-width:1320px;margin:0 auto;display:flex;align-items:center;height:72px;gap:8px}
+  .nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;margin-right:28px;flex-shrink:0}
+  .logo-paw{width:42px;height:42px;border-radius:12px;background:var(--green-dark);display:flex;align-items:center;justify-content:center;font-size:22px}
+  .nav-logo .brand{font-family:'Fredoka',sans-serif;font-size:22px;font-weight:700;color:var(--green-dark);letter-spacing:0.5px}
+  .nav-links{display:flex;gap:2px;list-style:none}
+  .nav-links a{text-decoration:none;color:var(--text-dark);font-weight:600;font-size:14px;padding:8px 16px;border-radius:10px;transition:all 0.2s}
+  .nav-links a:hover,.nav-links a.active{background:var(--green-pale);color:var(--green-dark)}
+  .nav-hamburger{display:none;background:none;border:none;font-size:26px;cursor:pointer;padding:8px}
+  .mobile-menu{display:none;position:fixed;top:72px;left:0;right:0;background:var(--cream);padding:16px 24px 24px;z-index:99;box-shadow:var(--shadow-lg);border-radius:0 0 var(--radius-md) var(--radius-md)}
+  .mobile-menu.open{display:block;animation:slideDown 0.3s ease}
+  .mobile-menu a{display:block;padding:14px 0;font-weight:600;font-size:16px;color:var(--text-dark);text-decoration:none;border-bottom:1px solid var(--cream-dark)}
+  @keyframes slideDown{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+
+  .breadcrumb{max-width:1320px;margin:0 auto;padding:20px clamp(16px,4vw,48px) 0;font-size:14px;color:var(--text-light);position:relative;z-index:1}
+  .breadcrumb a{color:var(--green-main);text-decoration:none;font-weight:600}
+  .breadcrumb a:hover{text-decoration:underline}
+
+  /* HERO */
+  .page-hero{max-width:1320px;margin:0 auto;padding:24px clamp(16px,4vw,48px);position:relative;z-index:1}
+  .page-hero-card{background:linear-gradient(135deg,var(--brown) 0%,#8B6F5E 50%,var(--orange-main) 100%);border-radius:var(--radius-xl);overflow:hidden;position:relative;display:grid;grid-template-columns:1fr 1fr;min-height:400px}
+  .page-hero-content{padding:56px;display:flex;flex-direction:column;justify-content:center;position:relative;z-index:2}
+  .page-hero-tag{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.15);padding:6px 16px;border-radius:50px;color:rgba(255,255,255,0.9);font-size:12px;font-weight:700;margin-bottom:20px;width:fit-content;backdrop-filter:blur(4px)}
+  .page-hero-content h1{font-size:clamp(32px,4vw,48px);color:white;line-height:1.1;margin-bottom:16px}
+  .page-hero-content h1 .accent{color:var(--orange-light)}
+  .page-hero-content p{color:rgba(255,255,255,0.82);font-size:16px;line-height:1.65;margin-bottom:28px;max-width:420px}
+  .page-hero-image{position:relative;overflow:hidden}
+  .page-hero-image img{width:100%;height:100%;object-fit:cover;mask-image:linear-gradient(to left,rgba(0,0,0,1) 50%,transparent 100%);-webkit-mask-image:linear-gradient(to left,rgba(0,0,0,1) 50%,transparent 100%)}
+  .hero-shapes{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+  .hero-shapes .blob{position:absolute;border-radius:50%}
+  .blob-1{width:300px;height:300px;background:rgba(255,255,255,0.08);top:-80px;right:-40px;animation:blobFloat 8s ease-in-out infinite}
+  .blob-2{width:200px;height:200px;background:rgba(232,145,58,0.1);bottom:-60px;left:20%;animation:blobFloat 11s ease-in-out infinite reverse}
+  @keyframes blobFloat{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(20px,-25px) scale(1.06)}66%{transform:translate(-15px,15px) scale(0.94)}}
+
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:15px 30px;border-radius:50px;font-family:'Fredoka',sans-serif;font-size:15px;font-weight:600;text-decoration:none;border:none;cursor:pointer;transition:all 0.3s cubic-bezier(0.4,0,0.2,1);letter-spacing:0.3px}
+  .btn-primary{background:var(--orange-main);color:white;box-shadow:0 4px 20px rgba(232,145,58,0.4)}
+  .btn-primary:hover{background:#D4812E;transform:translateY(-3px);box-shadow:0 8px 28px rgba(232,145,58,0.5)}
+  .btn-outline{background:transparent;color:var(--green-dark);border:2px solid var(--green-dark)}
+  .btn-outline:hover{background:var(--green-dark);color:white;transform:translateY(-3px)}
+  .btn-white{background:rgba(255,255,255,0.15);color:white;border:1.5px solid rgba(255,255,255,0.3);backdrop-filter:blur(4px)}
+  .btn-white:hover{background:rgba(255,255,255,0.25);transform:translateY(-2px)}
+
+  /* SECTIONS */
+  .section{position:relative;z-index:1;max-width:1320px;margin:0 auto;padding:72px clamp(16px,4vw,48px)}
+  .section-header{text-align:center;margin-bottom:48px}
+  .section-header h2{font-size:clamp(28px,3.5vw,42px);color:var(--green-dark);margin-bottom:12px}
+  .section-header p{color:var(--text-mid);font-size:16px;max-width:560px;margin:0 auto;line-height:1.6}
+
+  /* FILTERS */
+  .filters-bar{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:32px;align-items:center}
+  .filter-group{display:flex;gap:8px;flex-wrap:wrap}
+  .filter-btn{padding:8px 20px;border-radius:50px;border:2px solid var(--cream-dark);background:transparent;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s;color:var(--text-mid)}
+  .filter-btn.active{background:var(--green-dark);color:white;border-color:var(--green-dark)}
+  .filter-btn:hover:not(.active){border-color:var(--green-main);color:var(--green-main)}
+  .search-filter{flex:1;min-width:240px;position:relative}
+  .search-filter input{width:100%;padding:10px 16px 10px 40px;border:2px solid var(--cream-dark);border-radius:50px;font-family:'Nunito',sans-serif;font-size:14px;background:var(--white);outline:none;transition:all 0.25s}
+  .search-filter input:focus{border-color:var(--green-light);box-shadow:0 0 0 3px rgba(107,158,94,0.12)}
+  .search-filter .s-icon{position:absolute;left:15px;top:50%;transform:translateY(-50%);font-size:14px;opacity:0.35}
+
+  /* SALON CARDS */
+  .salons-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+  .salon-card{background:var(--white);border-radius:var(--radius-md);overflow:hidden;box-shadow:var(--shadow-sm);transition:all 0.3s;cursor:pointer;border:2px solid transparent}
+  .salon-card:hover{transform:translateY(-6px);box-shadow:var(--shadow-lg);border-color:var(--green-pale)}
+  .salon-cover{height:200px;position:relative;overflow:hidden;background:var(--cream-dark)}
+  .salon-cover img{width:100%;height:100%;object-fit:cover;transition:transform 0.4s}
+  .salon-card:hover .salon-cover img{transform:scale(1.05)}
+  .salon-badge{position:absolute;top:14px;left:14px;display:flex;gap:6px;flex-wrap:wrap}
+  .salon-badge span{padding:4px 12px;border-radius:50px;font-size:11px;font-weight:700;color:white;backdrop-filter:blur(4px)}
+  .salon-badge .top{background:var(--orange-main)}
+  .salon-badge .new-salon{background:var(--green-main)}
+  .salon-badge .promo{background:var(--red)}
+  .salon-favorite{position:absolute;top:14px;right:14px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.9);border:none;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;box-shadow:var(--shadow-sm);transition:all 0.2s;z-index:2}
+  .salon-favorite:hover{transform:scale(1.15)}
+
+  .salon-info{padding:20px}
+  .salon-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px}
+  .salon-name{font-family:'Fredoka',sans-serif;font-size:18px;font-weight:700;color:var(--text-dark)}
+  .salon-rating{display:flex;align-items:center;gap:4px;font-size:14px;font-weight:700;color:var(--orange-main)}
+  .salon-rating span{font-size:12px;color:var(--text-light);font-weight:400}
+  .salon-location{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-mid);margin-bottom:12px}
+
+  .salon-tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+  .salon-tag{padding:4px 10px;border-radius:50px;font-size:11px;font-weight:600;background:var(--cream);color:var(--text-mid)}
+  .salon-tag.specialty{background:var(--green-pale);color:var(--green-dark)}
+
+  .salon-details{display:flex;align-items:center;justify-content:space-between;padding-top:14px;border-top:1px solid var(--cream-dark)}
+  .salon-price{font-size:14px;color:var(--text-mid)}
+  .salon-price strong{color:var(--green-dark);font-size:16px;font-family:'Fredoka',sans-serif}
+  .salon-cta{padding:8px 18px;border-radius:50px;background:var(--green-main);color:white;border:none;font-family:'Fredoka',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s}
+  .salon-cta:hover{background:var(--green-dark);transform:translateY(-1px)}
+
+  /* SERVICES INFO */
+  .services-section{background:var(--white);border-radius:var(--radius-lg);padding:48px}
+  .services-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-top:36px}
+  .service-card{text-align:center;padding:28px 16px;border-radius:var(--radius-md);background:var(--cream);transition:all 0.3s}
+  .service-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-md)}
+  .service-icon{font-size:40px;margin-bottom:14px}
+  .service-card h4{font-size:15px;margin-bottom:6px}
+  .service-card p{font-size:13px;color:var(--text-mid);line-height:1.5}
+  .service-price{font-family:'Fredoka',sans-serif;font-size:16px;font-weight:700;color:var(--green-dark);margin-top:10px}
+
+  /* MAP PLACEHOLDER */
+  .map-section{background:var(--green-pale);border-radius:var(--radius-lg);padding:48px;text-align:center}
+  .map-placeholder{background:var(--white);border-radius:var(--radius-md);height:320px;display:flex;align-items:center;justify-content:center;margin-top:24px;box-shadow:var(--shadow-sm);font-size:48px;position:relative;overflow:hidden}
+  .map-placeholder::after{content:'Interactieve kaart — binnenkort beschikbaar';position:absolute;bottom:20px;font-size:14px;color:var(--text-light);font-weight:600}
+
+  /* REGISTER CTA */
+  .register-section{background:linear-gradient(135deg,var(--brown),#8B6F5E);border-radius:var(--radius-lg);padding:48px;color:white;display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center}
+  .register-section h2{color:white;font-size:28px;margin-bottom:14px}
+  .register-section p{opacity:0.82;font-size:15px;line-height:1.65;margin-bottom:24px}
+  .register-benefits{display:flex;flex-direction:column;gap:12px}
+  .register-benefit{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600}
+  .register-benefit-icon{width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+  .register-form{background:rgba(255,255,255,0.08);border-radius:var(--radius-md);padding:32px;backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,0.1)}
+  .register-form h3{font-size:20px;margin-bottom:20px}
+  .form-group{margin-bottom:14px}
+  .form-group label{display:block;font-size:13px;font-weight:700;margin-bottom:6px;opacity:0.8}
+  .form-group input,.form-group select{width:100%;padding:12px 16px;border:2px solid rgba(255,255,255,0.15);border-radius:12px;background:rgba(255,255,255,0.08);color:white;font-family:'Nunito',sans-serif;font-size:14px;outline:none;transition:all 0.2s}
+  .form-group input::placeholder{color:rgba(255,255,255,0.4)}
+  .form-group input:focus,.form-group select:focus{border-color:var(--orange-light);background:rgba(255,255,255,0.12)}
+  .form-group select{-webkit-appearance:none;cursor:pointer}
+  .form-group select option{background:var(--brown);color:white}
+
+  /* FOOTER */
+  footer{background:var(--green-dark);color:white;position:relative;z-index:1;margin-top:0}
+  .footer-inner{max-width:1320px;margin:0 auto;padding:48px clamp(16px,4vw,48px) 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
+  .footer-logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+  .footer-logo .logo-paw{background:rgba(255,255,255,0.15);width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
+  .footer-logo .brand{font-family:'Fredoka',sans-serif;font-size:20px;font-weight:700;color:white}
+  .footer-links{display:flex;gap:24px}
+  .footer-links a{color:white;opacity:0.6;text-decoration:none;font-size:14px;transition:opacity 0.2s}
+  .footer-links a:hover{opacity:1}
+  .footer-copy{font-size:13px;opacity:0.4;width:100%;text-align:center;padding-top:20px;border-top:1px solid rgba(255,255,255,0.08)}
+
+  /* BOOKING MODAL */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+  .modal-overlay.open{display:flex;animation:modalBgIn 0.25s ease}
+  @keyframes modalBgIn{from{opacity:0}to{opacity:1}}
+  .modal{background:var(--white);border-radius:var(--radius-lg);width:100%;max-width:580px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-xl);animation:modalIn 0.3s cubic-bezier(0.4,0,0.2,1);position:relative}
+  @keyframes modalIn{from{opacity:0;transform:translateY(20px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+  .modal-header{padding:28px 28px 0;display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+  .modal-header-text h2{font-size:22px;color:var(--green-dark)}
+  .modal-header-text p{font-size:13px;color:var(--text-mid);margin-top:4px}
+  .modal-close{width:40px;height:40px;border-radius:50%;border:none;background:var(--cream);display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;transition:all 0.2s;flex-shrink:0}
+  .modal-close:hover{background:var(--cream-dark);transform:rotate(90deg)}
+  .modal-body{padding:24px 28px 28px}
+  .booking-steps{display:flex;align-items:center;gap:0;margin-bottom:24px}
+  .booking-step{display:flex;align-items:center;gap:6px;flex:1}
+  .booking-step::after{content:'';flex:1;height:3px;background:var(--cream-dark);border-radius:4px;margin:0 6px}
+  .booking-step:last-child::after{display:none}
+  .booking-step:last-child{flex:0 0 auto}
+  .step-num{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Fredoka',sans-serif;font-size:13px;font-weight:700;flex-shrink:0;transition:all 0.3s;background:var(--cream-dark);color:var(--text-light)}
+  .booking-step.active .step-num{background:var(--green-main);color:white;box-shadow:0 2px 8px rgba(74,124,63,0.3)}
+  .booking-step.done .step-num{background:var(--green-dark);color:white}
+  .booking-step.done::after{background:var(--green-main)}
+  .step-label{font-size:11px;font-weight:700;color:var(--text-light);white-space:nowrap}
+  .booking-step.active .step-label{color:var(--green-dark)}
+  .booking-step.done .step-label{color:var(--green-main)}
+  .book-panel{display:none}
+  .book-panel.active{display:block;animation:fadeSlide 0.3s ease}
+  @keyframes fadeSlide{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:translateX(0)}}
+  .service-options{display:flex;flex-direction:column;gap:10px}
+  .service-option{display:flex;align-items:center;gap:14px;padding:16px;border:2px solid var(--cream-dark);border-radius:var(--radius-sm);cursor:pointer;transition:all 0.2s}
+  .service-option:hover{border-color:var(--green-light);background:var(--cream)}
+  .service-option.selected{border-color:var(--green-main);background:var(--green-pale)}
+  .svc-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+  .service-option:nth-child(1) .svc-icon{background:var(--orange-pale)}
+  .service-option:nth-child(2) .svc-icon{background:var(--green-pale)}
+  .service-option:nth-child(3) .svc-icon{background:#EDE8F5}
+  .service-option:nth-child(4) .svc-icon{background:var(--cream)}
+  .svc-info{flex:1}
+  .svc-name{font-weight:700;font-size:15px;margin-bottom:2px}
+  .svc-desc{font-size:12px;color:var(--text-light)}
+  .svc-price-tag{font-family:'Fredoka',sans-serif;font-size:18px;font-weight:700;color:var(--green-dark);text-align:right}
+  .svc-dur{font-size:11px;color:var(--text-light);display:block}
+  .svc-check{width:24px;height:24px;border-radius:50%;border:2px solid var(--cream-dark);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;transition:all 0.2s}
+  .service-option.selected .svc-check{background:var(--green-main);border-color:var(--green-main);color:white}
+  .cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  .cal-header h3{font-size:17px}
+  .cal-nav{display:flex;gap:6px}
+  .cal-nav button{width:36px;height:36px;border-radius:50%;border:2px solid var(--cream-dark);background:transparent;cursor:pointer;font-size:14px;transition:all 0.2s;display:flex;align-items:center;justify-content:center}
+  .cal-nav button:hover{border-color:var(--green-main);background:var(--green-pale)}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;margin-bottom:20px}
+  .cal-day-name{font-size:11px;font-weight:700;color:var(--text-light);padding:8px 0;text-transform:uppercase}
+  .cal-day{padding:10px 4px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;border:2px solid transparent}
+  .cal-day:hover:not(.disabled):not(.empty){background:var(--green-pale);border-color:var(--green-light)}
+  .cal-day.selected{background:var(--green-main);color:white;border-color:var(--green-main)}
+  .cal-day.today{border-color:var(--orange-main)}
+  .cal-day.disabled{opacity:0.25;cursor:default}
+  .cal-day.empty{cursor:default}
+  .slots-label{font-size:12px;font-weight:700;color:var(--text-light);text-transform:uppercase;margin:16px 0 8px;letter-spacing:0.5px}
+  .time-slots{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .time-slot{padding:10px;border-radius:10px;border:2px solid var(--cream-dark);text-align:center;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s}
+  .time-slot:hover:not(.taken){border-color:var(--green-light);background:var(--green-pale)}
+  .time-slot.selected{background:var(--green-main);color:white;border-color:var(--green-main)}
+  .time-slot.taken{opacity:0.25;cursor:not-allowed;text-decoration:line-through}
+  .no-slots{text-align:center;padding:24px;color:var(--text-light);font-size:14px}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .book-field{margin-bottom:16px}
+  .book-field label{display:block;font-size:13px;font-weight:700;margin-bottom:6px;color:var(--text-dark)}
+  .book-field input,.book-field select,.book-field textarea{width:100%;padding:12px 16px;border:2px solid var(--cream-dark);border-radius:12px;font-family:'Nunito',sans-serif;font-size:14px;outline:none;transition:all 0.2s;background:var(--white)}
+  .book-field input:focus,.book-field select:focus,.book-field textarea:focus{border-color:var(--green-light);box-shadow:0 0 0 3px rgba(107,158,94,0.12)}
+  .book-field textarea{resize:vertical;min-height:70px}
+  .confirm-summary{background:var(--cream);border-radius:var(--radius-md);padding:24px;margin-bottom:20px}
+  .confirm-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--cream-dark);font-size:14px}
+  .confirm-row:last-child{border-bottom:none;font-weight:700;font-size:16px;color:var(--green-dark)}
+  .confirm-row .label{color:var(--text-mid)}
+  .modal-footer{display:flex;justify-content:space-between;gap:12px;padding-top:16px;border-top:2px solid var(--cream-dark)}
+  .btn-back{padding:12px 24px;border-radius:50px;border:2px solid var(--cream-dark);background:transparent;font-family:'Fredoka',sans-serif;font-size:14px;font-weight:600;cursor:pointer;color:var(--text-mid);transition:all 0.2s}
+  .btn-back:hover{border-color:var(--text-light);color:var(--text-dark)}
+  .btn-next{padding:12px 28px;border-radius:50px;background:var(--green-main);color:white;border:none;font-family:'Fredoka',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 12px rgba(74,124,63,0.25)}
+  .btn-next:hover:not(:disabled){background:var(--green-dark);transform:translateY(-1px)}
+  .btn-next:disabled{opacity:0.4;cursor:not-allowed}
+  .btn-next.orange{background:var(--orange-main);box-shadow:0 2px 12px rgba(232,145,58,0.3)}
+  .btn-next.orange:hover:not(:disabled){background:#D4812E}
+  .success-state{text-align:center;padding:20px 0}
+  .success-icon{font-size:64px;margin-bottom:16px;animation:successPop 0.5s cubic-bezier(0.4,0,0.2,1)}
+  @keyframes successPop{0%{transform:scale(0)}50%{transform:scale(1.2)}100%{transform:scale(1)}}
+  .success-state h2{color:var(--green-dark);margin-bottom:10px}
+  .success-state p{color:var(--text-mid);font-size:15px;line-height:1.6;margin-bottom:20px}
+  .success-details{background:var(--green-pale);border-radius:var(--radius-sm);padding:20px;text-align:left;margin-bottom:20px;font-size:14px;line-height:1.9}
+  .success-details strong{color:var(--green-dark)}
+  @media(max-width:480px){.time-slots{grid-template-columns:repeat(3,1fr)}.form-row{grid-template-columns:1fr}.modal{border-radius:var(--radius-md) var(--radius-md) 0 0;max-height:95vh;align-self:flex-end}}
+
+  .fade-up{opacity:0;transform:translateY(32px);transition:opacity 0.7s ease,transform 0.7s ease}
+  .fade-up.visible{opacity:1;transform:translateY(0)}
+
+  @media(max-width:1024px){
+    .salons-grid{grid-template-columns:repeat(2,1fr)}
+    .services-grid{grid-template-columns:repeat(2,1fr)}
+    .register-section{grid-template-columns:1fr}
+    .page-hero-card{grid-template-columns:1fr}
+    .page-hero-image{display:none}
+  }
+  @media(max-width:768px){
+    .nav-links{display:none}.nav-hamburger{display:block}
+    .salons-grid{grid-template-columns:1fr}
+    .services-grid{grid-template-columns:1fr 1fr}
+    .services-section,.map-section{padding:32px 20px}
+    .register-section{padding:32px 20px}
+    .page-hero-content{padding:36px 24px}
+  }
+  @media(max-width:480px){
+    .services-grid{grid-template-columns:1fr}
+    .register-form{padding:24px 16px}
+  }
+</style>
+</head>
+<body>
+
+<div style="background:linear-gradient(90deg,#E8913A,#D4812E,#E8913A);animation:shimmer 3s ease infinite;background-size:200%;color:white;text-align:center;padding:10px 16px;font-size:13px;font-weight:600;position:relative;z-index:101">🚀 Kwispelclub is in opbouw! Boekingen zijn nog niet actief. Voorbeeldcontent ter illustratie.</div>
+<style>@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}.section-demo-notice{background:#FFF3E0;border:2px dashed #E8913A;border-radius:12px;padding:14px 20px;text-align:center;font-size:13px;font-weight:600;color:#5C3D2E;margin-bottom:24px}.section-demo-notice span{color:#E8913A}</style>
+<nav class="navbar" id="navbar">
+  <div class="nav-inner">
+    <a href="kwispelclub-index.html" class="nav-logo"><div class="logo-paw">🐾</div><span class="brand">Kwispelclub</span></a>
+    <ul class="nav-links">
+      <li><a href="kwispelclub-index.html#shop">Shop</a></li>
+      <li><a href="kwispelclub-index.html#academy">Academy</a></li>
+      <li><a href="kwispelclub-index.html#marketplace">Marktplaats</a></li>
+      <li><a href="#" class="active">Kapsalons</a></li>
+      <li><a href="kwispelclub-index.html#community">Community</a></li>
+    </ul>
+    <div style="flex:1"></div>
+    <button class="nav-hamburger" id="hamburger" aria-label="Menu">☰</button>
+  </div>
+</nav>
+<div class="mobile-menu" id="mobileMenu">
+  <a href="kwispelclub-index.html">🏠 Home</a>
+  <a href="kwispelclub-index.html#shop">🛍️ Shop</a>
+  <a href="kwispelclub-puppy-training.html">🎓 Puppy Training</a>
+  <a href="#">✂️ Kapsalons</a>
+</div>
+
+<div class="breadcrumb"><a href="kwispelclub-index.html">Home</a> › Hondenkapsalons</div>
+
+<!-- HERO -->
+<section class="page-hero">
+  <div class="page-hero-card">
+    <div class="hero-shapes"><div class="blob blob-1"></div><div class="blob blob-2"></div></div>
+    <div class="page-hero-content">
+      <div class="page-hero-tag">✂️ KWISPELCLUB KAPSALONS</div>
+      <h1>Honden<span class="accent">kapsalons</span> bij jou in de buurt</h1>
+      <p>Vind de beste trimsalons en groomers in België en Nederland. Geverifieerd, beoordeeld door echte klanten.</p>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <a href="#salons" class="btn btn-primary">Zoek kapsalon →</a>
+        <a href="#register" class="btn btn-white">Registreer je salon</a>
+      </div>
+    </div>
+    <div class="page-hero-image">
+      <img src="https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?w=700&q=80" alt="Hond bij de groomer">
+    </div>
+  </div>
+</section>
+
+<!-- SERVICES -->
+<section class="section">
+  <div class="services-section fade-up">
+    <div class="section-header"><h2>Populaire Diensten ✂️</h2><p>Wat je kunt verwachten bij onze kapsalons</p></div>
+    <div class="services-grid">
+      <div class="service-card"><div class="service-icon">✂️</div><h4>Volledig Trimmen</h4><p>Wassen, knippen, drogen en stylen op maat van het ras</p><div class="service-price">Vanaf €35</div></div>
+      <div class="service-card"><div class="service-icon">🛁</div><h4>Wassen & Drogen</h4><p>Professioneel bad met speciale shampoo en föhnen</p><div class="service-price">Vanaf €20</div></div>
+      <div class="service-card"><div class="service-icon">💅</div><h4>Nagels Knippen</h4><p>Veilig en stress-vrij nagelverzorging door experts</p><div class="service-price">Vanaf €10</div></div>
+      <div class="service-card"><div class="service-icon">👂</div><h4>Oren & Tanden</h4><p>Oorcontrole, reiniging en tandenpoetsen</p><div class="service-price">Vanaf €15</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- SALONS -->
+<section class="section" id="salons">
+  <div class="section-header fade-up"><h2>Kapsalons bij jou in de buurt 📍</h2><p>Geverifieerde salons met echte klantbeoordelingen</p></div>
+  <div class="section-demo-notice fade-up">⚠️ <span>Voorbeeldsalons</span> — Deze profielen zijn ter illustratie. Het boekingssysteem is nog in opbouw. Heb je een salon? <a href="#register" style="color:#E8913A;font-weight:700">Registreer je alvast →</a></div>
+
+  <div class="filters-bar fade-up">
+    <div class="filter-group">
+      <button class="filter-btn active" data-region="all">Alle</button>
+      <button class="filter-btn" data-region="limburg">Limburg</button>
+      <button class="filter-btn" data-region="antwerpen">Antwerpen</button>
+      <button class="filter-btn" data-region="brabant">Brabant</button>
+      <button class="filter-btn" data-region="oost-vl">Oost-Vlaanderen</button>
+      <button class="filter-btn" data-region="nl">Nederland</button>
+    </div>
+    <div class="search-filter">
+      <span class="s-icon">🔍</span>
+      <input type="text" placeholder="Zoek op naam of stad..." id="salonSearch">
+    </div>
+  </div>
+
+  <div class="salons-grid fade-up" id="salonsGrid">
+    <!-- Salon 1 -->
+    <div class="salon-card" data-region="limburg" data-name="happy paws grooming bree">
+      <div class="salon-cover">
+        <img src="https://images.unsplash.com/photo-1527526029430-319f10814151?w=500&q=80" alt="Happy Paws Grooming">
+        <div class="salon-badge"><span class="top">⭐ TOP</span></div>
+        <button class="salon-favorite">♡</button>
+      </div>
+      <div class="salon-info">
+        <div class="salon-header"><div class="salon-name">Happy Paws Grooming</div><div class="salon-rating">⭐ 4.9 <span>(87)</span></div></div>
+        <div class="salon-location">📍 Bree, Limburg</div>
+        <div class="salon-tags"><span class="salon-tag specialty">Alle rassen</span><span class="salon-tag">Hand-stripping</span><span class="salon-tag">Puppypakket</span></div>
+        <div class="salon-details"><div class="salon-price">Vanaf <strong>€30</strong></div><button class="salon-cta">Bekijk & Boek</button></div>
+      </div>
+    </div>
+
+    <!-- Salon 2 -->
+    <div class="salon-card" data-region="limburg" data-name="de gouden schaar hasselt">
+      <div class="salon-cover">
+        <img src="https://images.unsplash.com/photo-1581888227599-779811939961?w=500&q=80" alt="De Gouden Schaar">
+        <div class="salon-badge"><span class="new-salon">NIEUW</span></div>
+        <button class="salon-favorite">♡</button>
+      </div>
+      <div class="salon-info">
+        <div class="salon-header"><div class="salon-name">De Gouden Schaar</div><div class="salon-rating">⭐ 4.7 <span>(42)</span></div></div>
+        <div class="salon-location">📍 Hasselt, Limburg</div>
+        <div class="salon-tags"><span class="salon-tag specialty">Kleine rassen</span><span class="salon-tag">Spa-behandeling</span></div>
+        <div class="salon-details"><div class="salon-price">Vanaf <strong>€25</strong></div><button class="salon-cta">Bekijk & Boek</button></div>
+      </div>
+    </div>
+
+    <!-- Salon 3 -->
+    <div class="salon-card" data-region="antwerpen" data-name="woef wellness antwerpen">
+      <div class="salon-cover">
+        <img src="https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=500&q=80" alt="Woef Wellness">
+        <div class="salon-badge"><span class="top">⭐ TOP</span></div>
+        <button class="salon-favorite">♡</button>
+      </div>
+      <div class="salon-info">
+        <div class="salon-header"><div class="salon-name">Woef Wellness</div><div class="salon-rating">⭐ 4.8 <span>(156)</span></div></div>
+        <div class="salon-location">📍 Antwerpen</div>
+        <div class="salon-tags"><span class="salon-tag specialty">Premium salon</span><span class="salon-tag">Grote rassen</span><span class="salon-tag">Ophaalservice</span></div>
+        <div class="salon-details"><div class="salon-price">Vanaf <strong>€40</strong></div><button class="salon-cta">Bekijk & Boek</button></div>
+      </div>
+    </div>
+
+    <!-- Salon 4 -->
+    <div class="salon-card" data-region="brabant" data-name="trim en style leuven">
+      <div class="salon-cover">
+        <img src="https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=500&q=80" alt="Trim & Style">
+        <div class="salon-badge"><span class="promo">-15% INTRO</span></div>
+        <button class="salon-favorite">♡</button>
+      </div>
+      <div class="salon-info">
+        <div class="salon-header"><div class="salon-name">Trim & Style</div><div class="salon-rating">⭐ 4.6 <span>(68)</span></div></div>
+        <div class="salon-location">📍 Leuven, Vlaams-Brabant</div>
+        <div class="salon-tags"><span class="salon-tag specialty">Show-trimmen</span><span class="salon-tag">Wedstrijdvoorbereiding</span></div>
+        <div class="salon-details"><div class="salon-price">Vanaf <strong>€35</strong></div><button class="salon-cta">Bekijk & Boek</button></div>
+      </div>
+    </div>
+
+    <!-- Salon 5 -->
+    <div class="salon-card" data-region="oost-vl" data-name="knip en kwispel gent">
+      <div class="salon-cover">
+        <img src="https://images.unsplash.com/photo-1518717758536-85ae29035b6d?w=500&q=80" alt="Knip & Kwispel">
+        <button class="salon-favorite">♡</button>
+      </div>
+      <div class="salon-info">
+        <div class="salon-header"><div class="salon-name">Knip & Kwispel</div><div class="salon-rating">⭐ 4.9 <span>(203)</span></div></div>
+        <div class="salon-location">📍 Gent, Oost-Vlaanderen</div>
+        <div class="salon-tags"><span class="salon-tag specialty">Biologische producten</span><span class="salon-tag">Angst-vrij trimmen</span></div>
+        <div class="salon-details"><div class="salon-price">Vanaf <strong>€32</strong></div><button class="salon-cta">Bekijk & Boek</button></div>
+      </div>
+    </div>
+
+    <!-- Salon 6 -->
+    <div class="salon-card" data-region="nl" data-name="dierenkappers de luxe maastricht">
+      <div class="salon-cover">
+        <img src="https://images.unsplash.com/photo-1574158622682-e40e69881006?w=500&q=80" alt="Dierenkappers de Luxe">
+        <div class="salon-badge"><span class="top">⭐ TOP</span></div>
+        <button class="salon-favorite">♡</button>
+      </div>
+      <div class="salon-info">
+        <div class="salon-header"><div class="salon-name">Dierenkappers de Luxe</div><div class="salon-rating">⭐ 4.8 <span>(134)</span></div></div>
+        <div class="salon-location">📍 Maastricht, Nederland</div>
+        <div class="salon-tags"><span class="salon-tag specialty">Hond & Kat</span><span class="salon-tag">Creatief trimmen</span><span class="salon-tag">Senior dieren</span></div>
+        <div class="salon-details"><div class="salon-price">Vanaf <strong>€28</strong></div><button class="salon-cta">Bekijk & Boek</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MAP -->
+<section class="section">
+  <div class="map-section fade-up">
+    <h2>Vind een Salon op de Kaart 🗺️</h2>
+    <p style="color:var(--text-mid);margin-top:8px">Zoek salons in jouw buurt via onze interactieve kaart</p>
+    <div class="map-placeholder">🗺️</div>
+  </div>
+</section>
+
+<!-- REGISTER -->
+<section class="section" id="register">
+  <div class="register-section fade-up">
+    <div>
+      <h2>Heb je een hondenkapsalon? ✂️</h2>
+      <p>Word zichtbaar voor duizenden huisdiereigenaren in België en Nederland. Registreer je salon gratis op Kwispelclub.</p>
+      <div class="register-benefits">
+        <div class="register-benefit"><div class="register-benefit-icon">👥</div>Bereik 12.500+ actieve diereneigenaren</div>
+        <div class="register-benefit"><div class="register-benefit-icon">📅</div>Online boekingssysteem inbegrepen</div>
+        <div class="register-benefit"><div class="register-benefit-icon">⭐</div>Verzamel reviews en bouw reputatie</div>
+        <div class="register-benefit"><div class="register-benefit-icon">📊</div>Inzicht in je statistieken</div>
+        <div class="register-benefit"><div class="register-benefit-icon">🏷️</div>Eerste 3 maanden gratis</div>
+      </div>
+    </div>
+    <div class="register-form">
+      <h3>Registreer je Salon</h3>
+      <div class="form-group"><label>Salonnaam</label><input type="text" placeholder="Bijv. Happy Paws Grooming"></div>
+      <div class="form-group"><label>Locatie</label><input type="text" placeholder="Stad, provincie"></div>
+      <div class="form-group"><label>E-mailadres</label><input type="email" placeholder="info@jouwsalon.be"></div>
+      <div class="form-group"><label>Type Salon</label><select><option>Trimsalon (alle rassen)</option><option>Gespecialiseerd (kleine rassen)</option><option>Gespecialiseerd (grote rassen)</option><option>Mobiele trimmer</option><option>Premium / Spa salon</option></select></div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:8px" onclick="this.textContent='✓ Aanvraag verstuurd!';this.style.background='#4A7C3F'">Gratis registreren →</button>
+    </div>
+  </div>
+</section>
+
+<!-- BOOKING MODAL -->
+<div class="modal-overlay" id="bookingModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-header-text">
+        <h2 id="modalSalonName">Afspraak Maken</h2>
+        <p id="modalSalonLocation"></p>
+      </div>
+      <button class="modal-close" id="modalClose">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- Steps indicator -->
+      <div class="booking-steps" id="stepsIndicator">
+        <div class="booking-step active"><div class="step-num">1</div><span class="step-label">Dienst</span></div>
+        <div class="booking-step"><div class="step-num">2</div><span class="step-label">Datum & Tijd</span></div>
+        <div class="booking-step"><div class="step-num">3</div><span class="step-label">Gegevens</span></div>
+        <div class="booking-step"><div class="step-num">4</div><span class="step-label">Bevestig</span></div>
+      </div>
+
+      <!-- STEP 1: Service -->
+      <div class="book-panel active" id="step1">
+        <div class="service-options">
+          <div class="service-option" data-service="Volledig Trimmen" data-price="45" data-dur="60 min">
+            <div class="svc-icon">✂️</div>
+            <div class="svc-info"><div class="svc-name">Volledig Trimmen</div><div class="svc-desc">Wassen, knippen, drogen & stylen</div></div>
+            <div class="svc-price-tag">€45<span class="svc-dur">60 min</span></div>
+            <div class="svc-check"></div>
+          </div>
+          <div class="service-option" data-service="Wassen & Drogen" data-price="25" data-dur="30 min">
+            <div class="svc-icon">🛁</div>
+            <div class="svc-info"><div class="svc-name">Wassen & Drogen</div><div class="svc-desc">Professioneel bad & föhnen</div></div>
+            <div class="svc-price-tag">€25<span class="svc-dur">30 min</span></div>
+            <div class="svc-check"></div>
+          </div>
+          <div class="service-option" data-service="Nagels Knippen" data-price="12" data-dur="15 min">
+            <div class="svc-icon">💅</div>
+            <div class="svc-info"><div class="svc-name">Nagels Knippen</div><div class="svc-desc">Veilig nagelverzorging</div></div>
+            <div class="svc-price-tag">€12<span class="svc-dur">15 min</span></div>
+            <div class="svc-check"></div>
+          </div>
+          <div class="service-option" data-service="Puppy Eerste Beurt" data-price="35" data-dur="45 min">
+            <div class="svc-icon">🐶</div>
+            <div class="svc-info"><div class="svc-name">Puppy Eerste Beurt</div><div class="svc-desc">Zachte kennismaking met trimmen</div></div>
+            <div class="svc-price-tag">€35<span class="svc-dur">45 min</span></div>
+            <div class="svc-check"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2: Date & Time -->
+      <div class="book-panel" id="step2">
+        <div class="cal-header">
+          <h3 id="calMonth"></h3>
+          <div class="cal-nav">
+            <button id="calPrev">◀</button>
+            <button id="calNext">▶</button>
+          </div>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+        <div id="slotsContainer">
+          <div class="no-slots">👆 Kies eerst een datum hierboven</div>
+        </div>
+      </div>
+
+      <!-- STEP 3: Pet Info -->
+      <div class="book-panel" id="step3">
+        <div class="form-row">
+          <div class="book-field"><label>Naam huisdier *</label><input type="text" id="petName" placeholder="Bijv. Max"></div>
+          <div class="book-field"><label>Ras *</label><input type="text" id="petBreed" placeholder="Bijv. Labrador"></div>
+        </div>
+        <div class="form-row">
+          <div class="book-field"><label>Grootte</label><select id="petSize"><option>Klein (< 10 kg)</option><option>Middel (10-25 kg)</option><option selected>Groot (25-40 kg)</option><option>Extra groot (> 40 kg)</option></select></div>
+          <div class="book-field"><label>Leeftijd</label><select id="petAge"><option>Puppy (< 1 jaar)</option><option selected>Volwassen (1-7 jaar)</option><option>Senior (7+ jaar)</option></select></div>
+        </div>
+        <div class="book-field"><label>Jouw naam *</label><input type="text" id="ownerName" placeholder="Jouw volledige naam"></div>
+        <div class="form-row">
+          <div class="book-field"><label>Telefoon *</label><input type="tel" id="ownerPhone" placeholder="+32 ..."></div>
+          <div class="book-field"><label>E-mail *</label><input type="email" id="ownerEmail" placeholder="jouw@email.be"></div>
+        </div>
+        <div class="book-field"><label>Opmerkingen</label><textarea id="bookNotes" placeholder="Allergieën, bijzonderheden, wensen..."></textarea></div>
+      </div>
+
+      <!-- STEP 4: Confirm -->
+      <div class="book-panel" id="step4">
+        <div class="confirm-summary" id="confirmSummary"></div>
+      </div>
+
+      <!-- SUCCESS -->
+      <div class="book-panel" id="stepSuccess">
+        <div class="success-state">
+          <div class="success-icon">✅</div>
+          <h2>Afspraak Bevestigd!</h2>
+          <p>Je ontvangt een bevestiging per e-mail met alle details.</p>
+          <div class="success-details" id="successDetails"></div>
+          <button class="btn btn-primary" onclick="closeModal()" style="margin:0 auto">Sluiten</button>
+        </div>
+      </div>
+
+      <!-- Footer nav -->
+      <div class="modal-footer" id="modalFooter">
+        <button class="btn-back" id="btnBack">← Vorige</button>
+        <button class="btn-next" id="btnNext" disabled>Volgende →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <a href="kwispelclub-index.html" class="footer-logo"><div class="logo-paw">🐾</div><span class="brand">Kwispelclub</span></a>
+    <div class="footer-links">
+      <a href="kwispelclub-index.html">Home</a>
+      <a href="kwispelclub-index.html#shop">Shop</a>
+      <a href="kwispelclub-puppy-training.html">Puppy Training</a>
+      <a href="#">Kapsalons</a>
+      <a href="kwispelclub-index.html#community">Community</a>
+    </div>
+    <div class="footer-copy">© 2026 Kwispelclub. Alle rechten voorbehouden. 🇧🇪 België & 🇳🇱 Nederland</div>
+  </div>
+</footer>
+
+<script>
+  // === NAV & BASICS ===
+  const navbar=document.getElementById('navbar');
+  window.addEventListener('scroll',()=>navbar.classList.toggle('scrolled',window.scrollY>20));
+  document.getElementById('hamburger').addEventListener('click',()=>document.getElementById('mobileMenu').classList.toggle('open'));
+  const obs=new IntersectionObserver(entries=>{entries.forEach((e,i)=>{if(e.isIntersecting){setTimeout(()=>e.target.classList.add('visible'),i*60);obs.unobserve(e.target)}})},{threshold:0.08});
+  document.querySelectorAll('.fade-up').forEach(el=>obs.observe(el));
+
+  // Region filter
+  document.querySelectorAll('.filter-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      const region=btn.dataset.region;
+      document.querySelectorAll('.salon-card').forEach(card=>{card.style.display=(region==='all'||card.dataset.region===region)?'':'none'});
+    });
+  });
+
+  // Search filter
+  document.getElementById('salonSearch').addEventListener('input',function(){
+    const q=this.value.toLowerCase();
+    document.querySelectorAll('.salon-card').forEach(card=>{card.style.display=card.dataset.name.includes(q)?'':'none'});
+    if(q) document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  });
+
+  // Favorite
+  document.querySelectorAll('.salon-favorite').forEach(btn=>{
+    btn.addEventListener('click',e=>{e.stopPropagation();const l=btn.classList.toggle('liked');btn.textContent=l?'♥':'♡';btn.style.color=l?'#E84E4E':'';btn.style.transform='scale(1.3)';setTimeout(()=>btn.style.transform='',200)});
+  });
+
+  document.querySelectorAll('a[href^="#"]').forEach(a=>{a.addEventListener('click',e=>{const t=document.querySelector(a.getAttribute('href'));if(t){e.preventDefault();t.scrollIntoView({behavior:'smooth'})}})});
+
+  // === BOOKING SYSTEM ===
+  let currentStep = 1;
+  let booking = { salon:'', location:'', service:'', price:0, dur:'', date:null, dateStr:'', time:'', petName:'', petBreed:'', petSize:'', petAge:'', ownerName:'', ownerPhone:'', ownerEmail:'', notes:'' };
+
+  const modal = document.getElementById('bookingModal');
+  const steps = document.querySelectorAll('.booking-step');
+  const panels = { 1:document.getElementById('step1'), 2:document.getElementById('step2'), 3:document.getElementById('step3'), 4:document.getElementById('step4'), success:document.getElementById('stepSuccess') };
+  const btnNext = document.getElementById('btnNext');
+  const btnBack = document.getElementById('btnBack');
+  const footer = document.getElementById('modalFooter');
+
+  // Open modal from "Bekijk & Boek" buttons
+  document.querySelectorAll('.salon-cta').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const card = btn.closest('.salon-card');
+      const name = card.querySelector('.salon-name').textContent;
+      const loc = card.querySelector('.salon-location').textContent;
+      booking.salon = name;
+      booking.location = loc;
+      document.getElementById('modalSalonName').textContent = name;
+      document.getElementById('modalSalonLocation').textContent = loc;
+      openModal();
+    });
+  });
+
+  function openModal() {
+    currentStep = 1;
+    // Reset selections
+    document.querySelectorAll('.service-option').forEach(s => s.classList.remove('selected'));
+    document.querySelectorAll('.service-option .svc-check').forEach(c => c.textContent = '');
+    booking.service=''; booking.price=0; booking.date=null; booking.time='';
+    updateStep();
+    modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    modal.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  document.getElementById('modalClose').addEventListener('click', closeModal);
+  modal.addEventListener('click', e => { if(e.target === modal) closeModal(); });
+
+  // Service selection
+  document.querySelectorAll('.service-option').forEach(opt => {
+    opt.addEventListener('click', () => {
+      document.querySelectorAll('.service-option').forEach(s => { s.classList.remove('selected'); s.querySelector('.svc-check').textContent = ''; });
+      opt.classList.add('selected');
+      opt.querySelector('.svc-check').textContent = '✓';
+      booking.service = opt.dataset.service;
+      booking.price = parseInt(opt.dataset.price);
+      booking.dur = opt.dataset.dur;
+      validateStep();
+    });
+  });
+
+  // Calendar
+  let calDate = new Date();
+  const dayNames = ['Ma','Di','Wo','Do','Vr','Za','Zo'];
+  const monthNames = ['Januari','Februari','Maart','April','Mei','Juni','Juli','Augustus','September','Oktober','November','December'];
+
+  function renderCalendar() {
+    const year = calDate.getFullYear();
+    const month = calDate.getMonth();
+    document.getElementById('calMonth').textContent = monthNames[month] + ' ' + year;
+    const grid = document.getElementById('calGrid');
+    grid.innerHTML = dayNames.map(d => `<div class="cal-day-name">${d}</div>`).join('');
+    const firstDay = new Date(year, month, 1);
+    let startDay = firstDay.getDay() - 1; if(startDay < 0) startDay = 6; // Monday start
+    const daysInMonth = new Date(year, month+1, 0).getDate();
+    const today = new Date(); today.setHours(0,0,0,0);
+
+    for(let i = 0; i < startDay; i++) grid.innerHTML += '<div class="cal-day empty"></div>';
+    for(let d = 1; d <= daysInMonth; d++) {
+      const date = new Date(year, month, d);
+      const isPast = date < today;
+      const isSunday = date.getDay() === 0;
+      const isToday = date.getTime() === today.getTime();
+      const isSelected = booking.date && date.getTime() === booking.date.getTime();
+      let cls = 'cal-day';
+      if(isPast || isSunday) cls += ' disabled';
+      if(isToday) cls += ' today';
+      if(isSelected) cls += ' selected';
+      grid.innerHTML += `<div class="${cls}" data-date="${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}" data-ts="${date.getTime()}">${d}</div>`;
+    }
+
+    // Bind day clicks
+    grid.querySelectorAll('.cal-day:not(.disabled):not(.empty)').forEach(day => {
+      day.addEventListener('click', () => {
+        grid.querySelectorAll('.cal-day').forEach(d => d.classList.remove('selected'));
+        day.classList.add('selected');
+        booking.date = new Date(parseInt(day.dataset.ts));
+        booking.dateStr = day.dataset.date;
+        renderTimeSlots();
+        validateStep();
+      });
+    });
+  }
+
+  document.getElementById('calPrev').addEventListener('click', () => {
+    calDate.setMonth(calDate.getMonth() - 1);
+    const today = new Date();
+    if(calDate.getFullYear() < today.getFullYear() || (calDate.getFullYear() === today.getFullYear() && calDate.getMonth() < today.getMonth())) {
+      calDate = new Date(today.getFullYear(), today.getMonth(), 1);
+    }
+    renderCalendar();
+  });
+  document.getElementById('calNext').addEventListener('click', () => { calDate.setMonth(calDate.getMonth() + 1); renderCalendar(); });
+
+  function renderTimeSlots() {
+    const container = document.getElementById('slotsContainer');
+    if(!booking.date) { container.innerHTML = '<div class="no-slots">👆 Kies eerst een datum</div>'; return; }
+
+    const dayOfWeek = booking.date.getDay();
+    // Salon hours: Ma-Vr 9-17, Za 9-14
+    const isSaturday = dayOfWeek === 6;
+    const morningSlots = ['09:00','09:30','10:00','10:30','11:00','11:30'];
+    const afternoonSlots = isSaturday ? ['12:00','12:30','13:00','13:30'] : ['12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30'];
+
+    // Randomly mark some as taken (seeded by date for consistency)
+    const seed = booking.date.getDate() * 7 + booking.date.getMonth() * 31;
+    const isTaken = (idx) => (seed * (idx + 3) * 17) % 5 === 0;
+
+    let html = '<div class="slots-label">🌅 Ochtend</div><div class="time-slots">';
+    morningSlots.forEach((s, i) => {
+      const taken = isTaken(i);
+      const sel = booking.time === s ? ' selected' : '';
+      html += `<div class="time-slot${taken ? ' taken' : sel}" data-time="${s}">${s}</div>`;
+    });
+    html += '</div><div class="slots-label">☀️ Middag</div><div class="time-slots">';
+    afternoonSlots.forEach((s, i) => {
+      const taken = isTaken(i + 10);
+      const sel = booking.time === s ? ' selected' : '';
+      html += `<div class="time-slot${taken ? ' taken' : sel}" data-time="${s}">${s}</div>`;
+    });
+    html += '</div>';
+    container.innerHTML = html;
+
+    // Bind slot clicks
+    container.querySelectorAll('.time-slot:not(.taken)').forEach(slot => {
+      slot.addEventListener('click', () => {
+        container.querySelectorAll('.time-slot').forEach(s => s.classList.remove('selected'));
+        slot.classList.add('selected');
+        booking.time = slot.dataset.time;
+        validateStep();
+      });
+    });
+  }
+
+  // Step navigation
+  function updateStep() {
+    Object.values(panels).forEach(p => p.classList.remove('active'));
+    if(currentStep <= 4) panels[currentStep].classList.add('active');
+    else panels.success.classList.add('active');
+
+    steps.forEach((s, i) => {
+      s.classList.remove('active','done');
+      if(i + 1 === currentStep) s.classList.add('active');
+      else if(i + 1 < currentStep) s.classList.add('done');
+    });
+
+    btnBack.style.display = currentStep > 1 && currentStep <= 4 ? '' : 'none';
+    footer.style.display = currentStep > 4 ? 'none' : '';
+
+    if(currentStep === 2) { renderCalendar(); renderTimeSlots(); }
+    if(currentStep === 4) renderConfirmation();
+
+    btnNext.textContent = currentStep === 4 ? '✓ Bevestig Afspraak' : 'Volgende →';
+    btnNext.classList.toggle('orange', currentStep === 4);
+    validateStep();
+  }
+
+  function validateStep() {
+    let valid = false;
+    switch(currentStep) {
+      case 1: valid = !!booking.service; break;
+      case 2: valid = !!(booking.date && booking.time); break;
+      case 3:
+        const pn=document.getElementById('petName').value, pb=document.getElementById('petBreed').value;
+        const on=document.getElementById('ownerName').value, op=document.getElementById('ownerPhone').value, oe=document.getElementById('ownerEmail').value;
+        valid = !!(pn && pb && on && op && oe);
+        break;
+      case 4: valid = true; break;
+    }
+    btnNext.disabled = !valid;
+  }
+
+  // Form validation listeners
+  ['petName','petBreed','ownerName','ownerPhone','ownerEmail'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.addEventListener('input', validateStep);
+  });
+
+  btnNext.addEventListener('click', () => {
+    if(btnNext.disabled) return;
+    if(currentStep === 3) {
+      booking.petName = document.getElementById('petName').value;
+      booking.petBreed = document.getElementById('petBreed').value;
+      booking.petSize = document.getElementById('petSize').value;
+      booking.petAge = document.getElementById('petAge').value;
+      booking.ownerName = document.getElementById('ownerName').value;
+      booking.ownerPhone = document.getElementById('ownerPhone').value;
+      booking.ownerEmail = document.getElementById('ownerEmail').value;
+      booking.notes = document.getElementById('bookNotes').value;
+    }
+    if(currentStep === 4) {
+      // Confirm booking
+      currentStep = 5;
+      document.getElementById('successDetails').innerHTML = `
+        <strong>📍 ${booking.salon}</strong><br>
+        ${booking.location}<br><br>
+        <strong>✂️ ${booking.service}</strong> · ${booking.dur}<br>
+        <strong>📅 ${formatDate(booking.date)}</strong> om <strong>${booking.time}</strong><br><br>
+        <strong>🐕 ${booking.petName}</strong> (${booking.petBreed})<br>
+        <strong>👤 ${booking.ownerName}</strong><br>
+        📧 Bevestiging verstuurd naar ${booking.ownerEmail}
+      `;
+      updateStep();
+      return;
+    }
+    currentStep++;
+    updateStep();
+  });
+
+  btnBack.addEventListener('click', () => { if(currentStep > 1) { currentStep--; updateStep(); } });
+
+  function renderConfirmation() {
+    document.getElementById('confirmSummary').innerHTML = `
+      <div class="confirm-row"><span class="label">Salon</span><span>${booking.salon}</span></div>
+      <div class="confirm-row"><span class="label">Dienst</span><span>${booking.service} (${booking.dur})</span></div>
+      <div class="confirm-row"><span class="label">Datum</span><span>${formatDate(booking.date)}</span></div>
+      <div class="confirm-row"><span class="label">Tijdslot</span><span>${booking.time}</span></div>
+      <div class="confirm-row"><span class="label">Huisdier</span><span>${booking.petName} (${booking.petBreed})</span></div>
+      <div class="confirm-row"><span class="label">Eigenaar</span><span>${booking.ownerName}</span></div>
+      <div class="confirm-row"><span class="label">Contact</span><span>${booking.ownerPhone}</span></div>
+      ${booking.notes ? `<div class="confirm-row"><span class="label">Opmerkingen</span><span>${booking.notes}</span></div>` : ''}
+      <div class="confirm-row"><span class="label">Totaal</span><span>€${booking.price}</span></div>
+    `;
+  }
+
+  function formatDate(d) {
+    if(!d) return '';
+    const days = ['Zondag','Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Zaterdag'];
+    return `${days[d.getDay()]} ${d.getDate()} ${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+  }
+</script>
+</body>
+</html>

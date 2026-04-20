@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kwispelclub — Alles voor je beste vriend</title>
+<meta name="description" content="Kwispelclub is hét huisdierplatform voor België en Nederland. Premium producten, expert advies, hondenkapsalons en een warme community.">
+<meta name="keywords" content="huisdieren, honden, katten, voeding, kapsalon, training, België, Nederland, webshop, community">
+<meta property="og:title" content="Kwispelclub — Alles voor je beste vriend">
+<meta property="og:description" content="Vind premium voeding, deskundig advies, betrouwbare verkopers en een warme community — alles op één plek.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://kwispelclub.be">
+<meta property="og:site_name" content="Kwispelclub">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Kwispelclub — Alles voor je beste vriend">
+<meta name="twitter:description" content="Hét huisdierplatform voor België en Nederland.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐾</text></svg>">
+<link rel="canonical" href="https://kwispelclub.be">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green-dark: #2D5A27;
+    --green-main: #4A7C3F;
+    --green-light: #6B9E5E;
+    --green-pale: #E8F0E4;
+    --orange-main: #E8913A;
+    --orange-light: #F5A855;
+    --orange-pale: #FFF3E0;
+    --cream: #FFF9F0;
+    --cream-dark: #F5EDE0;
+    --brown: #5C3D2E;
+    --brown-light: #8B6F5E;
+    --text-dark: #2C2C2C;
+    --text-mid: #5A5A5A;
+    --text-light: #8A8A8A;
+    --white: #FFFFFF;
+    --red: #E84E4E;
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 20px rgba(0,0,0,0.08);
+    --shadow-lg: 0 8px 40px rgba(0,0,0,0.12);
+    --shadow-xl: 0 16px 56px rgba(0,0,0,0.14);
+    --radius-sm: 12px;
+    --radius-md: 20px;
+    --radius-lg: 28px;
+    --radius-xl: 36px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Nunito', sans-serif; background: var(--cream); color: var(--text-dark); overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+  h1,h2,h3,h4,h5 { font-family: 'Fredoka', sans-serif; }
+
+  /* BG PAWS */
+  .paw-bg { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+  .paw-bg .paw { position: absolute; font-size: 40px; opacity: 0.035; animation: floatPaw 25s ease-in-out infinite; }
+  .paw-bg .paw:nth-child(1){top:8%;left:4%;animation-delay:0s}
+  .paw-bg .paw:nth-child(2){top:25%;right:6%;animation-delay:4s;font-size:30px}
+  .paw-bg .paw:nth-child(3){top:50%;left:10%;animation-delay:8s;font-size:55px}
+  .paw-bg .paw:nth-child(4){top:70%;right:12%;animation-delay:12s}
+  .paw-bg .paw:nth-child(5){top:88%;left:35%;animation-delay:16s;font-size:35px}
+  .paw-bg .paw:nth-child(6){top:12%;left:55%;animation-delay:6s;font-size:28px}
+  .paw-bg .paw:nth-child(7){top:40%;right:30%;animation-delay:10s;font-size:22px}
+  .paw-bg .paw:nth-child(8){top:60%;left:70%;animation-delay:14s;font-size:45px}
+  @keyframes floatPaw{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-25px) rotate(12deg)}}
+
+  /* ANNOUNCE */
+  .announce-bar { background: var(--green-dark); color: white; text-align: center; padding: 10px 16px; font-size: 13px; font-weight: 600; letter-spacing: 0.3px; position: relative; z-index: 101; }
+  .announce-bar a { color: var(--orange-light); text-decoration: underline; margin-left: 6px; }
+
+  /* NAVBAR */
+  .navbar { position: sticky; top: 0; z-index: 100; background: rgba(255,249,240,0.88); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(0,0,0,0.04); padding: 0 clamp(16px,4vw,48px); transition: all 0.3s; }
+  .navbar.scrolled { box-shadow: var(--shadow-md); background: rgba(255,249,240,0.96); }
+  .nav-inner { max-width: 1320px; margin: 0 auto; display: flex; align-items: center; height: 72px; gap: 8px; }
+  .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; margin-right: 28px; flex-shrink: 0; }
+  .logo-paw { width: 42px; height: 42px; border-radius: 12px; background: var(--green-dark); display: flex; align-items: center; justify-content: center; font-size: 22px; }
+  .nav-logo .brand { font-family: 'Fredoka',sans-serif; font-size: 22px; font-weight: 700; color: var(--green-dark); letter-spacing: 0.5px; }
+  .nav-links { display: flex; gap: 2px; list-style: none; }
+  .nav-links a { text-decoration: none; color: var(--text-dark); font-weight: 600; font-size: 14px; padding: 8px 16px; border-radius: 10px; transition: all 0.2s; }
+  .nav-links a:hover { background: var(--green-pale); color: var(--green-dark); }
+  .nav-search { flex: 1; max-width: 340px; margin-left: auto; position: relative; }
+  .nav-search input { width: 100%; padding: 11px 16px 11px 42px; border: 2px solid var(--cream-dark); border-radius: 50px; font-family: 'Nunito',sans-serif; font-size: 14px; background: var(--white); outline: none; transition: all 0.25s; }
+  .nav-search input:focus { border-color: var(--green-light); box-shadow: 0 0 0 3px rgba(107,158,94,0.12); }
+  .nav-search .s-icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); font-size: 16px; opacity: 0.35; }
+  .nav-actions { display: flex; gap: 8px; margin-left: 16px; }
+  .nav-btn { width: 44px; height: 44px; border-radius: 50%; border: none; background: var(--white); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: all 0.2s; position: relative; box-shadow: var(--shadow-sm); }
+  .nav-btn:hover { background: var(--green-pale); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  .badge { position: absolute; top: -3px; right: -3px; min-width: 19px; height: 19px; border-radius: 50%; background: var(--orange-main); color: white; font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center; border: 2px solid var(--cream); }
+  .nav-hamburger { display: none; background: none; border: none; font-size: 26px; cursor: pointer; padding: 8px; }
+  .mobile-menu { display: none; position: fixed; top: 72px; left: 0; right: 0; background: var(--cream); padding: 16px 24px 24px; z-index: 99; box-shadow: var(--shadow-lg); border-radius: 0 0 var(--radius-md) var(--radius-md); }
+  .mobile-menu.open { display: block; animation: slideDown 0.3s ease; }
+  .mobile-menu a { display: block; padding: 14px 0; font-weight: 600; font-size: 16px; color: var(--text-dark); text-decoration: none; border-bottom: 1px solid var(--cream-dark); }
+  .mobile-menu a:last-child { border-bottom: none; }
+  @keyframes slideDown{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+
+  /* HERO */
+  .hero { position: relative; z-index: 1; max-width: 1320px; margin: 0 auto; padding: 24px clamp(16px,4vw,48px); }
+  .hero-card {
+    background: linear-gradient(135deg, var(--green-dark) 0%, var(--green-main) 40%, var(--green-light) 100%);
+    border-radius: var(--radius-xl); overflow: hidden; position: relative; min-height: 480px; display: flex; align-items: center;
+  }
+  .hero-shapes { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+  .hero-shapes .blob { position: absolute; border-radius: 50%; }
+  .blob-1{width:400px;height:400px;background:rgba(232,145,58,0.12);top:-120px;right:-80px;animation:blobFloat 8s ease-in-out infinite}
+  .blob-2{width:250px;height:250px;background:rgba(255,249,240,0.08);bottom:-80px;left:25%;animation:blobFloat 11s ease-in-out infinite reverse}
+  .blob-3{width:180px;height:180px;background:rgba(245,168,85,0.1);top:35%;right:20%;animation:blobFloat 14s ease-in-out infinite}
+  .blob-4{width:120px;height:120px;background:rgba(255,255,255,0.06);bottom:20%;left:8%;animation:blobFloat 9s ease-in-out infinite 2s}
+  @keyframes blobFloat{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(20px,-25px) scale(1.06)}66%{transform:translate(-15px,15px) scale(0.94)}}
+  .hero-content { position: relative; z-index: 2; padding: 60px clamp(32px,5vw,80px); max-width: 540px; }
+  .hero-tag { display: inline-flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.15); padding: 7px 18px; border-radius: 50px; color: rgba(255,255,255,0.9); font-size: 13px; font-weight: 700; margin-bottom: 24px; backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,0.1); }
+  .hero h1 { font-size: clamp(36px,5.5vw,56px); color: var(--white); line-height: 1.08; margin-bottom: 18px; letter-spacing: -0.5px; }
+  .hero h1 .accent { color: var(--orange-light); }
+  .hero p { color: rgba(255,255,255,0.82); font-size: 17px; line-height: 1.65; margin-bottom: 32px; max-width: 400px; }
+  .hero-buttons { display: flex; gap: 12px; flex-wrap: wrap; }
+
+  /* HERO IMAGE */
+  .hero-image {
+    position: absolute; right: 0; top: 0; width: 50%; height: 100%;
+    overflow: hidden; display: flex; align-items: center; justify-content: center;
+  }
+  .hero-photo-container {
+    position: relative; width: 100%; height: 100%;
+  }
+  .hero-photo {
+    width: 100%; height: 100%; object-fit: cover;
+    mask-image: linear-gradient(to left, rgba(0,0,0,1) 40%, rgba(0,0,0,0.6) 70%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to left, rgba(0,0,0,1) 40%, rgba(0,0,0,0.6) 70%, transparent 100%);
+  }
+  .hero-photo-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, var(--green-main) 0%, transparent 50%);
+    opacity: 0.3; pointer-events: none;
+  }
+  .hero-floating-badge {
+    position: absolute; background: rgba(255,255,255,0.95); border-radius: 16px;
+    padding: 10px 16px; box-shadow: var(--shadow-lg); display: flex;
+    align-items: center; gap: 8px; animation: floatBadge 4s ease-in-out infinite;
+    z-index: 3;
+  }
+  .hero-floating-badge.b1 { bottom: 80px; right: 40px; animation-delay: 0s; }
+  .hero-floating-badge.b2 { top: 60px; right: 60px; animation-delay: 1.5s; }
+  .hfb-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .hfb-icon.green { background: var(--green-pale); }
+  .hfb-icon.orange { background: var(--orange-pale); }
+  .hfb-text { font-size: 12px; font-weight: 700; color: var(--text-dark); line-height: 1.3; }
+  .hfb-text span { display: block; font-weight: 400; font-size: 11px; color: var(--text-light); }
+  @keyframes floatBadge { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+
+  /* BUTTONS */
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 15px 30px; border-radius: 50px; font-family: 'Fredoka',sans-serif; font-size: 15px; font-weight: 600; text-decoration: none; border: none; cursor: pointer; transition: all 0.3s cubic-bezier(0.4,0,0.2,1); letter-spacing: 0.3px; }
+  .btn-primary { background: var(--orange-main); color: white; box-shadow: 0 4px 20px rgba(232,145,58,0.4); }
+  .btn-primary:hover { background: #D4812E; transform: translateY(-3px); box-shadow: 0 8px 28px rgba(232,145,58,0.5); }
+  .btn-secondary { background: rgba(255,255,255,0.12); color: white; backdrop-filter: blur(4px); border: 1.5px solid rgba(255,255,255,0.25); }
+  .btn-secondary:hover { background: rgba(255,255,255,0.22); transform: translateY(-3px); }
+  .btn-outline { background: transparent; color: var(--green-dark); border: 2px solid var(--green-dark); }
+  .btn-outline:hover { background: var(--green-dark); color: white; transform: translateY(-3px); }
+
+  /* TRUST */
+  .trust-bar { position: relative; z-index: 2; max-width: 1320px; margin: -28px auto 0; padding: 0 clamp(16px,4vw,48px); }
+  .trust-inner { background: var(--white); border-radius: var(--radius-md); padding: 22px 36px; display: flex; justify-content: center; gap: clamp(20px,4vw,56px); flex-wrap: wrap; box-shadow: var(--shadow-xl); }
+  .trust-item { display: flex; align-items: center; gap: 12px; }
+  .trust-icon { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+  .trust-icon.green { background: var(--green-pale); }
+  .trust-icon.orange { background: var(--orange-pale); }
+  .trust-text strong { display: block; font-size: 14px; }
+  .trust-text span { font-size: 12px; color: var(--text-light); }
+
+  /* SECTIONS */
+  .section { position: relative; z-index: 1; max-width: 1320px; margin: 0 auto; padding: 72px clamp(16px,4vw,48px); }
+  .section-header { text-align: center; margin-bottom: 48px; }
+  .section-header h2 { font-size: clamp(28px,3.5vw,42px); color: var(--green-dark); margin-bottom: 12px; }
+  .section-header p { color: var(--text-mid); font-size: 16px; max-width: 520px; margin: 0 auto; line-height: 1.6; }
+
+  /* FEATURES */
+  .features-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 20px; }
+  .feature-card { background: var(--white); border-radius: var(--radius-md); padding: 36px 24px 28px; text-align: center; box-shadow: var(--shadow-sm); transition: all 0.35s cubic-bezier(0.4,0,0.2,1); cursor: pointer; position: relative; overflow: hidden; }
+  .feature-card::before { content:''; position: absolute; top: 0; left: 0; right: 0; height: 4px; transition: height 0.3s; }
+  .feature-card:nth-child(1)::before{background:var(--green-main)} .feature-card:nth-child(2)::before{background:var(--orange-main)}
+  .feature-card:nth-child(3)::before{background:var(--brown)} .feature-card:nth-child(4)::before{background:var(--green-light)}
+  .feature-card:hover { transform: translateY(-8px); box-shadow: var(--shadow-lg); }
+  .feature-card:hover::before { height: 6px; }
+  .feature-icon { width: 76px; height: 76px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 36px; margin: 0 auto 20px; }
+  .feature-card:nth-child(1) .feature-icon{background:var(--green-pale)} .feature-card:nth-child(2) .feature-icon{background:var(--orange-pale)}
+  .feature-card:nth-child(3) .feature-icon{background:#F5EDE0} .feature-card:nth-child(4) .feature-icon{background:#E8F5E0}
+  .feature-card h3 { font-size: 18px; margin-bottom: 10px; }
+  .feature-card p { font-size: 14px; color: var(--text-mid); line-height: 1.55; margin-bottom: 20px; }
+  .feature-link { display: inline-flex; align-items: center; gap: 4px; font-size: 14px; font-weight: 700; text-decoration: none; transition: gap 0.2s; }
+  .feature-card:nth-child(1) .feature-link{color:var(--green-main)} .feature-card:nth-child(2) .feature-link{color:var(--orange-main)}
+  .feature-card:nth-child(3) .feature-link{color:var(--brown)} .feature-card:nth-child(4) .feature-link{color:var(--green-light)}
+  .feature-link:hover { gap: 10px; }
+
+  /* STATS */
+  .stats-bar { position: relative; z-index: 1; max-width: 1320px; margin: 0 auto; padding: 0 clamp(16px,4vw,48px); }
+  .stats-inner { background: linear-gradient(135deg,var(--green-dark),var(--green-main)); border-radius: var(--radius-lg); padding: 40px; display: grid; grid-template-columns: repeat(4,1fr); gap: 24px; text-align: center; color: white; }
+  .stat-item h3 { font-size: clamp(32px,4vw,48px); color: var(--orange-light); margin-bottom: 6px; }
+  .stat-item p { font-size: 14px; opacity: 0.8; font-weight: 600; }
+
+  /* PRODUCTS */
+  .products-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 20px; }
+  .product-card { background: var(--white); border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-sm); transition: all 0.3s; cursor: pointer; }
+  .product-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-lg); }
+  .product-img { width: 100%; aspect-ratio: 1; background: var(--cream-dark); display: flex; align-items: center; justify-content: center; font-size: 64px; position: relative; overflow: hidden; }
+  .product-img img { width: 100%; height: 100%; object-fit: cover; }
+  .product-badge { position: absolute; top: 12px; left: 12px; padding: 4px 12px; border-radius: 50px; font-size: 11px; font-weight: 700; color: white; z-index: 2; }
+  .product-badge.new{background:var(--green-main)} .product-badge.sale{background:var(--red)} .product-badge.popular{background:var(--orange-main)} .product-badge.bio{background:#7BAE3B}
+  .product-wishlist { position: absolute; top: 12px; right: 12px; width: 38px; height: 38px; border-radius: 50%; background: var(--white); border: none; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; box-shadow: var(--shadow-sm); transition: all 0.2s; z-index: 2; }
+  .product-wishlist:hover { transform: scale(1.15); }
+  .product-info { padding: 18px; }
+  .product-brand { font-size: 11px; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px; }
+  .product-name { font-size: 15px; font-weight: 600; margin-bottom: 10px; line-height: 1.3; }
+  .product-meta { display: flex; align-items: center; justify-content: space-between; }
+  .product-price { font-family: 'Fredoka',sans-serif; font-size: 20px; font-weight: 700; color: var(--green-dark); }
+  .old-price { font-size: 14px; color: var(--text-light); text-decoration: line-through; margin-right: 6px; font-weight: 400; }
+  .product-rating { font-size: 12px; color: var(--orange-main); display: flex; align-items: center; gap: 4px; }
+  .product-rating span { color: var(--text-light); }
+  .see-all { display: flex; justify-content: center; margin-top: 36px; }
+
+  /* BREED */
+  .breed-section { background: var(--white); border-radius: var(--radius-lg); padding: 48px; }
+  .breed-tabs { display: flex; gap: 8px; justify-content: center; margin-bottom: 32px; }
+  .breed-tab { padding: 10px 24px; border-radius: 50px; border: 2px solid var(--cream-dark); background: transparent; font-family: 'Fredoka',sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; color: var(--text-mid); }
+  .breed-tab.active { background: var(--green-dark); color: white; border-color: var(--green-dark); }
+  .breed-tab:hover:not(.active) { border-color: var(--green-main); color: var(--green-main); }
+  .breed-grid { display: grid; grid-template-columns: repeat(6,1fr); gap: 16px; }
+  .breed-card { text-align: center; padding: 20px 12px; border-radius: var(--radius-md); cursor: pointer; transition: all 0.3s; background: var(--cream); }
+  .breed-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); background: var(--green-pale); }
+  .breed-emoji { font-size: 48px; margin-bottom: 10px; display: block; }
+  .breed-name { font-size: 13px; font-weight: 700; }
+  .breed-card p { font-size: 11px; color: var(--text-light); margin-top: 4px; }
+
+  /* ACADEMY */
+  .academy-section { background: var(--white); border-radius: var(--radius-lg); padding: 48px; }
+  .academy-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; }
+  .academy-card { border-radius: var(--radius-md); overflow: hidden; cursor: pointer; transition: all 0.3s; background: var(--cream); }
+  .academy-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-lg); }
+  .academy-thumb { aspect-ratio: 16/10; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; background: var(--cream-dark); }
+  .academy-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .play-btn { position: absolute; width: 52px; height: 52px; border-radius: 50%; background: rgba(255,255,255,0.92); display: flex; align-items: center; justify-content: center; font-size: 18px; box-shadow: var(--shadow-md); transition: all 0.25s; color: var(--green-dark); z-index: 2; }
+  .academy-card:hover .play-btn { transform: scale(1.12); }
+  .academy-info { padding: 18px; }
+  .academy-tag { display: inline-block; padding: 4px 12px; border-radius: 50px; font-size: 11px; font-weight: 700; margin-bottom: 10px; }
+  .academy-tag.hond{background:var(--green-pale);color:var(--green-dark)} .academy-tag.kat{background:var(--orange-pale);color:var(--orange-main)} .academy-tag.algemeen{background:#EDE8F5;color:#6B4FA0}
+  .academy-info h4 { font-size: 16px; margin-bottom: 6px; }
+  .academy-info p { font-size: 13px; color: var(--text-mid); }
+  .academy-duration { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-light); margin-top: 8px; }
+
+  /* MARKETPLACE */
+  .mp-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .mp-info-card { background: linear-gradient(135deg,var(--green-dark),var(--green-main)); border-radius: var(--radius-lg); padding: 52px; color: white; display: flex; flex-direction: column; justify-content: center; }
+  .mp-info-card h3 { font-size: 30px; margin-bottom: 16px; line-height: 1.2; }
+  .mp-info-card > p { font-size: 15px; opacity: 0.82; line-height: 1.65; margin-bottom: 28px; }
+  .mp-features { display: flex; flex-direction: column; gap: 14px; margin-bottom: 32px; }
+  .mp-feat { display: flex; align-items: center; gap: 12px; font-size: 14px; font-weight: 600; }
+  .mp-feat-icon { width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,0.12); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .mp-chat-card { background: var(--white); border-radius: var(--radius-lg); padding: 32px; box-shadow: var(--shadow-md); display: flex; flex-direction: column; }
+  .mp-chat-header { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; padding-bottom: 18px; border-bottom: 2px solid var(--cream-dark); }
+  .mp-chat-header h4 { font-size: 16px; }
+  .mp-chat-header span { font-size: 13px; color: var(--text-light); }
+  .chat-messages { display: flex; flex-direction: column; gap: 14px; flex: 1; }
+  .chat-msg { max-width: 85%; padding: 14px 18px; border-radius: 18px; font-size: 13px; line-height: 1.55; }
+  .chat-msg.buyer{background:var(--green-pale);color:var(--green-dark);align-self:flex-start;border-bottom-left-radius:4px}
+  .chat-msg.seller{background:var(--orange-pale);color:var(--brown);align-self:flex-end;border-bottom-right-radius:4px}
+  .chat-user { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .chat-avatar { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; color: white; }
+  .chat-avatar.b{background:var(--green-main)} .chat-avatar.s{background:var(--orange-main)}
+  .chat-name { font-size: 12px; font-weight: 700; }
+  .verified { display: inline-flex; align-items: center; gap: 3px; background: var(--green-main); color: white; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 50px; margin-left: 4px; }
+
+  /* SELLERS */
+  .sellers-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; }
+  .seller-card { background: var(--white); border-radius: var(--radius-md); padding: 28px; text-align: center; box-shadow: var(--shadow-sm); transition: all 0.3s; cursor: pointer; border: 2px solid transparent; }
+  .seller-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-lg); border-color: var(--green-pale); }
+  .seller-logo { width: 72px; height: 72px; border-radius: 50%; background: var(--cream); display: flex; align-items: center; justify-content: center; font-size: 34px; margin: 0 auto 16px; border: 3px solid var(--green-pale); }
+  .seller-card h4 { font-size: 16px; margin-bottom: 4px; }
+  .seller-cat { font-size: 12px; color: var(--text-light); margin-bottom: 12px; }
+  .seller-rating { font-size: 13px; color: var(--orange-main); margin-bottom: 8px; }
+  .seller-verified { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; color: var(--green-main); background: var(--green-pale); padding: 4px 12px; border-radius: 50px; }
+
+  /* TESTIMONIALS */
+  .testimonials-section { background: var(--green-pale); border-radius: var(--radius-lg); padding: 56px 48px; }
+  .testimonials-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; }
+  .testimonial-card { background: var(--white); border-radius: var(--radius-md); padding: 28px; box-shadow: var(--shadow-sm); transition: all 0.3s; }
+  .testimonial-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+  .t-stars { font-size: 14px; margin-bottom: 14px; letter-spacing: 2px; }
+  .t-text { font-size: 14px; color: var(--text-mid); line-height: 1.6; margin-bottom: 18px; font-style: italic; }
+  .t-author { display: flex; align-items: center; gap: 12px; }
+  .t-avatar { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; background: var(--cream); overflow: hidden; }
+  .t-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .t-name { font-weight: 700; font-size: 14px; }
+  .t-role { font-size: 12px; color: var(--text-light); }
+
+  /* COMMUNITY */
+  .community-section { background: linear-gradient(135deg,var(--orange-pale),var(--cream)); border-radius: var(--radius-lg); padding: 56px 48px; text-align: center; }
+  .community-section h2 { color: var(--brown); }
+  .community-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; margin-top: 36px; }
+  .community-card { background: var(--white); border-radius: var(--radius-md); padding: 32px 24px; transition: all 0.3s; cursor: pointer; }
+  .community-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-lg); }
+  .community-card .c-icon { font-size: 40px; margin-bottom: 16px; }
+  .community-card h4 { font-size: 17px; margin-bottom: 10px; }
+  .community-card p { font-size: 14px; color: var(--text-mid); line-height: 1.55; }
+
+  /* NEWSLETTER */
+  .newsletter-section { max-width: 1320px; margin: 0 auto; padding: 0 clamp(16px,4vw,48px) 72px; position: relative; z-index: 1; }
+  .newsletter-card { background: var(--white); border-radius: var(--radius-lg); padding: 56px 48px; display: flex; align-items: center; gap: 48px; box-shadow: var(--shadow-md); overflow: hidden; position: relative; }
+  .newsletter-card::before { content:''; position: absolute; top: 0; left: 0; bottom: 0; width: 6px; background: linear-gradient(180deg,var(--green-main),var(--orange-main)); }
+  .nl-content { flex: 1; }
+  .nl-content h2 { font-size: 28px; color: var(--green-dark); margin-bottom: 10px; }
+  .nl-content p { color: var(--text-mid); font-size: 15px; line-height: 1.6; max-width: 420px; }
+  .nl-form { flex: 1; display: flex; gap: 10px; }
+  .nl-form input { flex: 1; padding: 15px 20px; border: 2px solid var(--cream-dark); border-radius: 50px; font-family: 'Nunito',sans-serif; font-size: 15px; outline: none; transition: all 0.25s; }
+  .nl-form input:focus { border-color: var(--green-light); box-shadow: 0 0 0 3px rgba(107,158,94,0.12); }
+  .nl-form button { padding: 15px 32px; border-radius: 50px; background: var(--orange-main); color: white; border: none; font-family: 'Fredoka',sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.25s; white-space: nowrap; }
+  .nl-form button:hover { background: #D4812E; transform: translateY(-2px); }
+
+  /* CTA */
+  .cta-section { text-align: center; padding: 0 clamp(16px,4vw,48px) 80px; max-width: 1320px; margin: 0 auto; position: relative; z-index: 1; }
+  .cta-card { background: linear-gradient(135deg,var(--green-dark) 0%,var(--green-main) 50%,var(--green-light) 100%); border-radius: var(--radius-xl); padding: 72px 48px; color: white; position: relative; overflow: hidden; }
+  .cta-card h2 { font-size: clamp(28px,3.5vw,42px); margin-bottom: 16px; color: white; }
+  .cta-card p { font-size: 17px; opacity: 0.82; max-width: 480px; margin: 0 auto 36px; line-height: 1.6; }
+  .cta-emojis { font-size: 52px; margin-bottom: 28px; display: flex; justify-content: center; gap: 20px; }
+  .cta-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+  /* FOOTER */
+  footer { background: var(--green-dark); color: white; position: relative; z-index: 1; }
+  .footer-inner { max-width: 1320px; margin: 0 auto; padding: 64px clamp(16px,4vw,48px) 36px; display: grid; grid-template-columns: 2.2fr 1fr 1fr 1fr; gap: 48px; }
+  .footer-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; margin-bottom: 18px; }
+  .footer-logo .logo-paw { background: rgba(255,255,255,0.15); }
+  .footer-logo .brand { font-family: 'Fredoka',sans-serif; font-size: 22px; font-weight: 700; color: white; letter-spacing: 0.5px; }
+  .footer-brand p { font-size: 14px; opacity: 0.6; line-height: 1.65; max-width: 300px; }
+  .footer-social { display: flex; gap: 8px; margin-top: 20px; }
+  .footer-social a { width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 18px; text-decoration: none; transition: all 0.2s; }
+  .footer-social a:hover { background: rgba(255,255,255,0.2); transform: translateY(-2px); }
+  .footer-col h5 { font-size: 13px; font-weight: 700; margin-bottom: 18px; opacity: 0.45; text-transform: uppercase; letter-spacing: 1.5px; }
+  .footer-col a { display: block; color: white; opacity: 0.7; text-decoration: none; font-size: 14px; padding: 5px 0; transition: opacity 0.2s; }
+  .footer-col a:hover { opacity: 1; }
+  .footer-bottom { max-width: 1320px; margin: 0 auto; padding: 24px clamp(16px,4vw,48px); border-top: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; font-size: 13px; opacity: 0.4; flex-wrap: wrap; gap: 8px; }
+  .footer-bottom-links { display: flex; gap: 20px; }
+  .footer-bottom-links a { color: white; text-decoration: none; }
+  .footer-bottom-links a:hover { text-decoration: underline; }
+
+  /* ANIMATIONS */
+  .fade-up { opacity: 0; transform: translateY(32px); transition: opacity 0.7s ease, transform 0.7s ease; }
+  .fade-up.visible { opacity: 1; transform: translateY(0); }
+
+  /* RESPONSIVE */
+  @media(max-width:1024px){
+    .features-grid,.products-grid,.testimonials-grid,.sellers-grid{grid-template-columns:repeat(2,1fr)}
+    .academy-grid{grid-template-columns:repeat(2,1fr)}
+    .breed-grid{grid-template-columns:repeat(3,1fr)}
+    .footer-inner{grid-template-columns:1fr 1fr}
+    .hero-image{display:none} .hero-content{max-width:100%}
+    .stats-inner{grid-template-columns:repeat(2,1fr)}
+  }
+  @media(max-width:768px){
+    .nav-links{display:none} .nav-hamburger{display:block} .nav-search{max-width:200px}
+    .features-grid,.community-grid,.testimonials-grid,.sellers-grid,.academy-grid{grid-template-columns:1fr}
+    .products-grid{grid-template-columns:repeat(2,1fr)}
+    .mp-layout{grid-template-columns:1fr}
+    .breed-grid{grid-template-columns:repeat(3,1fr)}
+    .academy-section,.community-section,.testimonials-section,.breed-section{padding:32px 20px}
+    .hero-card{min-height:360px} .trust-inner{gap:16px}
+    .newsletter-card{flex-direction:column;gap:24px;padding:36px 24px}
+    .nl-form{flex-direction:column} .mp-info-card{padding:36px 24px}
+  }
+  @media(max-width:480px){
+    .products-grid{grid-template-columns:1fr}
+    .footer-inner{grid-template-columns:1fr;gap:24px}
+    .nav-actions{gap:4px} .nav-search{display:none}
+    .stats-inner{grid-template-columns:1fr 1fr;gap:16px;padding:28px 20px}
+    .breed-grid{grid-template-columns:repeat(2,1fr)}
+    .cta-card{padding:48px 24px}
+  }
+</style>
+</head>
+<body>
+
+<div class="paw-bg">
+  <div class="paw">🐾</div><div class="paw">🐾</div><div class="paw">🐾</div><div class="paw">🐾</div>
+  <div class="paw">🐾</div><div class="paw">🐾</div><div class="paw">🐾</div><div class="paw">🐾</div>
+</div>
+
+<div class="announce-bar" style="background:linear-gradient(90deg,var(--orange-main),#D4812E,var(--orange-main));animation:shimmer 3s ease infinite;background-size:200%">🚀 Kwispelclub is in opbouw! Webshop & boekingen zijn nog niet actief. <a href="#early-access" style="color:white">Registreer je voor early access →</a></div>
+<style>
+  @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  .beta-ribbon{position:absolute;top:14px;right:-8px;background:var(--orange-main);color:white;font-size:10px;font-weight:800;padding:4px 16px 4px 12px;letter-spacing:1px;text-transform:uppercase;z-index:5;border-radius:4px 0 0 4px;box-shadow:0 2px 8px rgba(232,145,58,0.3)}
+  .beta-ribbon::after{content:'';position:absolute;bottom:-6px;right:0;border-left:8px solid transparent;border-top:6px solid #B8701E}
+  .demo-overlay{position:absolute;inset:0;background:rgba(255,249,240,0.7);backdrop-filter:blur(1px);z-index:4;display:flex;align-items:center;justify-content:center;border-radius:inherit;opacity:0;transition:opacity 0.3s;pointer-events:none}
+  .product-card:hover .demo-overlay,.seller-card:hover .demo-overlay,.testimonial-card:hover .demo-overlay{opacity:1}
+  .demo-label{background:var(--white);padding:8px 20px;border-radius:50px;font-size:13px;font-weight:700;color:var(--orange-main);box-shadow:var(--shadow-md);border:2px solid var(--orange-main)}
+  .launch-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);animation:modalBgIn 0.4s ease}
+  @keyframes modalBgIn{from{opacity:0}to{opacity:1}}
+  .launch-modal{background:var(--white);border-radius:var(--radius-xl);max-width:560px;width:100%;padding:48px;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,0.2);animation:launchIn 0.5s cubic-bezier(0.4,0,0.2,1);position:relative;overflow:hidden}
+  .launch-modal::before{content:'';position:absolute;top:0;left:0;right:0;height:6px;background:linear-gradient(90deg,var(--green-main),var(--orange-main),var(--green-light))}
+  @keyframes launchIn{from{opacity:0;transform:translateY(30px) scale(0.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+  .launch-modal .lm-emoji{font-size:56px;margin-bottom:16px}
+  .launch-modal h2{font-size:28px;color:var(--green-dark);margin-bottom:10px}
+  .launch-modal p{color:var(--text-mid);font-size:15px;line-height:1.65;margin-bottom:24px;max-width:420px;margin-left:auto;margin-right:auto}
+  .launch-modal .lm-features{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:28px}
+  .launch-modal .lm-feat{padding:6px 16px;border-radius:50px;font-size:12px;font-weight:700;background:var(--green-pale);color:var(--green-dark)}
+  .launch-modal .lm-form{display:flex;gap:8px;max-width:400px;margin:0 auto 16px}
+  .launch-modal .lm-form input{flex:1;padding:14px 18px;border:2px solid var(--cream-dark);border-radius:50px;font-family:'Nunito',sans-serif;font-size:14px;outline:none}
+  .launch-modal .lm-form input:focus{border-color:var(--green-light)}
+  .launch-modal .lm-form button{padding:14px 24px;border-radius:50px;background:var(--orange-main);color:white;border:none;font-family:'Fredoka',sans-serif;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s}
+  .launch-modal .lm-form button:hover{background:#D4812E}
+  .launch-modal .lm-skip{background:none;border:none;color:var(--text-light);font-size:13px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:600;transition:color 0.2s}
+  .launch-modal .lm-skip:hover{color:var(--text-dark)}
+  .section-demo-notice{background:var(--orange-pale);border:2px dashed var(--orange-main);border-radius:var(--radius-sm);padding:14px 20px;text-align:center;font-size:13px;font-weight:600;color:var(--brown);margin-bottom:24px}
+  .section-demo-notice span{color:var(--orange-main)}
+  @media(max-width:480px){.launch-modal{padding:32px 20px}.launch-modal .lm-form{flex-direction:column}}
+</style>
+
+<!-- NAVBAR -->
+<nav class="navbar" id="navbar">
+  <div class="nav-inner">
+    <a href="#" class="nav-logo"><div class="logo-paw">🐾</div><span class="brand">Kwispelclub</span></a>
+    <ul class="nav-links">
+      <li><a href="#shop">Shop</a></li>
+      <li><a href="#academy">Academy</a></li>
+      <li><a href="#marketplace">Marktplaats</a></li>
+      <li><a href="#community">Community</a></li>
+      <li><a href="#sellers">Verkopers</a></li>
+      <li><a href="kwispelclub-hondenkapsalons.html">Kapsalons</a></li>
+      <li><a href="kwispelclub-2dehands.html">2de Hands</a></li>
+    </ul>
+    <div class="nav-search"><span class="s-icon">🔍</span><input type="text" placeholder="Zoek voeding, tips, fokkers..."></div>
+    <div class="nav-actions">
+      <button class="nav-btn" title="Huisdierprofiel" onclick="window.location.href='kwispelclub-account.html'">🐕</button>
+      <button class="nav-btn" title="Berichten">✉️<span class="badge">2</span></button>
+      <button class="nav-btn" title="Winkelwagen">🛒<span class="badge">3</span></button>
+      <a href="kwispelclub-auth.html" style="padding:9px 20px;border-radius:50px;background:var(--green-main);color:white;font-family:'Fredoka',sans-serif;font-size:13px;font-weight:600;text-decoration:none;margin-left:4px;transition:all 0.2s;box-shadow:0 2px 8px rgba(74,124,63,0.2)">Inloggen</a>
+    </div>
+    <button class="nav-hamburger" id="hamburger" aria-label="Menu">☰</button>
+  </div>
+</nav>
+<div class="mobile-menu" id="mobileMenu">
+  <a href="#shop">🛍️ Shop</a><a href="#academy">🎓 Academy</a><a href="#marketplace">🤝 Marktplaats</a>
+  <a href="#community">💛 Community</a><a href="#sellers">⭐ Verkopers</a><a href="kwispelclub-hondenkapsalons.html">✂️ Kapsalons</a><a href="kwispelclub-2dehands.html">♻️ 2de Hands</a>
+</div>
+
+<!-- HERO with real photo -->
+<section class="hero">
+  <div class="hero-card">
+    <div class="hero-shapes"><div class="blob blob-1"></div><div class="blob blob-2"></div><div class="blob blob-3"></div><div class="blob blob-4"></div></div>
+    <div class="hero-content fade-up">
+      <div class="hero-tag">🌟 #1 Huisdierplatform in België & Nederland</div>
+      <h1>Alles voor je <span class="accent">beste vriend</span></h1>
+      <p>Vind premium voeding, deskundig advies, betrouwbare verkopers en een warme community — alles op één plek.</p>
+      <div class="hero-buttons">
+        <a href="#shop" class="btn btn-primary">Ontdek nu →</a>
+        <a href="#marketplace" class="btn btn-secondary">Bekijk marktplaats</a>
+      </div>
+    </div>
+    <div class="hero-image">
+      <div class="hero-photo-container">
+        <img class="hero-photo" src="https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=800&q=80" alt="Twee honden spelen samen buiten" loading="eager">
+        <div class="hero-photo-overlay"></div>
+      </div>
+      <div class="hero-floating-badge b1">
+        <div class="hfb-icon green">⭐</div>
+        <div class="hfb-text">4.9 / 5.0<span>12.500+ reviews</span></div>
+      </div>
+      <div class="hero-floating-badge b2">
+        <div class="hfb-icon orange">🐾</div>
+        <div class="hfb-text">85+ Verkopers<span>Geverifieerd</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TRUST -->
+<div class="trust-bar fade-up">
+  <div class="trust-inner">
+    <div class="trust-item"><div class="trust-icon green">✅</div><div class="trust-text"><strong>Geverifieerde Verkopers</strong><span>100% betrouwbaar</span></div></div>
+    <div class="trust-item"><div class="trust-icon orange">🚚</div><div class="trust-text"><strong>Snelle Levering</strong><span>Binnen 2-3 werkdagen</span></div></div>
+    <div class="trust-item"><div class="trust-icon green">🐾</div><div class="trust-text"><strong>Dierenwelzijn Eerst</strong><span>Ethisch & duurzaam</span></div></div>
+    <div class="trust-item"><div class="trust-icon orange">💬</div><div class="trust-text"><strong>Expert Advies</strong><span>Dierenartsen & trainers</span></div></div>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section class="section" id="features">
+  <div class="section-header fade-up"><h2>Alles op één plek 🐾</h2><p>Of je nu een puppy hebt of een senior kat — bij Kwispelclub vind je alles wat je nodig hebt.</p></div>
+  <div class="features-grid">
+    <div class="feature-card fade-up"><div class="feature-icon">🛍️</div><h3>Webshop</h3><p>Premium voeding & unieke speeltjes voor hond en kat, zorgvuldig geselecteerd door experts.</p><a href="#" class="feature-link">Shop hond & kat →</a></div>
+    <div class="feature-card fade-up"><div class="feature-icon">🎓</div><h3>Academy</h3><p>Video's en tips over puppy training, kattengedrag, voeding en gezondheid van experts.</p><a href="#" class="feature-link">Video's & info →</a></div>
+    <div class="feature-card fade-up"><div class="feature-icon">🤝</div><h3>Marktplaats</h3><p>Betrouwbare kopers & verkopers met geverifieerde matches en beveiligde chat.</p><a href="#" class="feature-link">Bekijk aanbod →</a></div>
+    <div class="feature-card fade-up"><div class="feature-icon">💛</div><h3>Community</h3><p>Forums, chatbox & advies van gelijkgestemde dierenliefhebbers in jouw regio.</p><a href="#" class="feature-link">Doe mee →</a></div>
+  </div>
+</section>
+
+<!-- STATS -->
+<div class="stats-bar fade-up">
+  <div class="stats-inner" style="position:relative">
+    <div style="position:absolute;top:12px;right:16px;background:rgba(255,255,255,0.15);padding:4px 14px;border-radius:50px;font-size:11px;font-weight:700;color:rgba(255,255,255,0.7)">🎯 Onze doelen</div>
+    <div class="stat-item"><h3 data-target="1250">0</h3><p>Producten (gepland)</p></div>
+    <div class="stat-item"><h3 data-target="85">0</h3><p>Verkopers (gepland)</p></div>
+    <div class="stat-item"><h3 data-target="12500">0</h3><p>Klanten (doel)</p></div>
+    <div class="stat-item"><h3 data-target="4.9" data-decimal="true">0</h3><p>Streefcijfer</p></div>
+  </div>
+</div>
+
+<!-- PRODUCTS -->
+<section class="section" id="shop">
+  <div class="section-header fade-up"><h2>Aanbevolen Producten</h2><p>Topkwaliteit, geselecteerd door onze experts</p></div>
+  <div class="section-demo-notice fade-up">⚠️ <span>Voorbeeldproducten</span> — Deze producten zijn ter illustratie. De webshop is nog in opbouw.</div>
+  <div class="products-grid">
+    <div class="product-card fade-up" style="position:relative">
+      <div class="demo-overlay"><span class="demo-label">Voorbeeld</span></div>
+      <div class="beta-ribbon">DEMO</div>
+      <div class="product-img"><img src="https://images.unsplash.com/photo-1589924691995-400dc9ecc119?w=400&q=80" alt="Hondenvoeding"><span class="product-badge new">NIEUW</span><button class="product-wishlist">♡</button></div>
+      <div class="product-info"><div class="product-brand">Kwispelclub Premium</div><div class="product-name">Biologische Kip & Rijst Brokken</div><div class="product-meta"><div class="product-price">€34,95</div><div class="product-rating">⭐ 4.8 <span>(124)</span></div></div></div>
+    </div>
+    <div class="product-card fade-up" style="position:relative">
+      <div class="demo-overlay"><span class="demo-label">Voorbeeld</span></div>
+      <div class="beta-ribbon">DEMO</div>
+      <div class="product-img"><img src="https://images.unsplash.com/photo-1526336024174-e58f5cdd8e13?w=400&q=80" alt="Kattenspeeltje"><span class="product-badge popular">POPULAIR</span><button class="product-wishlist">♡</button></div>
+      <div class="product-info"><div class="product-brand">KattenKracht</div><div class="product-name">Interactief Kattenspeeltje Set</div><div class="product-meta"><div class="product-price">€19,50</div><div class="product-rating">⭐ 4.6 <span>(89)</span></div></div></div>
+    </div>
+    <div class="product-card fade-up" style="position:relative">
+      <div class="demo-overlay"><span class="demo-label">Voorbeeld</span></div>
+      <div class="beta-ribbon">DEMO</div>
+      <div class="product-img"><img src="https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=400&q=80" alt="Honden tuigje"><span class="product-badge sale">-20%</span><button class="product-wishlist">♡</button></div>
+      <div class="product-info"><div class="product-brand">WoofWalk</div><div class="product-name">Ergonomische Anti-trek Tuigje</div><div class="product-meta"><div class="product-price"><span class="old-price">€34,99</span>€27,99</div><div class="product-rating">⭐ 4.9 <span>(203)</span></div></div></div>
+    </div>
+    <div class="product-card fade-up" style="position:relative">
+      <div class="demo-overlay"><span class="demo-label">Voorbeeld</span></div>
+      <div class="beta-ribbon">DEMO</div>
+      <div class="product-img"><img src="https://images.unsplash.com/photo-1574158622682-e40e69881006?w=400&q=80" alt="Kat met kattenkruid"><span class="product-badge bio">BIO</span><button class="product-wishlist">♡</button></div>
+      <div class="product-info"><div class="product-brand">NatuurPuur</div><div class="product-name">Kattenkruid & Valeriaan Mix</div><div class="product-meta"><div class="product-price">€12,95</div><div class="product-rating">⭐ 4.7 <span>(67)</span></div></div></div>
+    </div>
+  </div>
+  <div class="see-all fade-up"><a href="#" class="btn btn-outline">Bekijk alle producten →</a></div>
+</section>
+
+<!-- BREED SELECTOR -->
+<section class="section">
+  <div class="breed-section fade-up">
+    <div class="section-header"><h2>Ontdek per Ras 🐕</h2><p>Vind specifieke producten en advies voor jouw ras</p></div>
+    <div class="breed-tabs"><button class="breed-tab active" data-tab="honden">🐕 Honden</button><button class="breed-tab" data-tab="katten">🐱 Katten</button></div>
+    <div class="breed-grid" id="breedGrid">
+      <div class="breed-card"><span class="breed-emoji">🐕‍🦺</span><div class="breed-name">Labrador</div><p>48 producten</p></div>
+      <div class="breed-card"><span class="breed-emoji">🐩</span><div class="breed-name">Poedel</div><p>35 producten</p></div>
+      <div class="breed-card"><span class="breed-emoji">🦮</span><div class="breed-name">Golden Retriever</div><p>52 producten</p></div>
+      <div class="breed-card"><span class="breed-emoji">🐕</span><div class="breed-name">Duitse Herder</div><p>41 producten</p></div>
+      <div class="breed-card"><span class="breed-emoji">🐶</span><div class="breed-name">Beagle</div><p>29 producten</p></div>
+      <div class="breed-card"><span class="breed-emoji">🐾</span><div class="breed-name">Alle rassen →</div><p>200+ producten</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ACADEMY -->
+<section class="section" id="academy">
+  <div class="academy-section fade-up">
+    <div class="section-header"><h2>Kwispelclub Academy 🎓</h2><p>Leer alles over de verzorging en training van je huisdier</p></div>
+    <div class="academy-grid">
+      <div class="academy-card" onclick="window.location.href='kwispelclub-puppy-training.html'" style="cursor:pointer"><div class="academy-thumb"><img src="https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=500&q=80" alt="Puppy training"><div class="play-btn">▶</div></div><div class="academy-info"><span class="academy-tag hond">Hond</span><h4>Puppy Training Basics</h4><p>De basis van gehoorzaamheid voor je nieuwe puppy</p><div class="academy-duration">⏱️ 12 min · Trainer Lisa</div></div></div>
+      <div class="academy-card"><div class="academy-thumb"><img src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=500&q=80" alt="Kat"><div class="play-btn">▶</div></div><div class="academy-info"><span class="academy-tag kat">Kat</span><h4>Kattenkruid Geheimen</h4><p>Waarom katten zo gek zijn van kattenkruid</p><div class="academy-duration">⏱️ 8 min · Dierenarts Jan</div></div></div>
+      <div class="academy-card"><div class="academy-thumb"><img src="https://images.unsplash.com/photo-1518717758536-85ae29035b6d?w=500&q=80" alt="Senior hond"><div class="play-btn">▶</div></div><div class="academy-info"><span class="academy-tag algemeen">Algemeen</span><h4>Voeding voor Senior Honden</h4><p>De juiste voeding na het 7e levensjaar</p><div class="academy-duration">⏱️ 15 min · Voedingsexpert</div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- MARKETPLACE -->
+<section class="section" id="marketplace">
+  <div class="section-header fade-up"><h2>Koper-Verkoper Area 🤝</h2><p>Veilig handelen met geverifieerde matches</p></div>
+  <div class="mp-layout fade-up">
+    <div class="mp-info-card">
+      <h3>Betrouwbaar handelen in huisdieren & producten</h3>
+      <p>Onze marktplaats verbindt kopers en verkopers met een focus op veiligheid, transparantie en dierenwelzijn.</p>
+      <div class="mp-features">
+        <div class="mp-feat"><div class="mp-feat-icon">🛡️</div>Geverifieerde verkopers & fokkers</div>
+        <div class="mp-feat"><div class="mp-feat-icon">💬</div>Beveiligde chat met kopers</div>
+        <div class="mp-feat"><div class="mp-feat-icon">⭐</div>Beoordelingen & reviews</div>
+        <div class="mp-feat"><div class="mp-feat-icon">📋</div>Gezondheidscertificaten</div>
+        <div class="mp-feat"><div class="mp-feat-icon">🔒</div>Veilige betalingen via Mollie</div>
+      </div>
+      <a href="#" class="btn btn-primary" style="align-self:flex-start;">Bekijk aanbod →</a>
+    </div>
+    <div class="mp-chat-card">
+      <div class="mp-chat-header"><span style="font-size:26px;">💬</span><div><h4>Beveiligde Chat</h4><span>Rechtstreeks met verkopers</span></div></div>
+      <div class="chat-messages">
+        <div class="chat-msg buyer"><div class="chat-user"><div class="chat-avatar b">👩</div><span class="chat-name">Sofie V.</span><span class="verified">✓ VERIFIED</span></div>Hallo, ik ben geïnteresseerd in de premium brokken. Zijn ze geschikt voor een gevoelige maag? 🐕</div>
+        <div class="chat-msg seller"><div class="chat-user"><div class="chat-avatar s">🏪</div><span class="chat-name">Huisdiershop De Poot</span><span class="verified">✓ VERIFIED</span></div>Ja zeker! Onze Kwispelclub Premium lijn is speciaal ontwikkeld voor gevoelige honden. Ik stuur u graag meer info! 😊</div>
+        <div class="chat-msg buyer"><div class="chat-user"><div class="chat-avatar b">👩</div><span class="chat-name">Sofie V.</span></div>Super, heel fijn! Dan bestel ik er meteen 2 zakken van. 🎉</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SELLERS -->
+<section class="section" id="sellers">
+  <div class="section-header fade-up"><h2>Uitgelichte Verkopers ⭐</h2><p>Ontdek onze meest populaire verkopers en fokkers</p></div>
+  <div class="section-demo-notice fade-up">⚠️ <span>Voorbeeldverkopers</span> — Deze profielen zijn ter illustratie. Ben je verkoper? <a href="#early-access" style="color:var(--orange-main);font-weight:700">Registreer je hier →</a></div>
+  <div class="sellers-grid fade-up">
+    <div class="seller-card"><div class="seller-logo">🏪</div><h4>Huisdiershop De Poot</h4><div class="seller-cat">Premium Voeding & Snacks</div><div class="seller-rating">⭐⭐⭐⭐⭐ 4.9 (312 reviews)</div><div class="seller-verified">✓ Geverifieerd</div></div>
+    <div class="seller-card"><div class="seller-logo">🐕‍🦺</div><h4>Golden Dreams Kennel</h4><div class="seller-cat">Golden Retriever Fokker</div><div class="seller-rating">⭐⭐⭐⭐⭐ 5.0 (89 reviews)</div><div class="seller-verified">✓ Geverifieerd</div></div>
+    <div class="seller-card"><div class="seller-logo">🧶</div><h4>KattenKracht</h4><div class="seller-cat">Speelgoed & Accessoires</div><div class="seller-rating">⭐⭐⭐⭐ 4.7 (156 reviews)</div><div class="seller-verified">✓ Geverifieerd</div></div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="section">
+  <div class="testimonials-section fade-up">
+    <div class="section-header"><h2>Wat onze klanten zeggen 💬</h2><p>Echte ervaringen van baasjes zoals jij</p></div>
+    <div class="section-demo-notice">⚠️ <span>Voorbeeldreviews</span> — Dit zijn fictieve reviews ter illustratie van het platform.</div>
+    <div class="testimonials-grid">
+      <div class="testimonial-card"><div class="t-stars">⭐⭐⭐⭐⭐</div><div class="t-text">"Eindelijk een platform dat ik volledig vertrouw. De verkopers zijn betrouwbaar en mijn hond is dol op de premium brokken!"</div><div class="t-author"><div class="t-avatar"><img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&q=80" alt="Sofie"></div><div><div class="t-name">Sofie V.</div><div class="t-role">Baasje van Max (Labrador)</div></div></div></div>
+      <div class="testimonial-card"><div class="t-stars">⭐⭐⭐⭐⭐</div><div class="t-text">"De Academy video's hebben me enorm geholpen met de training van mijn puppy. En de community is super behulpzaam!"</div><div class="t-author"><div class="t-avatar"><img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80" alt="Thomas"></div><div><div class="t-name">Thomas D.</div><div class="t-role">Baasje van Bella (Beagle)</div></div></div></div>
+      <div class="testimonial-card"><div class="t-stars">⭐⭐⭐⭐⭐</div><div class="t-text">"Via de marktplaats heb ik een geweldige fokker gevonden. Alles geverifieerd, super veilig. Aanrader!"</div><div class="t-author"><div class="t-avatar"><img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&q=80" alt="Lisa"></div><div><div class="t-name">Lisa M.</div><div class="t-role">Baasje van Luna (Maine Coon)</div></div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- COMMUNITY -->
+<section class="section" id="community">
+  <div class="community-section fade-up">
+    <h2>Word deel van de Community 💛</h2>
+    <p style="color:var(--text-mid);max-width:480px;margin:12px auto 0;font-size:15px;line-height:1.6;">Deel ervaringen, stel vragen en leer van andere dierenliefhebbers in België en Nederland.</p>
+    <div class="community-grid">
+      <div class="community-card"><div class="c-icon">💬</div><h4>Forums & Discussies</h4><p>Stel vragen en deel tips met duizenden andere baasjes over voeding, gedrag en gezondheid.</p></div>
+      <div class="community-card"><div class="c-icon">📸</div><h4>Foto's & Verhalen</h4><p>Deel de leukste momenten van je huisdier en bekijk de schattigste foto's van de community.</p></div>
+      <div class="community-card"><div class="c-icon">🏆</div><h4>Events & Wedstrijden</h4><p>Doe mee aan maandelijkse fotowedstrijden, quizzen en lokale meetups in jouw regio.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- NEWSLETTER -->
+<div class="newsletter-section fade-up">
+  <div class="newsletter-card">
+    <div class="nl-content"><h2>Blijf op de hoogte 📬</h2><p>Ontvang wekelijks tips, exclusieve aanbiedingen en het laatste nieuws over jouw huisdier.</p></div>
+    <div class="nl-form"><input type="email" placeholder="Jouw e-mailadres" id="nlEmail"><button type="button" id="nlBtn">Aanmelden</button></div>
+  </div>
+</div>
+
+<!-- CTA -->
+<section class="cta-section" id="early-access">
+  <div class="cta-card fade-up">
+    <div class="hero-shapes"><div class="blob blob-1"></div><div class="blob blob-2"></div></div>
+    <div class="cta-emojis">🚀 🐕 🐱</div>
+    <h2>Kwispelclub lanceert binnenkort!</h2>
+    <p>We bouwen hét huisdierplatform voor België en Nederland. Registreer je nu voor early access en wees er als eerste bij.</p>
+    <div style="display:flex;gap:8px;max-width:440px;margin:0 auto 20px;flex-wrap:wrap;justify-content:center">
+      <input type="email" id="earlyEmail" placeholder="Jouw e-mailadres" style="flex:1;min-width:200px;padding:16px 20px;border-radius:50px;border:2px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:white;font-family:'Nunito',sans-serif;font-size:15px;outline:none">
+      <select id="earlyRole" style="padding:16px 20px;border-radius:50px;border:2px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:white;font-family:'Nunito',sans-serif;font-size:14px;outline:none;cursor:pointer;-webkit-appearance:none">
+        <option value="koper" style="color:#2C2C2C">🛒 Ik ben koper</option>
+        <option value="verkoper" style="color:#2C2C2C">🏪 Ik ben verkoper</option>
+        <option value="kapsalon" style="color:#2C2C2C">✂️ Ik heb een kapsalon</option>
+        <option value="trainer" style="color:#2C2C2C">🎓 Ik ben trainer/expert</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" style="font-size:17px;padding:16px 36px" id="earlyBtn" onclick="registerEarly()">Registreer voor Early Access →</button>
+    <p style="font-size:12px;opacity:0.5;margin-top:14px">Geen spam. Je ontvangt alleen updates over de lancering.</p>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <a href="#" class="footer-logo"><div class="logo-paw">🐾</div><span class="brand">Kwispelclub</span></a>
+      <p>Het #1 platform voor huisdierliefhebbers in België en Nederland. Premium producten, expert advies en een warme community.</p>
+      <div class="footer-social"><a href="#">📘</a><a href="#">📷</a><a href="#">🎵</a><a href="#">▶️</a></div>
+    </div>
+    <div class="footer-col"><h5>Shop</h5><a href="#">Hondenvoeding</a><a href="#">Kattenvoeding</a><a href="#">Speelgoed</a><a href="#">Accessoires</a><a href="#">Verzorging</a><a href="#">Cadeaukaarten</a></div>
+    <div class="footer-col"><h5>Platform</h5><a href="#">Academy</a><a href="kwispelclub-puppy-training.html">Puppy Training</a><a href="#">Marktplaats</a><a href="kwispelclub-2dehands.html">2de Hands</a><a href="#">Community</a><a href="kwispelclub-hondenkapsalons.html">Hondenkapsalons</a><a href="#">Blog</a><a href="#">Word Verkoper</a></div>
+    <div class="footer-col"><h5>Support</h5><a href="#">Help Center</a><a href="#">Contact</a><a href="#">FAQ</a><a href="#">Verzending & Retour</a><a href="kwispelclub-privacy.html">Privacybeleid</a><a href="kwispelclub-privacy.html">Voorwaarden</a></div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 Kwispelclub. Alle rechten voorbehouden.</span>
+    <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Cookies</a><a href="#">Voorwaarden</a></div>
+    <span>🇧🇪 België & 🇳🇱 Nederland</span>
+  </div>
+</footer>
+
+<script>
+  const navbar=document.getElementById('navbar');
+  window.addEventListener('scroll',()=>navbar.classList.toggle('scrolled',window.scrollY>20));
+
+  const hamburger=document.getElementById('hamburger'),mobileMenu=document.getElementById('mobileMenu');
+  hamburger.addEventListener('click',()=>mobileMenu.classList.toggle('open'));
+  mobileMenu.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>mobileMenu.classList.remove('open')));
+
+  const fadeObs=new IntersectionObserver(entries=>{
+    entries.forEach((entry,i)=>{if(entry.isIntersecting){setTimeout(()=>entry.target.classList.add('visible'),i*60);fadeObs.unobserve(entry.target)}});
+  },{threshold:0.08,rootMargin:'0px 0px -30px 0px'});
+  document.querySelectorAll('.fade-up').forEach(el=>fadeObs.observe(el));
+
+  document.querySelectorAll('.product-wishlist').forEach(btn=>{
+    btn.addEventListener('click',e=>{e.stopPropagation();const l=btn.classList.toggle('liked');btn.textContent=l?'♥':'♡';btn.style.color=l?'#E84E4E':'';btn.style.transform='scale(1.3)';setTimeout(()=>btn.style.transform='',200)});
+  });
+
+  const counterObs=new IntersectionObserver(entries=>{
+    entries.forEach(entry=>{if(entry.isIntersecting){entry.target.querySelectorAll('[data-target]').forEach(el=>{
+      const t=parseFloat(el.dataset.target),d=el.dataset.decimal==='true',dur=2000,s=performance.now();
+      const a=n=>{const p=Math.min((n-s)/dur,1),e=1-Math.pow(1-p,3);el.textContent=d?(t*e).toFixed(1):Math.floor(t*e).toLocaleString('nl-BE')+'+';if(p<1)requestAnimationFrame(a)};requestAnimationFrame(a)});counterObs.unobserve(entry.target)}});
+  },{threshold:0.3});
+  document.querySelectorAll('.stats-inner').forEach(el=>counterObs.observe(el));
+
+  const breedData={
+    honden:[{emoji:'🐕‍🦺',name:'Labrador',count:48},{emoji:'🐩',name:'Poedel',count:35},{emoji:'🦮',name:'Golden Retriever',count:52},{emoji:'🐕',name:'Duitse Herder',count:41},{emoji:'🐶',name:'Beagle',count:29},{emoji:'🐾',name:'Alle rassen →',count:'200+'}],
+    katten:[{emoji:'🐱',name:'Maine Coon',count:38},{emoji:'😺',name:'Britse Korthaar',count:42},{emoji:'🐈',name:'Siamees',count:27},{emoji:'😸',name:'Ragdoll',count:33},{emoji:'🐈‍⬛',name:'Bengaal',count:24},{emoji:'🐾',name:'Alle rassen →',count:'150+'}]
+  };
+  document.querySelectorAll('.breed-tab').forEach(tab=>{
+    tab.addEventListener('click',()=>{document.querySelectorAll('.breed-tab').forEach(t=>t.classList.remove('active'));tab.classList.add('active');
+    document.getElementById('breedGrid').innerHTML=breedData[tab.dataset.tab].map(b=>`<div class="breed-card"><span class="breed-emoji">${b.emoji}</span><div class="breed-name">${b.name}</div><p>${b.count} producten</p></div>`).join('')});
+  });
+
+  document.getElementById('nlBtn').addEventListener('click',()=>{
+    const e=document.getElementById('nlEmail').value,b=document.getElementById('nlBtn');
+    if(e&&e.includes('@')){b.textContent='✓ Aangemeld!';b.style.background='#4A7C3F';document.getElementById('nlEmail').value='';setTimeout(()=>{b.textContent='Aanmelden';b.style.background=''},3000)}
+  });
+
+  document.querySelectorAll('a[href^="#"]').forEach(a=>{
+    a.addEventListener('click',e=>{const t=document.querySelector(a.getAttribute('href'));if(t){e.preventDefault();t.scrollIntoView({behavior:'smooth',block:'start'})}});
+  });
+</script>
+
+<!-- LAUNCH POPUP -->
+<div class="launch-modal-overlay" id="launchPopup">
+  <div class="launch-modal">
+    <div class="lm-emoji">🐾</div>
+    <h2>Welkom bij Kwispelclub!</h2>
+    <p>We zijn druk bezig met het bouwen van hét huisdierplatform voor België en Nederland. Wat je nu ziet is een voorproefje — de webshop, boekingen en community zijn nog niet actief.</p>
+    <div class="lm-features">
+      <span class="lm-feat">🛍️ Webshop — binnenkort</span>
+      <span class="lm-feat">✂️ Boekingen — binnenkort</span>
+      <span class="lm-feat">💬 Community — binnenkort</span>
+      <span class="lm-feat">🎓 Academy — binnenkort</span>
+    </div>
+    <p style="font-size:14px"><b>Wil je als eerste weten wanneer we live gaan?</b></p>
+    <div class="lm-form">
+      <input type="email" id="popupEmail" placeholder="Jouw e-mailadres">
+      <button onclick="submitPopup()">Hou me op de hoogte</button>
+    </div>
+    <button class="lm-skip" onclick="closePopup()">Nee bedankt, ik kijk gewoon even rond →</button>
+  </div>
+</div>
+
+<script>
+  // Launch popup — show once per session
+  function closePopup(){ document.getElementById('launchPopup').style.display='none'; sessionStorage.setItem('kc_seen','1'); }
+  function submitPopup(){
+    const e=document.getElementById('popupEmail').value;
+    if(e&&e.includes('@')){
+      const btn=document.querySelector('.lm-form button');
+      btn.textContent='✓ Bedankt!'; btn.style.background='#4A7C3F';
+      setTimeout(closePopup, 1500);
+    }
+  }
+  if(!sessionStorage.getItem('kc_seen')){
+    // Show popup after 1.5s
+    setTimeout(()=>{ document.getElementById('launchPopup').style.display='flex'; }, 1500);
+  } else {
+    document.getElementById('launchPopup').style.display='none';
+  }
+
+  // Early access registration
+  function registerEarly(){
+    const email=document.getElementById('earlyEmail').value;
+    const role=document.getElementById('earlyRole').value;
+    const btn=document.getElementById('earlyBtn');
+    if(email&&email.includes('@')){
+      btn.textContent='✓ Je bent geregistreerd!';
+      btn.style.background='#4A7C3F';
+      btn.style.boxShadow='0 4px 20px rgba(74,124,63,0.4)';
+      document.getElementById('earlyEmail').value='';
+      setTimeout(()=>{ btn.textContent='Registreer voor Early Access →'; btn.style.background=''; btn.style.boxShadow=''; }, 4000);
+    }
+  }
+</script>
+
+<!-- KWISPEL CHATBOT -->
+<style>
+  .chat-fab{position:fixed;bottom:24px;right:24px;z-index:200;width:64px;height:64px;border-radius:50%;background:var(--green-main);color:white;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 4px 24px rgba(74,124,63,0.4);transition:all 0.3s cubic-bezier(0.4,0,0.2,1)}
+  .chat-fab:hover{transform:scale(1.08);box-shadow:0 6px 32px rgba(74,124,63,0.5)}
+  .chat-fab.open{background:var(--green-dark);transform:rotate(90deg) scale(1)}
+  .chat-fab .fab-badge{position:absolute;top:-2px;right:-2px;width:22px;height:22px;border-radius:50%;background:var(--orange-main);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;border:3px solid var(--cream);animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+
+  .chat-window{position:fixed;bottom:100px;right:24px;z-index:199;width:400px;max-width:calc(100vw - 32px);height:540px;max-height:calc(100vh - 140px);background:var(--white);border-radius:var(--radius-lg);box-shadow:0 12px 48px rgba(0,0,0,0.16);display:none;flex-direction:column;overflow:hidden;animation:chatIn 0.35s cubic-bezier(0.4,0,0.2,1)}
+  .chat-window.open{display:flex}
+  @keyframes chatIn{from{opacity:0;transform:translateY(16px) scale(0.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+
+  .chat-head{background:linear-gradient(135deg,var(--green-dark),var(--green-main));padding:20px;color:white;display:flex;align-items:center;gap:14px;flex-shrink:0}
+  .chat-avatar-bot{width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;border:2px solid rgba(255,255,255,0.2)}
+  .chat-head-info h3{font-size:17px;margin-bottom:2px}
+  .chat-head-info p{font-size:12px;opacity:0.7}
+  .chat-status{display:flex;align-items:center;gap:5px;font-size:12px;opacity:0.8}
+  .chat-status::before{content:'';width:8px;height:8px;border-radius:50%;background:#4ADE80;display:inline-block}
+
+  .chat-body{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth}
+  .chat-body::-webkit-scrollbar{width:5px}
+  .chat-body::-webkit-scrollbar-thumb{background:var(--cream-dark);border-radius:10px}
+
+  .chat-bubble{max-width:85%;padding:14px 18px;border-radius:18px;font-size:14px;line-height:1.55;animation:bubbleIn 0.3s ease}
+  @keyframes bubbleIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  .chat-bubble.bot{background:var(--green-pale);color:var(--green-dark);align-self:flex-start;border-bottom-left-radius:4px}
+  .chat-bubble.user{background:var(--green-main);color:white;align-self:flex-end;border-bottom-right-radius:4px}
+  .chat-bubble .bot-name{font-size:11px;font-weight:700;opacity:0.6;margin-bottom:4px}
+
+  .chat-hashtags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .chat-hashtag{display:inline-flex;align-items:center;gap:4px;padding:6px 14px;border-radius:50px;background:var(--white);border:1.5px solid var(--green-main);font-size:12px;font-weight:700;color:var(--green-dark);cursor:pointer;transition:all 0.2s}
+  .chat-hashtag:hover{background:var(--green-main);color:white;transform:translateY(-1px)}
+
+  .chat-typing{display:flex;gap:4px;padding:14px 18px;align-self:flex-start}
+  .chat-typing span{width:8px;height:8px;border-radius:50%;background:var(--green-light);animation:typingDot 1.4s ease-in-out infinite}
+  .chat-typing span:nth-child(2){animation-delay:0.2s}
+  .chat-typing span:nth-child(3){animation-delay:0.4s}
+  @keyframes typingDot{0%,100%{transform:translateY(0);opacity:0.4}50%{transform:translateY(-6px);opacity:1}}
+
+  .chat-input-area{padding:14px 16px;border-top:2px solid var(--cream-dark);display:flex;gap:8px;align-items:center;flex-shrink:0;background:var(--white)}
+  .chat-input{flex:1;padding:12px 16px;border:2px solid var(--cream-dark);border-radius:50px;font-family:'Nunito',sans-serif;font-size:14px;outline:none;transition:all 0.2s}
+  .chat-input:focus{border-color:var(--green-light);box-shadow:0 0 0 3px rgba(107,158,94,0.1)}
+  .chat-send{width:44px;height:44px;border-radius:50%;background:var(--green-main);color:white;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;transition:all 0.2s;flex-shrink:0}
+  .chat-send:hover{background:var(--green-dark);transform:scale(1.05)}
+
+  .chat-quick-actions{padding:8px 16px 4px;display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0}
+  .quick-action{padding:5px 12px;border-radius:50px;background:var(--cream);font-size:11px;font-weight:700;color:var(--text-mid);cursor:pointer;transition:all 0.2s;border:none;font-family:'Nunito',sans-serif}
+  .quick-action:hover{background:var(--green-pale);color:var(--green-dark)}
+
+  @media(max-width:480px){
+    .chat-window{bottom:0;right:0;width:100%;max-width:100%;height:100vh;max-height:100vh;border-radius:0}
+    .chat-fab{bottom:16px;right:16px;width:56px;height:56px;font-size:24px}
+  }
+</style>
+
+<!-- Chatbot FAB -->
+<button class="chat-fab" id="chatFab" title="Chat met Kwispel">
+  🐾
+  <span class="fab-badge">1</span>
+</button>
+
+<!-- Chat Window -->
+<div class="chat-window" id="chatWindow">
+  <div class="chat-head">
+    <div class="chat-avatar-bot">🐕</div>
+    <div class="chat-head-info">
+      <h3>Kwispel</h3>
+      <div class="chat-status">Online · Jouw huisdier-assistent</div>
+    </div>
+  </div>
+  <div class="chat-body" id="chatBody"></div>
+  <div class="chat-quick-actions" id="quickActions">
+    <button class="quick-action" data-msg="#voeding">🦴 Voeding</button>
+    <button class="quick-action" data-msg="#training">🎓 Training</button>
+    <button class="quick-action" data-msg="#kapsalon">✂️ Kapsalon</button>
+    <button class="quick-action" data-msg="#gezondheid">💊 Gezondheid</button>
+  </div>
+  <div class="chat-input-area">
+    <input type="text" class="chat-input" id="chatInput" placeholder="Typ een bericht of gebruik #...">
+    <button class="chat-send" id="chatSend">→</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  const fab = document.getElementById('chatFab');
+  const win = document.getElementById('chatWindow');
+  const body = document.getElementById('chatBody');
+  const input = document.getElementById('chatInput');
+  const sendBtn = document.getElementById('chatSend');
+  let isOpen = false;
+  let greeted = false;
+
+  // Hashtag knowledge base
+  const hashResponses = {
+    '#voeding': {
+      text: 'Ik help je graag met voeding! 🦴 Wat voor huisdier heb je?',
+      hashtags: ['#hondenvoeding','#kattenvoeding','#puppyvoeding','#seniorvoeding','#allergieen']
+    },
+    '#hondenvoeding': {
+      text: 'Voor honden raden we aan:\n\n🥇 <b>Kwispelclub Premium Brokken</b> — biologische kip & rijst, €34,95\n🥈 <b>WoofWalk Graanvrij</b> — lam & zoete aardappel, €39,95\n🥉 <b>NatuurPuur Vers</b> — dagverse maaltijden, vanaf €2,50/dag\n\nWil je meer weten over een specifiek product?',
+      hashtags: ['#puppyvoeding','#seniorvoeding','#allergieen','#bestellen']
+    },
+    '#kattenvoeding': {
+      text: 'Voor katten is er veel keuze! 🐱\n\n🥇 <b>KattenKracht Premium</b> — kip & zalm, €28,95\n🥈 <b>NatuurPuur Kattenpaté</b> — 100% biologisch, €1,80/bakje\n🥉 <b>Kwispelclub Kitten</b> — speciaal voor kittens, €24,50\n\nTip: katten hebben meer eiwitten nodig dan honden!',
+      hashtags: ['#allergieen','#bestellen','#kattenspeeltjes']
+    },
+    '#puppyvoeding': {
+      text: 'Puppy voeding is cruciaal voor een goede start! 🐶\n\n• <b>0-4 maanden:</b> Speciaal puppyvoer, 3-4x per dag\n• <b>4-12 maanden:</b> Junior brokken, 2-3x per dag\n• <b>Na 1 jaar:</b> Overstap naar volwassen voeding\n\nOnze <b>Kwispelclub Puppy Start Box</b> (€29,95) bevat alles voor de eerste maand!',
+      hashtags: ['#hondenvoeding','#training','#bestellen']
+    },
+    '#seniorvoeding': {
+      text: 'Senior huisdieren (7+) hebben speciale behoeften 🧓\n\n• Minder calorieën, meer vezels\n• Extra glucosamine voor de gewrichten\n• Zachter voer voor oudere tanden\n\nBekijk onze <b>Senior Wellness lijn</b> vanaf €32,95.',
+      hashtags: ['#hondenvoeding','#kattenvoeding','#gezondheid']
+    },
+    '#allergieen': {
+      text: 'Heeft je huisdier een allergie? Dat komt vaker voor dan je denkt! 🤧\n\nVeelvoorkomend: granen, kip, rundvlees, zuivel.\n\nOnze <b>Hypoallergeen lijn</b> bevat:\n• Graanvrij voer (lam/vis-basis)\n• Single-protein opties\n• Allergie-test kit (€49,95)\n\nTip: raadpleeg altijd eerst je dierenarts!',
+      hashtags: ['#hondenvoeding','#kattenvoeding','#gezondheid']
+    },
+    '#training': {
+      text: 'Training is zo belangrijk! 🎓 Wat wil je leren?\n\nOnze <b>Kwispelclub Academy</b> biedt gratis cursussen:\n• Puppy Training Basics (8 modules)\n• Lijntraining voor Beginners\n• Kattenenverrijking 101\n\n👉 <a href="kwispelclub-puppy-training.html" style="color:var(--orange-main);font-weight:700">Start direct met Puppy Training →</a>',
+      hashtags: ['#puppytraining','#gedrag','#socialisatie']
+    },
+    '#puppytraining': {
+      text: 'Onze Puppy Training cursus bevat 8 modules:\n\n1️⃣ Voorbereiding\n2️⃣ Zit, Lig, Blijf\n3️⃣ Socialisatie\n4️⃣ Zindelijkheid\n5️⃣ Lijnlopen\n6️⃣ Bijten afleren\n7️⃣ Gevorderde commando\'s\n8️⃣ Certificaat\n\n👉 <a href="kwispelclub-puppy-training.html" style="color:var(--orange-main);font-weight:700">Start de cursus →</a>',
+      hashtags: ['#training','#socialisatie','#gedrag']
+    },
+    '#gedrag': {
+      text: 'Gedragsproblemen? Geen stress, daar is altijd iets aan te doen! 💪\n\nVeelvoorkomend:\n• Blaffen / janken\n• Verlatingsangst\n• Trekken aan de lijn\n• Agressie naar andere honden\n\nTip: begin altijd met de Academy cursus en stel je vraag in het <b>Community forum</b>!',
+      hashtags: ['#training','#socialisatie','#community']
+    },
+    '#socialisatie': {
+      text: 'Socialisatie is het allerbelangrijkste vóór 16 weken! 🐕‍🦺\n\nChecklijst:\n✅ Andere honden (groot & klein)\n✅ Kinderen & ouderen\n✅ Geluiden (stofzuiger, verkeer)\n✅ Verschillende ondergronden\n✅ Autorijden\n\nIn onze Academy-module leer je precies hoe.',
+      hashtags: ['#puppytraining','#training','#gedrag']
+    },
+    '#kapsalon': {
+      text: 'Op zoek naar een hondenkapsalon? ✂️\n\nWe hebben 6+ geverifieerde salons in België & Nederland.\n\n👉 <a href="kwispelclub-hondenkapsalons.html" style="color:var(--orange-main);font-weight:700">Bekijk alle kapsalons →</a>\n\nJe kunt direct online een afspraak met tijdslot boeken!',
+      hashtags: ['#kapsalonbree','#trimtips','#vacht']
+    },
+    '#kapsalonbree': {
+      text: '📍 In Bree heb je <b>Happy Paws Grooming</b>!\n\n⭐ 4.9/5 (87 reviews)\n✂️ Alle rassen · Hand-stripping · Puppypakket\n💰 Vanaf €30\n\n👉 <a href="kwispelclub-hondenkapsalons.html" style="color:var(--orange-main);font-weight:700">Boek een afspraak →</a>',
+      hashtags: ['#kapsalon','#trimtips']
+    },
+    '#trimtips': {
+      text: 'Handige trimtips voor thuis! ✂️\n\n🔹 Borstel je hond minstens 2x per week\n🔹 Was maximaal 1x per maand (vaker droogt de huid uit)\n🔹 Controleer oren wekelijks\n🔹 Nagels elke 3-4 weken\n🔹 Professioneel trimmen elke 6-8 weken\n\nNeem een <b>grooming-set</b> mee uit onze shop!',
+      hashtags: ['#kapsalon','#vacht','#bestellen']
+    },
+    '#vacht': {
+      text: 'Vachtverzorging verschilt per type! 🐩\n\n<b>Kort haar:</b> Wekelijks borstelen, weinig trimmen\n<b>Lang haar:</b> Dagelijks ontklitten, 6-8 wekelijks trimmen\n<b>Krulhaar:</b> Regelmatig knippen, niet scheren!\n<b>Dubbele vacht:</b> Nooit scheren, goed uitkammen in ruiperiode',
+      hashtags: ['#kapsalon','#trimtips','#hondenvoeding']
+    },
+    '#gezondheid': {
+      text: 'Gezondheid is het allerbelangrijkste! 💚\n\nWaar kan ik je mee helpen?',
+      hashtags: ['#vaccinaties','#ontwormen','#allergieen','#seniorvoeding','#dierenarts']
+    },
+    '#vaccinaties': {
+      text: 'Vaccinatieschema voor puppy\'s 💉\n\n• <b>6-8 weken:</b> Parvo & Hondenziekte\n• <b>8-10 weken:</b> DHP + Leptospirose\n• <b>12 weken:</b> Herhaling DHP + Lepto\n• <b>16 weken:</b> Rabiës (verplicht in BE)\n• <b>Jaarlijks:</b> Booster DHP + Lepto\n\n⚠️ Raadpleeg altijd je dierenarts voor een persoonlijk schema!',
+      hashtags: ['#gezondheid','#ontwormen','#dierenarts']
+    },
+    '#ontwormen': {
+      text: 'Ontwormen niet vergeten! 🪱\n\n<b>Puppy\'s:</b> Om de 2 weken tot 12 weken oud, daarna maandelijks tot 6 maanden\n<b>Volwassen:</b> Elke 3-4 maanden\n<b>Katten (buiten):</b> Elke 1-3 maanden\n\nAntivlooien en ontworming vind je in onze <b>Gezondheid-shop</b>.',
+      hashtags: ['#gezondheid','#vaccinaties','#bestellen']
+    },
+    '#dierenarts': {
+      text: 'Een goede dierenarts is goud waard! 🏥\n\nTips voor het kiezen:\n• Kijk naar reviews van andere baasjes\n• Check of ze spoedservice bieden\n• Vraag naar specialisaties\n\nBinnenkort: <b>Dierenarts-directory</b> op Kwispelclub! 🔜',
+      hashtags: ['#gezondheid','#vaccinaties','#community']
+    },
+    '#bestellen': {
+      text: 'Bestellen bij Kwispelclub is makkelijk! 🛒\n\n✅ Gratis verzending vanaf €50\n✅ Levering binnen 2-3 werkdagen\n✅ 30 dagen retourrecht\n✅ Veilig betalen via Bancontact, iDEAL, Visa\n\n👉 <a href="#shop" style="color:var(--orange-main);font-weight:700">Ga naar de shop →</a>',
+      hashtags: ['#voeding','#kattenspeeltjes']
+    },
+    '#kattenspeeltjes': {
+      text: 'Katten moeten spelen! 🧶\n\nOnze bestsellers:\n🥇 <b>Interactief Kattenspeeltje Set</b> — €19,50\n🥈 <b>Kattenkruid & Valeriaan Mix</b> — €12,95\n🥉 <b>Laserpointerset Deluxe</b> — €14,95\n\nTip: wissel speeltjes regelmatig af zodat het leuk blijft!',
+      hashtags: ['#kattenvoeding','#bestellen']
+    },
+    '#community': {
+      text: 'De Kwispelclub Community is dé plek voor dierenliefhebbers! 💛\n\n💬 Forums & discussies\n📸 Foto\'s & verhalen delen\n🏆 Maandelijkse wedstrijden\n👥 Lokale meetups\n\n👉 <a href="#community" style="color:var(--orange-main);font-weight:700">Word lid →</a>',
+      hashtags: ['#training','#voeding','#gezondheid']
+    },
+    '#help': {
+      text: 'Hier zijn alle beschikbare onderwerpen! 📋\n\nTyp een <b>#hashtag</b> of klik erop:\n\n🦴 <b>#voeding</b> — Alles over voeding\n🎓 <b>#training</b> — Cursussen & tips\n✂️ <b>#kapsalon</b> — Trimsalons vinden\n💊 <b>#gezondheid</b> — Gezondheidsadvies\n🛒 <b>#bestellen</b> — Bestelinfo\n💛 <b>#community</b> — Community & forum',
+      hashtags: ['#voeding','#training','#kapsalon','#gezondheid','#bestellen','#community']
+    }
+  };
+
+  // Default response for unknown input
+  const defaultResponse = {
+    text: 'Hmm, daar weet ik nog niet zoveel over! 🤔\n\nProbeer een van deze hashtags, of typ <b>#help</b> voor alle onderwerpen:',
+    hashtags: ['#voeding','#training','#kapsalon','#gezondheid','#help']
+  };
+
+  function toggleChat() {
+    isOpen = !isOpen;
+    win.classList.toggle('open', isOpen);
+    fab.classList.toggle('open', isOpen);
+    fab.innerHTML = isOpen ? '✕' : '🐾<span class="fab-badge" style="display:none">1</span>';
+    if(isOpen && !greeted) { greet(); greeted = true; }
+    if(isOpen) input.focus();
+  }
+
+  fab.addEventListener('click', toggleChat);
+
+  function greet() {
+    setTimeout(() => addBot('Woef! 🐾 Ik ben <b>Kwispel</b>, jouw persoonlijke huisdier-assistent!\n\nIk kan je helpen met voeding, training, kapsalons en meer. Typ een <b>#hashtag</b> of klik hieronder:', ['#voeding','#training','#kapsalon','#gezondheid','#help']), 400);
+  }
+
+  function addBot(text, hashtags) {
+    // Typing indicator
+    const typing = document.createElement('div');
+    typing.className = 'chat-typing';
+    typing.innerHTML = '<span></span><span></span><span></span>';
+    body.appendChild(typing);
+    body.scrollTop = body.scrollHeight;
+
+    setTimeout(() => {
+      typing.remove();
+      const bubble = document.createElement('div');
+      bubble.className = 'chat-bubble bot';
+      let html = `<div class="bot-name">🐕 Kwispel</div>${text.replace(/\n/g,'<br>')}`;
+      if(hashtags && hashtags.length) {
+        html += '<div class="chat-hashtags">';
+        hashtags.forEach(h => { html += `<span class="chat-hashtag" data-tag="${h}">${h}</span>`; });
+        html += '</div>';
+      }
+      bubble.innerHTML = html;
+      body.appendChild(bubble);
+      body.scrollTop = body.scrollHeight;
+
+      // Bind hashtag clicks
+      bubble.querySelectorAll('.chat-hashtag').forEach(tag => {
+        tag.addEventListener('click', () => handleInput(tag.dataset.tag));
+      });
+    }, 800 + Math.random() * 400);
+  }
+
+  function addUser(text) {
+    const bubble = document.createElement('div');
+    bubble.className = 'chat-bubble user';
+    bubble.textContent = text;
+    body.appendChild(bubble);
+    body.scrollTop = body.scrollHeight;
+  }
+
+  function handleInput(text) {
+    if(!text.trim()) return;
+    addUser(text);
+    input.value = '';
+
+    // Find hashtags in text
+    const tags = text.match(/#\w+/g);
+    if(tags) {
+      const tag = tags[0].toLowerCase();
+      const response = hashResponses[tag];
+      if(response) {
+        addBot(response.text, response.hashtags);
+      } else {
+        addBot(defaultResponse.text, defaultResponse.hashtags);
+      }
+    } else {
+      // No hashtag — try to match keywords
+      const lower = text.toLowerCase();
+      let matched = null;
+      const keywords = {
+        '#voeding': ['voeding','eten','voer','brokken','maaltijd','food'],
+        '#training': ['training','trainen','leren','commando','gehoorzaam','cursus'],
+        '#kapsalon': ['kapsalon','trimmen','groomer','knippen','salon','trim'],
+        '#gezondheid': ['gezondheid','ziek','dierenarts','vaccin','pijn','koorts'],
+        '#puppyvoeding': ['puppy voeding','puppy eten','puppy voer'],
+        '#puppytraining': ['puppy training','puppy trainen','puppy leren'],
+        '#bestellen': ['bestellen','kopen','winkel','shop','prijs','kosten'],
+        '#community': ['community','forum','groep','contact','andere baasjes'],
+        '#allergieen': ['allergi','intolerant','glutenvrij','graanvrij'],
+      };
+      for(const [tag, words] of Object.entries(keywords)) {
+        if(words.some(w => lower.includes(w))) { matched = tag; break; }
+      }
+      if(matched) {
+        const r = hashResponses[matched];
+        addBot(r.text, r.hashtags);
+      } else {
+        addBot(defaultResponse.text, defaultResponse.hashtags);
+      }
+    }
+  }
+
+  sendBtn.addEventListener('click', () => handleInput(input.value));
+  input.addEventListener('keydown', e => { if(e.key === 'Enter') handleInput(input.value); });
+
+  // Quick action buttons
+  document.querySelectorAll('.quick-action').forEach(btn => {
+    btn.addEventListener('click', () => handleInput(btn.dataset.msg));
+  });
+})();
+</script>
+
+<!-- COOKIE BANNER -->
+<style>
+  .cookie-banner{position:fixed;bottom:0;left:0;right:0;z-index:250;background:var(--white);box-shadow:0 -4px 24px rgba(0,0,0,0.1);padding:20px clamp(16px,4vw,48px);display:none;animation:slideUp 0.4s ease}
+  .cookie-banner.show{display:block}
+  @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  .cookie-inner{max-width:1320px;margin:0 auto;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+  .cookie-text{flex:1;min-width:280px}
+  .cookie-text p{font-size:14px;color:var(--text-mid);line-height:1.6}
+  .cookie-text a{color:var(--green-main);font-weight:700;text-decoration:none}
+  .cookie-btns{display:flex;gap:10px;flex-shrink:0}
+  .cookie-btn{padding:11px 24px;border-radius:50px;font-family:'Fredoka',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;border:none}
+  .cookie-accept{background:var(--green-main);color:white}
+  .cookie-accept:hover{background:var(--green-dark)}
+  .cookie-settings{background:transparent;border:2px solid var(--cream-dark);color:var(--text-mid)}
+  .cookie-settings:hover{border-color:var(--green-main);color:var(--green-dark)}
+  .cookie-reject{background:transparent;border:none;color:var(--text-light);font-size:13px;padding:11px 16px;font-family:'Nunito',sans-serif;font-weight:600;cursor:pointer}
+  .cookie-reject:hover{color:var(--text-dark)}
+</style>
+
+<div class="cookie-banner" id="cookieBanner">
+  <div class="cookie-inner">
+    <div class="cookie-text">
+      <p>🍪 Kwispelclub gebruikt cookies om je ervaring te verbeteren. Noodzakelijke cookies zijn altijd actief. Je kunt optionele cookies accepteren of weigeren. <a href="kwispelclub-privacy.html" onclick="switchLegal && switchLegal('cookies')">Meer info</a></p>
+    </div>
+    <div class="cookie-btns">
+      <button class="cookie-btn cookie-reject" onclick="handleCookies('reject')">Alleen noodzakelijk</button>
+      <button class="cookie-btn cookie-settings" onclick="window.location.href='kwispelclub-privacy.html'">Instellingen</button>
+      <button class="cookie-btn cookie-accept" onclick="handleCookies('accept')">Alles Accepteren</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  if(!localStorage.getItem('kc_cookies')){
+    setTimeout(()=>document.getElementById('cookieBanner').classList.add('show'),2000);
+  }
+  function handleCookies(choice){
+    localStorage.setItem('kc_cookies',choice);
+    document.getElementById('cookieBanner').classList.remove('show');
+  }
+</script>
+</body>
+</html>
