@@ -5,13 +5,12 @@ import Link from 'next/link'
 
 const navLinks = [
   { href: '/', label: 'Home' },
-  { href: '/kapsalons', label: 'Kapsalons' },
-  { href: '/2dehands', label: '2de Hands' },
-  { href: '/blog', label: 'Blog' },
-  { href: '/over-ons', label: 'Over Ons' },
-  { href: '/contact', label: 'Contact' },
+  { href: '/kapsalons.html', label: 'Kapsalons' },
+  { href: '/2dehands.html', label: '2de Hands' },
+  { href: '/blog.html', label: 'Blog' },
+  { href: '/over-ons.html', label: 'Over Ons' },
+  { href: '/contact.html', label: 'Contact' },
 ]
-
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -63,7 +62,7 @@ export default function Navbar() {
               </span>
             </button>
             <Link
-              href="/auth"
+              href="/auth.html"
               className="hidden sm:flex px-5 py-2.5 rounded-full bg-[#4A7C3F] text-white font-heading text-[13px] font-semibold no-underline hover:bg-[#2D5A27] hover:-translate-y-0.5 transition-all shadow-[0_2px_8px_rgba(74,124,63,0.2)]"
             >
               Inloggen
