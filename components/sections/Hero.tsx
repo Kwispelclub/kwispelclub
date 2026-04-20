@@ -36,7 +36,7 @@ export default function Hero() {
               Ontdek nu →
             </Link>
             <Link
-              href="/kapsalons"
+              href="/kapsalons.html"
               className="inline-flex items-center gap-2 px-[30px] py-[15px] rounded-full font-heading text-[15px] font-semibold no-underline bg-white/12 text-white border border-white/25 backdrop-blur-sm hover:bg-white/22 hover:-translate-y-[3px] transition-all"
             >
               Bekijk marktplaats

@@ -34,21 +34,21 @@ export default function Footer() {
           {/* Platform */}
           <div>
             <h5 className="text-[13px] font-bold mb-4 opacity-45 uppercase tracking-[1.5px]">Platform</h5>
-            <Link href="/puppy-training" className="block text-white opacity-70 no-underline text-sm py-1 hover:opacity-100">Academy</Link>
-            <Link href="/kapsalons" className="block text-white opacity-70 no-underline text-sm py-1 hover:opacity-100">Hondenkapsalons</Link>
-            <Link href="/2dehands" className="block text-white opacity-70 no-underline text-sm py-1 hover:opacity-100">2de Hands</Link>
-            <Link href="/blog" className="block text-white opacity-70 no-underline text-sm py-1 hover:opacity-100">Blog</Link>
-            <Link href="/verkoper" className="block text-white opacity-70 no-underline text-sm py-1 hover:opacity-100">Word Verkoper</Link>
+            <Link href="/puppy-training.html" className="block text-white opacity-70 no-underline text-sm py-1 hover:opacity-100">Academy</Link>
+            <Link href="/kapsalons.html" className="block text-white opacity-70 no-underline text-sm py-1 hover:opacity-100">Hondenkapsalons</Link>
+            <Link href="/2dehands.html" className="block text-white opacity-70 no-underline text-sm py-1 hover:opacity-100">2de Hands</Link>
+            <Link href="/blog.html" className="block text-white opacity-70 no-underline text-sm py-1 hover:opacity-100">Blog</Link>
+            <Link href="/verkoper.html" className="block text-white opacity-70 no-underline text-sm py-1 hover:opacity-100">Word Verkoper</Link>
           </div>
 
           {/* Support */}
           <div>
             <h5 className="text-[13px] font-bold mb-4 opacity-45 uppercase tracking-[1.5px]">Support</h5>
-            <Link href="/contact" className="block text-white opacity-70 no-underline text-sm py-1 hover:opacity-100">Help Center</Link>
-            <Link href="/contact" className="block text-white opacity-70 no-underline text-sm py-1 hover:opacity-100">Contact</Link>
-            <Link href="/contact#faq" className="block text-white opacity-70 no-underline text-sm py-1 hover:opacity-100">FAQ</Link>
-            <Link href="/privacy" className="block text-white opacity-70 no-underline text-sm py-1 hover:opacity-100">Privacybeleid</Link>
-            <Link href="/privacy" className="block text-white opacity-70 no-underline text-sm py-1 hover:opacity-100">Voorwaarden</Link>
+            <Link href="/contact.html" className="block text-white opacity-70 no-underline text-sm py-1 hover:opacity-100">Help Center</Link>
+            <Link href="/contact.html" className="block text-white opacity-70 no-underline text-sm py-1 hover:opacity-100">Contact</Link>
+            <Link href="/contact.html#faq" className="block text-white opacity-70 no-underline text-sm py-1 hover:opacity-100">FAQ</Link>
+            <Link href="/privacy.html" className="block text-white opacity-70 no-underline text-sm py-1 hover:opacity-100">Privacybeleid</Link>
+            <Link href="/privacy.html" className="block text-white opacity-70 no-underline text-sm py-1 hover:opacity-100">Voorwaarden</Link>
           </div>
         </div>
 
@@ -56,9 +56,9 @@ export default function Footer() {
         <div className="border-t border-white/[0.08] pt-6 flex justify-between items-center flex-wrap gap-2 text-[13px] opacity-40">
           <span>© 2026 Kwispelclub. Alle rechten voorbehouden.</span>
           <div className="flex gap-5">
-            <Link href="/privacy" className="text-white no-underline hover:underline">Privacy</Link>
-            <Link href="/privacy" className="text-white no-underline hover:underline">Cookies</Link>
-            <Link href="/privacy" className="text-white no-underline hover:underline">Voorwaarden</Link>
+            <Link href="/privacy.html" className="text-white no-underline hover:underline">Privacy</Link>
+            <Link href="/privacy.html" className="text-white no-underline hover:underline">Cookies</Link>
+            <Link href="/privacy.html" className="text-white no-underline hover:underline">Voorwaarden</Link>
           </div>
           <span>🇧🇪 België & 🇳🇱 Nederland</span>
         </div>

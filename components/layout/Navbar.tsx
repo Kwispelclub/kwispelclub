@@ -11,6 +11,7 @@ const navLinks = [
   { href: '/over-ons.html', label: 'Over Ons' },
   { href: '/contact.html', label: 'Contact' },
 ]
+
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -96,7 +97,7 @@ export default function Navbar() {
             </Link>
           ))}
           <Link
-            href="/auth"
+            href="/auth.html"
             className="block mt-4 text-center py-3 rounded-full bg-[#4A7C3F] text-white font-heading font-semibold no-underline"
             onClick={() => setMobileOpen(false)}
           >

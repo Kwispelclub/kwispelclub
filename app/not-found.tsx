@@ -23,7 +23,7 @@ export default function NotFound() {
             🏠 Terug naar Home
           </Link>
           <Link
-            href="/contact"
+            href="/contact.html"
             className="px-7 py-3.5 rounded-full font-heading text-[15px] font-semibold no-underline bg-transparent text-[#4A7C3F] border-2 border-[#E8F0E4] hover:bg-[#E8F0E4] hover:-translate-y-[3px] transition-all"
           >
             💬 Contact

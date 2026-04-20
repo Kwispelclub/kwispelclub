@@ -30,7 +30,7 @@ export default function CookieBanner() {
           <p className="text-sm text-[#5A5A5A] leading-relaxed">
             🍪 Kwispelclub gebruikt cookies om je ervaring te verbeteren.
             Noodzakelijke cookies zijn altijd actief.{' '}
-            <Link href="/privacy" className="text-[#4A7C3F] font-bold no-underline">
+            <Link href="/privacy.html" className="text-[#4A7C3F] font-bold no-underline">
               Meer info
             </Link>
           </p>
