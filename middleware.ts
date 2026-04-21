@@ -12,22 +12,20 @@ export async function middleware(request: NextRequest) {
         getAll() {
           return request.cookies.getAll()
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           supabaseResponse = NextResponse.next({ request })
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
+            supabaseResponse.cookies.set(name, value, options as Parameters<typeof supabaseResponse.cookies.set>[2])
           )
         },
       },
     }
   )
 
-  // Sessie ophalen (verplicht voor SSR cookie refresh)
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Beschermde routes — redirect naar /auth als niet ingelogd
-  const protectedRoutes = ['/account']
+  const protectedRoutes = ['/account', '/admin']
   const isProtected = protectedRoutes.some(route =>
     request.nextUrl.pathname.startsWith(route)
   )
@@ -39,7 +37,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Al ingelogd en naar /auth → redirect naar /account
   if (request.nextUrl.pathname === '/auth' && user) {
     const url = request.nextUrl.clone()
     url.pathname = '/account'
