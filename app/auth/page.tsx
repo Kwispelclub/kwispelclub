@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 
 type Role = 'koper' | 'verkoper' | 'kapsalon'
 type Tab = 'register' | 'login'
 
-export default function AuthPage() {
+function AuthPageInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
@@ -422,5 +422,17 @@ export default function AuthPage() {
         </div>
       </div>
     </>
+  )
+}
+
+export default function AuthPage() {
+  return (
+    <Suspense fallback={
+      <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'#FFF9F0'}}>
+        <div style={{fontFamily:'Fredoka,sans-serif',fontSize:22,color:'#4A7C3F'}}>🐾 Laden...</div>
+      </div>
+    }>
+      <AuthPageInner />
+    </Suspense>
   )
 }
