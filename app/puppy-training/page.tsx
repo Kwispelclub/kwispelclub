@@ -72,17 +72,7 @@ export default function PuppyTrainingPage() {
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
-      <div className="beta-bar">🚀 Kwispelclub is in opbouw! Academy-content is nog in ontwikkeling. Dit is een voorproefje van wat komt.</div>
-
-      <nav className={`navbar ${scrolled?'scrolled':''}`}>
-        <div className="nav-inner">
-          <a href="/" className="nav-logo"><div className="logo-paw">🐾</div><span className="brand">Kwispelclub</span></a>
-          <ul className="nav-links">
-            <li><a href="/#shop">Shop</a></li><li><a href="/puppy-training" className="active">Academy</a></li><li><a href="/kapsalons">Kapsalons</a></li>
-          </ul>
-          <div style={{flex:1}} />
-        </div>
-      </nav>
+      
 
       <div className="breadcrumb"><a href="/">Home</a> › <a href="/#academy">Academy</a> › Puppy Training</div>
 

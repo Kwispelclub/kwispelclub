@@ -82,17 +82,7 @@ export default function TweedeHandsPage() {
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
-      <div className="beta-bar">🚀 Kwispelclub is in opbouw! De 2de Hands marktplaats is nog niet actief. Onderstaande items zijn ter illustratie.</div>
-
-      <nav className={`navbar ${scrolled?'scrolled':''}`}>
-        <div className="nav-inner">
-          <a href="/" className="nav-logo"><div className="logo-paw">🐾</div><span className="brand">Kwispelclub</span></a>
-          <ul className="nav-links">
-            <li><a href="/#shop">Shop</a></li><li><a href="/2dehands" className="active">2de Hands</a></li><li><a href="/kapsalons">Kapsalons</a></li><li><a href="/#academy">Academy</a></li>
-          </ul>
-          <div style={{flex:1}} />
-        </div>
-      </nav>
+     
 
       <div className="breadcrumb"><a href="/">Home</a> › 2de Hands Marktplaats</div>
 
