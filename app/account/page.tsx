@@ -204,28 +204,7 @@ export default function AccountPage() {
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
-      {/* NAVBAR */}
-      <nav className={`navbar ${scrolled ? 'scrolled' : ''}`}>
-        <div className="nav-inner">
-          <a href="/" className="nav-logo">
-            <div className="logo-paw">🐾</div>
-            <span className="brand">Kwispelclub</span>
-          </a>
-          <ul className="nav-links">
-            <li><a href="/#shop">Shop</a></li>
-            <li><a href="/#academy">Academy</a></li>
-            <li><a href="/kapsalons">Kapsalons</a></li>
-            <li><a href="/2dehands">2de Hands</a></li>
-          </ul>
-          <div className="nav-right">
-            <div className="user-pill">
-              <div className="ua">{initials}</div>
-              <span>{firstName}</span>
-            </div>
-            <button className="btn-signout" onClick={handleSignOut}>Uitloggen</button>
-          </div>
-        </div>
-      </nav>
+    
 
       <div className="account-layout">
         {/* SIDEBAR */}
