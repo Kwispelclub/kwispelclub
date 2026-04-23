@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import KwispelChat from '@/components/KwispelChat'
 
 export const metadata: Metadata = {
   title: {
