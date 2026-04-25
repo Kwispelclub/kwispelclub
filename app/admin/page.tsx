@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase'
 
 type Tab = 'dashboard' | 'kapsalons' | 'gebruikers' | 'listings' | 'bestellingen'
 
-const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'Vrijdag@201024+'
+const ADMIN_PASSWORD = 'Vrijdag@201024+'
 
 export default function AdminPage() {
   const router = useRouter()
