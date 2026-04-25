@@ -1,4 +1,4 @@
-import { Suspense } from 'react'
+
 import BedanktContent from './BedanktContent'
 
 export default function BedanktContent() {
