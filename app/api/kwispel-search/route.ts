@@ -52,7 +52,7 @@ function extractKeywords(message: string): string[] {
     if (lower.includes(key)) keywords.push(...terms)
   })
 
-  return [...new Set(keywords)]
+ return [...new Set(keywords)]
 }
 
 async function searchDatabase(keywords: string[]) {
