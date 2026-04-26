@@ -52,7 +52,9 @@ function extractKeywords(message: string): string[] {
     if (lower.includes(key)) keywords.push(...terms)
   })
 
- return [...new Set(keywords)]
+const unique: string[] = []
+  keywords.forEach(k => { if (!unique.includes(k)) unique.push(k) })
+  return unique
 }
 
 async function searchDatabase(keywords: string[]) {
