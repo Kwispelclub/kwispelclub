@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
+import { SettingsPanel } from '@/components/AdminSettingsPanel'
 
-type Tab = 'dashboard' | 'kapsalons' | 'gebruikers' | 'listings' | 'bestellingen'
+type Tab = 'dashboard' | 'kapsalons' | 'gebruikers' | 'listings' | 'bestellingen' | 'instellingen'
 
 const ADMIN_PASSWORD = 'Vrijdag@201024+'
 
@@ -25,12 +26,13 @@ export default function AdminPage() {
   const [stats, setStats] = useState({ kapsalons: 0, gebruikers: 0, listings: 0, bestellingen: 0, pending: 0 })
   const [dataLoading, setDataLoading] = useState(false)
 
+  // Settings
+  const [siteSettings, setSiteSettings] = useState<Record<string, any>>({})
+  const [settingsSaved, setSettingsSaved] = useState(false)
+
   useEffect(() => {
-    // Check if admin session exists
     const adminSession = sessionStorage.getItem('kw_admin')
     if (adminSession === 'true') setAuthed(true)
-
-    // Check Supabase auth
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) { router.push('/auth?redirect=/admin'); return }
       setLoading(false)
@@ -55,22 +57,24 @@ export default function AdminPage() {
   const loadData = async () => {
     setDataLoading(true)
     try {
-      const [k, u, l, b] = await Promise.all([
+      const [k, u, l, b, s] = await Promise.all([
         supabase.from('kapsalons').select('*').order('created_at', { ascending: false }),
         supabase.from('profiles').select('*').order('created_at', { ascending: false }),
         supabase.from('listings').select('*').order('created_at', { ascending: false }),
         supabase.from('bestellingen').select('*').order('created_at', { ascending: false }),
+        fetch('/api/admin-settings').then(r => r.json()),
       ])
       setKapsalons(k.data || [])
       setGebruikers(u.data || [])
       setListings(l.data || [])
       setBestellingen(b.data || [])
+      setSiteSettings(s.settings || {})
       setStats({
         kapsalons: k.data?.length || 0,
         gebruikers: u.data?.length || 0,
         listings: l.data?.length || 0,
         bestellingen: b.data?.length || 0,
-        pending: k.data?.filter(x => !x.geverifieerd).length || 0,
+        pending: k.data?.filter((x: any) => !x.geverifieerd).length || 0,
       })
     } catch (e) {
       console.error(e)
@@ -78,8 +82,31 @@ export default function AdminPage() {
     setDataLoading(false)
   }
 
+  const toggleSetting = async (key: string, value: boolean) => {
+    setSiteSettings(prev => ({ ...prev, [key]: value }))
+    await fetch('/api/admin-settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key, value }),
+    })
+    setSettingsSaved(true)
+    setTimeout(() => setSettingsSaved(false), 2000)
+  }
+
   const approveKapsalon = async (id: string) => {
     await supabase.from('kapsalons').update({ geverifieerd: true, actief: true }).eq('id', id)
+    const kapsalon = kapsalons.find(k => k.id === id)
+    if (kapsalon?.email) {
+      await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'kapsalon_goedgekeurd',
+          to: kapsalon.email,
+          data: { salonNaam: kapsalon.naam }
+        })
+      })
+    }
     loadData()
   }
 
@@ -193,7 +220,7 @@ export default function AdminPage() {
         <div className="pw-card">
           <div className="icon">🔐</div>
           <h2>Admin Toegang</h2>
-          <p>Voer het admin wachtwoord in om toegang te krijgen tot het beheerпанель.</p>
+          <p>Voer het admin wachtwoord in om toegang te krijgen tot het beheerpaneel.</p>
           {pwError && <div className="pw-error">⚠️ Onjuist wachtwoord</div>}
           <input
             className={`pw-input ${pwError ? 'error' : ''}`}
@@ -216,6 +243,7 @@ export default function AdminPage() {
     gebruikers: { title: 'Gebruikers', desc: `${stats.gebruikers} geregistreerde accounts` },
     listings: { title: '2de Hands Listings', desc: `${stats.listings} advertenties` },
     bestellingen: { title: 'Bestellingen', desc: `${stats.bestellingen} bestellingen` },
+    instellingen: { title: 'Site Instellingen', desc: 'Beheer demo-data en site-instellingen' },
   }
 
   return (
@@ -224,7 +252,6 @@ export default function AdminPage() {
       <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
       <div className="admin-layout">
-        {/* SIDEBAR */}
         <aside className="sidebar">
           <div className="sidebar-logo">
             <div className="lp">🐾</div>
@@ -233,11 +260,12 @@ export default function AdminPage() {
           </div>
           <nav className="sidebar-nav">
             {([
-              ['dashboard', '📊', 'Dashboard'],
+              ['dashboard', '📊', 'Dashboard', null],
               ['kapsalons', '✂️', 'Kapsalons', stats.pending > 0 ? stats.pending : null],
-              ['gebruikers', '👥', 'Gebruikers'],
-              ['listings', '♻️', '2de Hands'],
-              ['bestellingen', '📦', 'Bestellingen'],
+              ['gebruikers', '👥', 'Gebruikers', null],
+              ['listings', '♻️', '2de Hands', null],
+              ['bestellingen', '📦', 'Bestellingen', null],
+              ['instellingen', '⚙️', 'Instellingen', null],
             ] as [Tab, string, string, number | null][]).map(([id, icon, label, badge]) => (
               <div key={id} className={`nav-item ${tab === id ? 'active' : ''}`} onClick={() => setTab(id)}>
                 <span className="ni">{icon}</span>
@@ -252,7 +280,6 @@ export default function AdminPage() {
           </div>
         </aside>
 
-        {/* MAIN */}
         <main className="main">
           <div className="main-header">
             <div>
@@ -275,7 +302,6 @@ export default function AdminPage() {
                     <a onClick={() => setTab('kapsalons')} style={{ marginLeft: 8 }}>Bekijk nu →</a>
                   </div>
                 )}
-
                 <div className="stats-grid">
                   {[
                     { icon: '👥', val: stats.gebruikers, label: 'Gebruikers', cls: 'highlight' },
@@ -291,8 +317,6 @@ export default function AdminPage() {
                     </div>
                   ))}
                 </div>
-
-                {/* Recent kapsalons */}
                 <div className="section-card">
                   <div className="section-card-header">
                     <div><h2>Recente Kapsalon Aanmeldingen</h2><p>Nieuwste registraties die wachten op goedkeuring</p></div>
@@ -322,8 +346,6 @@ export default function AdminPage() {
                     </table>
                   )}
                 </div>
-
-                {/* Recent users */}
                 <div className="section-card">
                   <div className="section-card-header">
                     <div><h2>Recente Gebruikers</h2><p>Nieuwste accounts</p></div>
@@ -349,7 +371,7 @@ export default function AdminPage() {
               </>
             )}
 
-            {/* KAPSALONS TAB */}
+            {/* KAPSALONS */}
             {tab === 'kapsalons' && (
               <div className="section-card">
                 <div className="section-card-header">
@@ -372,8 +394,7 @@ export default function AdminPage() {
                               ? <span className="badge badge-green">✓ Geverifieerd</span>
                               : k.actief === false
                                 ? <span className="badge badge-red">✗ Geweigerd</span>
-                                : <span className="badge badge-orange">⏳ In afwachting</span>
-                            }
+                                : <span className="badge badge-orange">⏳ In afwachting</span>}
                           </td>
                           <td>
                             <div className="action-btns">
@@ -389,7 +410,7 @@ export default function AdminPage() {
               </div>
             )}
 
-            {/* GEBRUIKERS TAB */}
+            {/* GEBRUIKERS */}
             {tab === 'gebruikers' && (
               <div className="section-card">
                 <div className="section-card-header">
@@ -399,7 +420,7 @@ export default function AdminPage() {
                   <div className="empty-state"><div className="ei">👥</div><p>Geen gebruikers gevonden</p></div>
                 ) : (
                   <table className="table">
-                    <thead><tr><th>Naam</th><th>Rol</th><th>E-mail (Supabase)</th><th>Locatie</th><th>Bedrijf</th><th>Datum</th></tr></thead>
+                    <thead><tr><th>Naam</th><th>Rol</th><th>E-mail</th><th>Locatie</th><th>Bedrijf</th><th>Datum</th></tr></thead>
                     <tbody>
                       {gebruikers.map(u => (
                         <tr key={u.id}>
@@ -417,7 +438,7 @@ export default function AdminPage() {
               </div>
             )}
 
-            {/* LISTINGS TAB */}
+            {/* LISTINGS */}
             {tab === 'listings' && (
               <div className="section-card">
                 <div className="section-card-header">
@@ -456,7 +477,7 @@ export default function AdminPage() {
               </div>
             )}
 
-            {/* BESTELLINGEN TAB */}
+            {/* BESTELLINGEN */}
             {tab === 'bestellingen' && (
               <div className="section-card">
                 <div className="section-card-header">
@@ -485,6 +506,15 @@ export default function AdminPage() {
                   </table>
                 )}
               </div>
+            )}
+
+            {/* INSTELLINGEN */}
+            {tab === 'instellingen' && (
+              <SettingsPanel
+                siteSettings={siteSettings}
+                toggleSetting={toggleSetting}
+                settingsSaved={settingsSaved}
+              />
             )}
 
           </div>
