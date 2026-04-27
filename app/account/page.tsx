@@ -24,6 +24,8 @@ function EmptyState({ icon, title, desc, cta, ctaHref, onCtaClick }: {
   )
 }
 
+const STAAT_LABELS: Record<string, string> = { zo_goed_als_nieuw: 'Zo goed als nieuw', licht_gebruikt: 'Licht gebruikt', goed: 'Goed', redelijk: 'Redelijk' }
+
 export default function AccountPage() {
   const router = useRouter()
   const supabase = createClient()
@@ -32,6 +34,11 @@ export default function AccountPage() {
   const [scrolled, setScrolled] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saveMsg, setSaveMsg] = useState('Opslaan')
+
+  // Listings state
+  const [eigenListings, setEigenListings] = useState<any[]>([])
+  const [listingsLoading, setListingsLoading] = useState(false)
+  const [statusUpdating, setStatusUpdating] = useState<string | null>(null)
 
   const [settingsFirstName, setSettingsFirstName] = useState('')
   const [settingsLastName, setSettingsLastName] = useState('')
@@ -56,11 +63,36 @@ export default function AccountPage() {
       setSettingsTel(m?.telefoon || '')
       setSettingsLocatie(m?.locatie || '')
       setLoading(false)
+      loadEigenListings(user.id)
     })
     const onScroll = () => setScrolled(window.scrollY > 10)
     window.addEventListener('scroll', onScroll)
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
+
+  const loadEigenListings = async (userId: string) => {
+    setListingsLoading(true)
+    try {
+      const res = await fetch(`/api/listings?seller_id=${userId}`)
+      const data = await res.json()
+      setEigenListings(data.listings || [])
+    } catch (e) {
+      console.error('Fout bij laden listings:', e)
+    }
+    setListingsLoading(false)
+  }
+
+  const handleStatusUpdate = async (id: string, status: string) => {
+    if (!user) return
+    setStatusUpdating(id)
+    await fetch('/api/listings', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, status, seller_id: user.id })
+    })
+    await loadEigenListings(user.id)
+    setStatusUpdating(null)
+  }
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -97,6 +129,9 @@ export default function AccountPage() {
   const memberSince = user?.created_at
     ? new Date(user.created_at).toLocaleDateString('nl-BE', { month: 'long', year: 'numeric' })
     : ''
+
+  const actieveListings = eigenListings.filter(l => l.status === 'actief')
+  const inactieveListings = eigenListings.filter(l => l.status !== 'actief')
 
   const navItems: { id: Panel; icon: string; label: string }[] = [
     { id: 'overview',  icon: '📊', label: 'Overzicht' },
@@ -151,6 +186,11 @@ export default function AccountPage() {
         .btn{display:inline-flex;align-items:center;gap:8px;padding:11px 24px;border-radius:50px;font-family:'Fredoka',sans-serif;font-size:14px;font-weight:600;border:none;cursor:pointer;transition:all .2s;text-decoration:none}
         .btn-green{background:var(--green-main);color:white;box-shadow:0 2px 12px rgba(74,124,63,.2)}
         .btn-green:hover{background:var(--green-dark);transform:translateY(-2px)}
+        .btn-sm{padding:6px 14px;font-size:12px;border-radius:50px;font-family:'Fredoka',sans-serif;font-weight:600;border:none;cursor:pointer;transition:all .2s}
+        .btn-verkocht{background:#2a9d8f;color:white}
+        .btn-verkocht:hover{background:#21867a}
+        .btn-verwijder{background:transparent;border:1.5px solid var(--red);color:var(--red)}
+        .btn-verwijder:hover{background:var(--red);color:white}
         .card{background:var(--white);border-radius:20px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
         .welcome-banner{background:linear-gradient(135deg,var(--green-dark),var(--green-main));border-radius:20px;padding:32px;color:white;margin-bottom:24px;position:relative;overflow:hidden}
         .welcome-banner::after{content:'🐾';position:absolute;right:24px;bottom:-10px;font-size:90px;opacity:.1;pointer-events:none}
@@ -188,6 +228,25 @@ export default function AccountPage() {
         .t-off{background:var(--cream-dark)}
         .t-on{background:var(--green-main)}
         .knob{width:20px;height:20px;border-radius:50%;background:white;position:absolute;top:2px;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+        /* Listings cards */
+        .listing-card{background:var(--white);border-radius:16px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.06);display:flex;gap:16px;align-items:flex-start;margin-bottom:12px;border:2px solid transparent;transition:all .2s}
+        .listing-card:hover{border-color:var(--green-pale);box-shadow:0 4px 16px rgba(0,0,0,.1)}
+        .listing-img{width:80px;height:80px;border-radius:12px;object-fit:cover;flex-shrink:0;background:var(--cream)}
+        .listing-img-placeholder{width:80px;height:80px;border-radius:12px;background:var(--cream);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0}
+        .listing-info{flex:1;min-width:0}
+        .listing-titel{font-family:'Fredoka',sans-serif;font-size:16px;font-weight:700;color:var(--text-dark);margin-bottom:4px}
+        .listing-meta{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--text-light);margin-bottom:8px}
+        .listing-prijs{font-family:'Fredoka',sans-serif;font-size:18px;font-weight:700;color:var(--green-dark)}
+        .listing-status{display:inline-flex;padding:3px 10px;border-radius:50px;font-size:11px;font-weight:700}
+        .status-actief{background:#e8f5e9;color:#2D5A27}
+        .status-verkocht{background:#fce4ec;color:#c62828}
+        .status-gereserveerd{background:#fff3e0;color:#e65100}
+        .listing-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+        .slots-bar{display:flex;align-items:center;gap:10px;padding:14px 18px;background:var(--green-pale);border-radius:12px;margin-bottom:20px;font-size:13px;font-weight:700;color:var(--green-dark)}
+        .slot-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800}
+        .slot-used{background:var(--green-main);color:white}
+        .slot-free{background:white;color:var(--text-light);border:2px solid var(--cream-dark)}
+        .section-title{font-family:'Fredoka',sans-serif;font-size:16px;color:var(--text-mid);margin:20px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--cream-dark)}
         footer{background:var(--green-dark);color:white;margin-top:48px}
         .footer-inner{max-width:1320px;margin:0 auto;padding:28px clamp(16px,4vw,48px);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:13px;opacity:.5}
         .footer-inner a{color:white;text-decoration:none;margin:0 12px}
@@ -204,8 +263,6 @@ export default function AccountPage() {
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
-    
-
       <div className="account-layout">
         {/* SIDEBAR */}
         <div className="account-sidebar">
@@ -220,6 +277,11 @@ export default function AccountPage() {
               <a key={item.id} className={activePanel === item.id ? 'active' : ''} onClick={() => setActivePanel(item.id)}>
                 <span className="nav-icon">{item.icon}</span>
                 {item.label}
+                {item.id === 'listings' && eigenListings.length > 0 && (
+                  <span style={{ marginLeft: 'auto', background: 'var(--green-main)', color: 'white', borderRadius: 50, padding: '1px 8px', fontSize: 11, fontWeight: 800 }}>
+                    {actieveListings.length}
+                  </span>
+                )}
               </a>
             ))}
           </nav>
@@ -243,7 +305,7 @@ export default function AccountPage() {
                 ['🐾', '0', 'Huisdieren', 'pets'],
                 ['📦', '0', 'Bestellingen', 'orders'],
                 ['❤️', '0', 'Favorieten', 'favorites'],
-                ['✂️', '0', 'Afspraken', 'bookings'],
+                ['♻️', String(actieveListings.length), '2de Hands', 'listings'],
               ] as [string, string, string, Panel][]).map(([icon, val, label, panel]) => (
                 <div key={label} className="stat-card" onClick={() => setActivePanel(panel)}>
                   <div className="stat-icon">{icon}</div>
@@ -306,19 +368,106 @@ export default function AccountPage() {
           <div className={`panel ${activePanel === 'listings' ? 'active' : ''}`}>
             <div className="panel-header">
               <h2>Mijn 2de Hands ♻️</h2>
-              <a href="/2dehands" className="btn btn-green">+ Advertentie Plaatsen</a>
+              <a href="/2dehands#sell" className="btn btn-green">+ Nieuwe Advertentie</a>
             </div>
-            <div className="notice notice-green" style={{ marginBottom: 16 }}>
-              <span style={{ fontSize: 18 }}>ℹ️</span>
-              Je mag <strong>2 gratis advertenties</strong> plaatsen als je recent iets hebt gekocht bij Kwispelclub.
+
+            {/* Slots indicator */}
+            <div className="slots-bar">
+              <span>Slots:</span>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <div className={`slot-dot ${actieveListings.length >= 1 ? 'slot-used' : 'slot-free'}`}>{actieveListings.length >= 1 ? '✓' : '1'}</div>
+                <div className={`slot-dot ${actieveListings.length >= 2 ? 'slot-used' : 'slot-free'}`}>{actieveListings.length >= 2 ? '✓' : '2'}</div>
+              </div>
+              <span style={{ marginLeft: 'auto', fontWeight: 400, color: 'var(--green-dark)' }}>
+                {2 - actieveListings.length} van 2 beschikbaar
+              </span>
             </div>
-            <EmptyState
-              icon="♻️"
-              title="Nog geen advertenties"
-              desc="Verkoop tweedehands huisdierartikelen aan andere leden. Hondenmanden, speelgoed, benches — alles mag."
-              cta="Eerste Advertentie Plaatsen"
-              ctaHref="/2dehands"
-            />
+
+            {listingsLoading ? (
+              <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-light)' }}>⏳ Laden...</div>
+            ) : eigenListings.length === 0 ? (
+              <EmptyState
+                icon="♻️"
+                title="Nog geen advertenties"
+                desc="Verkoop tweedehands huisdierartikelen aan andere leden. Hondenmanden, speelgoed, benches — alles mag."
+                cta="Eerste Advertentie Plaatsen"
+                ctaHref="/2dehands#sell"
+              />
+            ) : (
+              <>
+                {actieveListings.length > 0 && (
+                  <>
+                    <div className="section-title">🟢 Actief ({actieveListings.length})</div>
+                    {actieveListings.map(l => (
+                      <div key={l.id} className="listing-card">
+                        {l.foto_urls?.[0]
+                          ? <img src={l.foto_urls[0]} className="listing-img" alt={l.titel} />
+                          : <div className="listing-img-placeholder">📦</div>
+                        }
+                        <div className="listing-info">
+                          <div className="listing-titel">{l.titel}</div>
+                          <div className="listing-meta">
+                            <span>📂 {l.categorie}</span>
+                            <span>⭐ {STAAT_LABELS[l.staat] || l.staat}</span>
+                            <span>📍 {l.locatie}</span>
+                            <span>👁️ {l.views || 0} views</span>
+                            <span>🗓️ {new Date(l.created_at).toLocaleDateString('nl-BE')}</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <div className="listing-prijs">€{parseFloat(l.vraagprijs).toFixed(2)}</div>
+                            <span className="listing-status status-actief">Actief</span>
+                          </div>
+                          <div className="listing-actions">
+                            <button
+                              className="btn-sm btn-verkocht"
+                              disabled={statusUpdating === l.id}
+                              onClick={() => handleStatusUpdate(l.id, 'verkocht')}
+                            >
+                              {statusUpdating === l.id ? '...' : '✓ Markeer als Verkocht'}
+                            </button>
+                            <button
+                              className="btn-sm btn-verwijder"
+                              disabled={statusUpdating === l.id}
+                              onClick={() => handleStatusUpdate(l.id, 'verlopen')}
+                            >
+                              Verwijderen
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )}
+
+                {inactieveListings.length > 0 && (
+                  <>
+                    <div className="section-title">📁 Eerder geplaatst ({inactieveListings.length})</div>
+                    {inactieveListings.map(l => (
+                      <div key={l.id} className="listing-card" style={{ opacity: 0.7 }}>
+                        {l.foto_urls?.[0]
+                          ? <img src={l.foto_urls[0]} className="listing-img" alt={l.titel} />
+                          : <div className="listing-img-placeholder">📦</div>
+                        }
+                        <div className="listing-info">
+                          <div className="listing-titel">{l.titel}</div>
+                          <div className="listing-meta">
+                            <span>📂 {l.categorie}</span>
+                            <span>📍 {l.locatie}</span>
+                            <span>🗓️ {new Date(l.created_at).toLocaleDateString('nl-BE')}</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <div className="listing-prijs">€{parseFloat(l.vraagprijs).toFixed(2)}</div>
+                            <span className={`listing-status ${l.status === 'verkocht' ? 'status-verkocht' : 'status-gereserveerd'}`}>
+                              {l.status}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </>
+            )}
           </div>
 
           {/* BOOKINGS */}
