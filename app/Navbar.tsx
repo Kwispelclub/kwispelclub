@@ -50,12 +50,21 @@ export default function Navbar() {
         .kw-user span{font-size:13px;font-weight:700;color:#2C2C2C}
         .kw-login{padding:9px 20px;border-radius:50px;background:#4A7C3F;color:white;font-family:'Fredoka',sans-serif;font-size:14px;font-weight:600;text-decoration:none;transition:all .2s;box-shadow:0 2px 8px rgba(74,124,63,.25)}
         .kw-login:hover{background:#2D5A27;transform:translateY(-1px)}
-        .kw-ham{display:none;background:none;border:none;font-size:26px;cursor:pointer;padding:8px;margin-left:8px}
-        .kw-mob{display:none;position:fixed;top:72px;left:0;right:0;background:#FFF9F0;padding:16px 24px 24px;z-index:99;box-shadow:0 8px 40px rgba(0,0,0,.12);border-radius:0 0 20px 20px}
+        .kw-ham{display:none;background:none;border:none;font-size:26px;cursor:pointer;padding:8px;margin-left:8px;flex-shrink:0}
+
+        /* Mobile menu overlay */
+        .kw-mob{display:none;position:fixed;top:72px;left:0;right:0;bottom:0;z-index:99;background:rgba(0,0,0,.3)}
         .kw-mob.open{display:block}
-        .kw-mob a{display:block;padding:14px 0;font-weight:600;font-size:16px;color:#2C2C2C;text-decoration:none;border-bottom:1px solid #F5EDE0}
-        .kw-mob a:last-child{border-bottom:none}
-        .kw-mob a.active{color:#2D5A27}
+        .kw-mob-inner{background:#FFF9F0;border-radius:0 0 24px 24px;box-shadow:0 8px 40px rgba(0,0,0,.15);overflow:hidden}
+        .kw-mob-links{padding:8px 0}
+        .kw-mob-links a{display:flex;align-items:center;padding:16px 24px;font-weight:600;font-size:16px;color:#2C2C2C;text-decoration:none;border-bottom:1px solid #F5EDE0;transition:background .15s}
+        .kw-mob-links a:hover{background:#F5EDE0}
+        .kw-mob-links a.active{color:#2D5A27;background:#E8F0E4}
+        .kw-mob-links a:last-child{border-bottom:none}
+        .kw-mob-account{padding:16px 24px;background:#F5EDE0;display:flex;gap:12px}
+        .kw-mob-acc-btn{flex:1;padding:13px;border-radius:50px;background:#2D5A27;color:white;font-family:'Fredoka',sans-serif;font-size:15px;font-weight:600;text-decoration:none;text-align:center;border:none;cursor:pointer}
+        .kw-mob-out-btn{padding:13px 20px;border-radius:50px;background:white;color:#2C2C2C;font-family:'Fredoka',sans-serif;font-size:15px;font-weight:600;text-decoration:none;text-align:center;border:2px solid #F5EDE0;cursor:pointer}
+
         @media(max-width:1024px){.kw-links{display:none}.kw-ham{display:block}}
       `}</style>
       <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -86,21 +95,40 @@ export default function Navbar() {
               <a href="/auth" className="kw-login">Inloggen →</a>
             )}
           </div>
-          <button className="kw-ham" onClick={() => setMobileOpen(!mobileOpen)}>☰</button>
+          <button className="kw-ham" onClick={() => setMobileOpen(!mobileOpen)}>
+            {mobileOpen ? '✕' : '☰'}
+          </button>
         </div>
       </nav>
 
+      {/* Mobile menu */}
       {mobileOpen && (
-        <div className="kw-mob open">
-          {links.map(l => (
-            <a key={l.href} href={l.href} className={isActive(l.href) ? 'active' : ''} onClick={() => setMobileOpen(false)}>
-              {l.label}
-            </a>
-          ))}
-          {user
-            ? <a href="/account" onClick={() => setMobileOpen(false)}>👤 Mijn Account</a>
-            : <a href="/auth" onClick={() => setMobileOpen(false)}>→ Inloggen / Registreren</a>
-          }
+        <div className="kw-mob open" onClick={() => setMobileOpen(false)}>
+          <div className="kw-mob-inner" onClick={e => e.stopPropagation()}>
+            <div className="kw-mob-links">
+              {links.map(l => (
+                <a key={l.href} href={l.href} className={isActive(l.href) ? 'active' : ''} onClick={() => setMobileOpen(false)}>
+                  {l.label}
+                </a>
+              ))}
+            </div>
+            <div className="kw-mob-account">
+              {user ? (
+                <>
+                  <a href="/account" className="kw-mob-acc-btn" onClick={() => setMobileOpen(false)}>
+                    👤 Mijn Account
+                  </a>
+                  <a href="/auth/signout" className="kw-mob-out-btn" onClick={() => setMobileOpen(false)}>
+                    Uitloggen
+                  </a>
+                </>
+              ) : (
+                <a href="/auth" className="kw-mob-acc-btn" onClick={() => setMobileOpen(false)}>
+                  → Inloggen / Registreren
+                </a>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </>
