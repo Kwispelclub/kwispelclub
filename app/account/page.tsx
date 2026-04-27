@@ -253,15 +253,15 @@ export default function AccountPage() {
         .footer-inner a{color:white;text-decoration:none;margin:0 12px}
         .mob-nav-trigger{display:none}
         @media(max-width:900px){
-          .account-layout{grid-template-columns:1fr}
-          .account-sidebar{position:relative}
+          .account-layout{grid-template-columns:1fr;padding:16px}
+          .account-sidebar{position:static}
           .profile-card{display:none}
           .sidebar-nav{display:none}
-          .mob-nav-trigger{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--white);border-radius:14px;box-shadow:0 2px 8px rgba(0,0,0,.06);cursor:pointer;border:none;width:100%;font-family:'Nunito',sans-serif;font-size:15px;font-weight:700;color:var(--text-dark);margin-bottom:16px}
+          .mob-nav-trigger{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--white);border-radius:14px;box-shadow:0 2px 8px rgba(0,0,0,.06);cursor:pointer;border:none;width:100%;font-family:'Nunito',sans-serif;font-size:15px;font-weight:700;color:var(--text-dark);margin-bottom:0}
           .mob-nav-trigger .trigger-left{display:flex;align-items:center;gap:10px;font-size:15px}
           .mob-nav-trigger .chevron{font-size:12px;transition:transform .2s;color:var(--text-light)}
           .mob-nav-trigger .chevron.open{transform:rotate(180deg)}
-          .mob-dropdown{position:absolute;top:58px;left:0;right:0;background:var(--white);border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.12);z-index:50;overflow:hidden;border:1px solid var(--cream-dark)}
+          .mob-dropdown{position:fixed;top:auto;left:16px;right:16px;background:var(--white);border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.15);z-index:200;overflow:hidden;border:1px solid var(--cream-dark)}
           .mob-dropdown a{display:flex;align-items:center;gap:12px;padding:14px 18px;font-size:14px;font-weight:600;color:var(--text-mid);text-decoration:none;border-bottom:1px solid var(--cream-dark);cursor:pointer}
           .mob-dropdown a:last-child{border-bottom:none}
           .mob-dropdown a.active{background:var(--green-pale);color:var(--green-dark)}
