@@ -30,7 +30,12 @@ type Vaccination = {
   notities?: string
 }
 
-const SPECIES = ['Hond', 'Kat', 'Konijn', 'Vogel', 'Hamster', 'Cavia', 'Anders']
+const SPECIES = [
+  { value: 'hond', label: 'Hond' },
+  { value: 'kat', label: 'Kat' },
+  { value: 'konijn', label: 'Konijn' },
+  { value: 'overig', label: 'Overig' },
+]
 const G = {
   greenDark: '#2D5A27', greenMain: '#4A7C3F', greenPale: '#E8F0E4',
   orangeMain: '#E8913A', orangePale: '#FFF3E0', cream: '#FFF9F0',
@@ -156,7 +161,7 @@ export default function PetsPanel({ userId }: { userId: string }) {
     await loadVaccinations(selectedPet!.id)
   }
 
-  const speciesEmoji = (s: string) => ({ Hond: '🐶', Kat: '🐱', Konijn: '🐰', Vogel: '🦜', Hamster: '🐹', Cavia: '🐾', Anders: '🐾' }[s] || '🐾')
+  const speciesEmoji = (s: string) => ({ hond: '🐶', kat: '🐱', konijn: '🐰', overig: '🐾' }[s] || '🐾')
 
   const inp = (label: string, key: keyof Pet, type = 'text', placeholder = '') => (
     <div style={{ marginBottom: 14 }}>
@@ -214,7 +219,7 @@ export default function PetsPanel({ userId }: { userId: string }) {
             <select value={form.species || ''} onChange={e => setForm(f => ({ ...f, species: e.target.value }))}
               style={{ width: '100%', padding: '10px 14px', border: `2px solid ${G.creamDark}`, borderRadius: 10, fontFamily: 'Nunito, sans-serif', fontSize: 14, outline: 'none', background: G.white }}>
               <option value="">Kies soort...</option>
-              {SPECIES.map(s => <option key={s} value={s}>{s}</option>)}
+              {SPECIES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
             </select>
           </div>
           {inp('Ras', 'breed', 'text', 'Bijv. Golden Retriever')}
