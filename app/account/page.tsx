@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import type { User } from '@supabase/supabase-js'
+import PetsPanel from '@/components/PetsPanel'
 
 type Panel = 'overview' | 'pets' | 'orders' | 'favorites' | 'listings' | 'bookings' | 'academy' | 'settings'
 
@@ -266,12 +267,9 @@ export default function AccountPage() {
           </div>
 
           {/* PETS */}
-          <div className={`acc-panel ${activePanel === 'pets' ? 'active' : ''}`}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-              <h2 style={{ fontFamily: 'Fredoka, sans-serif', fontSize: 24, color: G.greenDark }}>Mijn Huisdieren 🐾</h2>
-            </div>
-            <EmptyState icon="🐾" title="Nog geen huisdieren" desc="Voeg je hond, kat of ander huisdier toe om vaccinaties bij te houden, afspraken te boeken en persoonlijke producttips te ontvangen." cta="+ Huisdier Toevoegen" />
-          </div>
+<div className={`acc-panel ${activePanel === 'pets' ? 'active' : ''}`}>
+  <PetsPanel userId={user!.id} />
+</div>
 
           {/* ORDERS */}
           <div className={`acc-panel ${activePanel === 'orders' ? 'active' : ''}`}>
