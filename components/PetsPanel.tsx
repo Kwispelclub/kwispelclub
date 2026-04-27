@@ -465,10 +465,34 @@ export default function PetsPanel({ userId }: { userId: string }) {
 const savePet = async () => {
   if (!form.name || !form.species) return
   setSaving(true)
-  const { data, error } = await supabase.from('pets').insert({ ...form, owner_id: userId })
-  console.log('INSERT RESULT:', data, error)  // ← tijdelijk toevoegen
+
+  const payload = {
+    owner_id: userId,
+    name: form.name,
+    species: form.species,
+    breed: form.breed || null,
+    geboortedatum: form.geboortedatum || null,
+    gender: form.gender || null,
+    weight_kg: form.weight_kg ? parseFloat(String(form.weight_kg)) : null,
+    chipped: form.chipped || false,
+    chip_number: form.chip_number || null,
+    sterilised: form.sterilised || false,
+    insurance: form.insurance || null,
+    allergies: form.allergies || null,
+    notes: form.notes || null,
+    avatar_url: form.avatar_url || null,
+  }
+
+  if (view === 'add') {
+    const { data, error } = await supabase.from('pets').insert(payload)
+    console.log('INSERT:', data, error)
+  } else {
+    const { data, error } = await supabase.from('pets').update(payload).eq('id', selectedPet!.id)
+    console.log('UPDATE:', data, error)
+  }
+
   await loadPets()
   setForm({})
   setView('list')
   setSaving(false)
-}}
+}
