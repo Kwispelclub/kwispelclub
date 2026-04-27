@@ -113,7 +113,7 @@ export default function Navbar() {
               {user ? (
                 <>
                   <a href="/account" className="kw-mob-acc-btn" onClick={() => setMobileOpen(false)}>👤 Mijn Account</a>
-                  <a href="/auth/signout" className="kw-mob-out-btn" onClick={() => setMobileOpen(false)}>Uitloggen</a>
+                  <a href="/auth/si<button className="kw-mob-out-btn" onClick={async () => { await supabase.auth.signOut(); setMobileOpen(false); window.location.href = '/' }}>Uitloggen</button></div>gnout" className="kw-mob-out-btn" onClick={() => setMobileOpen(false)}>Uitloggen</a>
                 </>
               ) : (
                 <a href="/auth" className="kw-mob-acc-btn" onClick={() => setMobileOpen(false)}>→ Inloggen / Registreren</a>
