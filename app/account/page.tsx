@@ -253,7 +253,7 @@ export default function AccountPage() {
         .footer-inner a{color:white;text-decoration:none;margin:0 12px}
         .mob-nav-trigger{display:none}
         @media(max-width:900px){
-          .account-layout{grid-template-columns:1fr;padding:16px}
+          .account-layout{display:block;padding:16px}
           .account-sidebar{position:static}
           .profile-card{display:none}
           .sidebar-nav{display:none}
