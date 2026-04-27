@@ -36,6 +36,7 @@ const SPECIES = [
   { value: 'konijn', label: 'Konijn' },
   { value: 'overig', label: 'Overig' },
 ]
+
 const G = {
   greenDark: '#2D5A27', greenMain: '#4A7C3F', greenPale: '#E8F0E4',
   orangeMain: '#E8913A', orangePale: '#FFF3E0', cream: '#FFF9F0',
@@ -55,8 +56,7 @@ function age(geboortedatum?: string) {
 function daysUntil(date?: string) {
   if (!date) return null
   const diff = new Date(date).getTime() - Date.now()
-  const days = Math.ceil(diff / (1000 * 60 * 60 * 24))
-  return days
+  return Math.ceil(diff / (1000 * 60 * 60 * 24))
 }
 
 export default function PetsPanel({ userId }: { userId: string }) {
@@ -69,8 +69,6 @@ export default function PetsPanel({ userId }: { userId: string }) {
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
-
-  // Form state
   const [form, setForm] = useState<Partial<Pet>>({})
   const [vaxForm, setVaxForm] = useState<Partial<Vaccination>>({})
 
@@ -127,10 +125,28 @@ export default function PetsPanel({ userId }: { userId: string }) {
   const savePet = async () => {
     if (!form.name || !form.species) return
     setSaving(true)
+    const payload = {
+      owner_id: userId,
+      name: form.name,
+      species: form.species,
+      breed: form.breed || null,
+      geboortedatum: form.geboortedatum || null,
+      gender: form.gender || null,
+      weight_kg: form.weight_kg ? parseFloat(String(form.weight_kg)) : null,
+      chipped: form.chipped || false,
+      chip_number: form.chip_number || null,
+      sterilised: form.sterilised || false,
+      insurance: form.insurance || null,
+      allergies: form.allergies || null,
+      notes: form.notes || null,
+      avatar_url: form.avatar_url || null,
+    }
     if (view === 'add') {
-      await supabase.from('pets').insert({ ...form, owner_id: userId })
+      const { error } = await supabase.from('pets').insert(payload)
+      if (error) { console.error('INSERT ERROR:', error); setSaving(false); return }
     } else {
-      await supabase.from('pets').update(form).eq('id', selectedPet!.id)
+      const { error } = await supabase.from('pets').update(payload).eq('id', selectedPet!.id)
+      if (error) { console.error('UPDATE ERROR:', error); setSaving(false); return }
     }
     await loadPets()
     setForm({})
@@ -182,7 +198,6 @@ export default function PetsPanel({ userId }: { userId: string }) {
     </div>
   )
 
-  // STYLES
   const card = { background: G.white, borderRadius: 16, padding: 20, boxShadow: '0 2px 8px rgba(0,0,0,.06)', marginBottom: 12 }
   const btn = (bg: string, color = 'white') => ({ display: 'inline-flex' as const, alignItems: 'center' as const, gap: 6, padding: '10px 20px', borderRadius: 50, fontFamily: 'Fredoka, sans-serif', fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer' as const, background: bg, color })
   const backBtn = { background: 'none', border: 'none', cursor: 'pointer' as const, color: G.greenMain, fontWeight: 700, fontSize: 14, fontFamily: 'Nunito, sans-serif', padding: 0, marginBottom: 20, display: 'flex' as const, alignItems: 'center' as const, gap: 6 }
@@ -196,11 +211,9 @@ export default function PetsPanel({ userId }: { userId: string }) {
       <h2 style={{ fontFamily: 'Fredoka, sans-serif', fontSize: 22, color: G.greenDark, marginBottom: 24 }}>
         {view === 'add' ? '🐾 Huisdier Toevoegen' : `✏️ ${selectedPet?.name} Bewerken`}
       </h2>
-
-      {/* Avatar */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
         <div onClick={() => fileRef.current?.click()} style={{ width: 80, height: 80, borderRadius: '50%', background: G.greenPale, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36, cursor: 'pointer', border: `3px dashed ${G.greenMain}`, overflow: 'hidden', flexShrink: 0 }}>
-          {form.avatar_url ? <img src={form.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (form.species ? speciesEmoji(form.species) : '📷')}
+          {form.avatar_url ? <img src={form.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="avatar" /> : (form.species ? speciesEmoji(form.species) : '📷')}
         </div>
         <div>
           <button style={btn(G.greenPale, G.greenDark)} onClick={() => fileRef.current?.click()}>
@@ -210,7 +223,6 @@ export default function PetsPanel({ userId }: { userId: string }) {
         </div>
         <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAvatarUpload} />
       </div>
-
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
         <div>
           {inp('Naam *', 'name', 'text', 'Bijv. Max')}
@@ -245,13 +257,11 @@ export default function PetsPanel({ userId }: { userId: string }) {
           </div>
         </div>
       </div>
-
       <div style={{ marginBottom: 14 }}>
         <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: G.textMid, marginBottom: 5 }}>Extra notities</label>
         <textarea value={form.notes || ''} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Bijzonderheden, medicatie, dieet..."
           style={{ width: '100%', padding: '10px 14px', border: `2px solid ${G.creamDark}`, borderRadius: 10, fontFamily: 'Nunito, sans-serif', fontSize: 14, outline: 'none', background: G.white, minHeight: 80, resize: 'vertical' }} />
       </div>
-
       <div style={{ display: 'flex', gap: 10 }}>
         <button style={btn(G.greenMain)} onClick={savePet} disabled={saving}>
           {saving ? '⏳ Opslaan...' : '✓ Opslaan'}
@@ -311,15 +321,12 @@ export default function PetsPanel({ userId }: { userId: string }) {
   if (view === 'detail' && selectedPet) {
     const p = selectedPet
     const upcomingVax = vaccinations.filter(v => v.volgende_datum && daysUntil(v.volgende_datum)! <= 60 && daysUntil(v.volgende_datum)! >= 0)
-
     return (
       <div>
         <button style={backBtn} onClick={() => setView('list')}>← Terug naar overzicht</button>
-
-        {/* Pet header */}
-        <div style={{ background: `linear-gradient(135deg, ${G.greenDark}, ${G.greenMain})`, borderRadius: 20, padding: 28, color: 'white', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 20 }}>
+        <div style={{ background: `linear-gradient(135deg, ${G.greenDark}, ${G.greenMain})`, borderRadius: 20, padding: 28, color: 'white', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
           <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(255,255,255,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40, overflow: 'hidden', flexShrink: 0 }}>
-            {p.avatar_url ? <img src={p.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : speciesEmoji(p.species)}
+            {p.avatar_url ? <img src={p.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={p.name} /> : speciesEmoji(p.species)}
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ fontFamily: 'Fredoka, sans-serif', fontSize: 26, fontWeight: 700 }}>{p.name}</div>
@@ -331,8 +338,6 @@ export default function PetsPanel({ userId }: { userId: string }) {
             <button style={btn('rgba(232,78,78,.3)', 'white')} onClick={() => deletePet(p.id)}>🗑️</button>
           </div>
         </div>
-
-        {/* Upcoming vaccinations warning */}
         {upcomingVax.length > 0 && (
           <div style={{ background: G.orangePale, border: `2px solid ${G.orangeMain}`, borderRadius: 14, padding: '14px 18px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ fontSize: 20 }}>⚠️</span>
@@ -346,66 +351,54 @@ export default function PetsPanel({ userId }: { userId: string }) {
             </div>
           </div>
         )}
-
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
-          {/* Info card */}
           <div style={card}>
             <h3 style={{ fontFamily: 'Fredoka, sans-serif', fontSize: 16, color: G.greenDark, marginBottom: 14 }}>📋 Gegevens</h3>
-            {[
+            {([
               ['Gewicht', p.weight_kg ? `${p.weight_kg} kg` : null],
               ['Chipnummer', p.chip_number],
               ['Gechipped', p.chipped !== undefined ? (p.chipped ? '✅ Ja' : '❌ Nee') : null],
               ['Gesteriliseerd', p.sterilised !== undefined ? (p.sterilised ? '✅ Ja' : '❌ Nee') : null],
               ['Verzekering', p.insurance],
               ['Allergieën', p.allergies],
-            ].filter(([, v]) => v).map(([label, value]) => (
-              <div key={label as string} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: `1px solid ${G.creamDark}`, fontSize: 13 }}>
+            ] as [string, string | null][]).filter(([, v]) => v).map(([label, value]) => (
+              <div key={label} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: `1px solid ${G.creamDark}`, fontSize: 13 }}>
                 <span style={{ color: G.textLight, fontWeight: 600 }}>{label}</span>
                 <span style={{ fontWeight: 700, color: G.textDark }}>{value}</span>
               </div>
             ))}
-            {p.notes && (
-              <div style={{ marginTop: 12, padding: 12, background: G.cream, borderRadius: 8, fontSize: 13, color: G.textMid }}>
-                📝 {p.notes}
-              </div>
-            )}
+            {p.notes && <div style={{ marginTop: 12, padding: 12, background: G.cream, borderRadius: 8, fontSize: 13, color: G.textMid }}>📝 {p.notes}</div>}
           </div>
-
-          {/* Vaccinations */}
           <div style={card}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
               <h3 style={{ fontFamily: 'Fredoka, sans-serif', fontSize: 16, color: G.greenDark }}>💉 Vaccinaties</h3>
               <button style={btn(G.greenPale, G.greenDark)} onClick={() => setView('addvax')}>+ Toevoegen</button>
             </div>
             {vaccinations.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '20px 0', color: G.textLight, fontSize: 13 }}>
-                Nog geen vaccinaties geregistreerd
-              </div>
-            ) : (
-              vaccinations.map(v => {
-                const days = daysUntil(v.volgende_datum)
-                const urgent = days !== null && days <= 30 && days >= 0
-                const overdue = days !== null && days < 0
-                return (
-                  <div key={v.id} style={{ padding: '10px 0', borderBottom: `1px solid ${G.creamDark}`, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 700, fontSize: 14 }}>{v.naam}</div>
-                      <div style={{ fontSize: 12, color: G.textLight }}>
-                        Gegeven: {new Date(v.datum).toLocaleDateString('nl-BE')}
-                        {v.dierenarts && ` · ${v.dierenarts}`}
-                      </div>
-                      {v.volgende_datum && (
-                        <div style={{ fontSize: 12, marginTop: 2, fontWeight: 600, color: overdue ? G.red : urgent ? G.orangeMain : G.greenMain }}>
-                          {overdue ? '⚠️ Verlopen! ' : urgent ? '⏰ Binnenkort: ' : '📅 Volgende: '}
-                          {new Date(v.volgende_datum).toLocaleDateString('nl-BE')}
-                        </div>
-                      )}
+              <div style={{ textAlign: 'center', padding: '20px 0', color: G.textLight, fontSize: 13 }}>Nog geen vaccinaties geregistreerd</div>
+            ) : vaccinations.map(v => {
+              const days = daysUntil(v.volgende_datum)
+              const urgent = days !== null && days <= 30 && days >= 0
+              const overdue = days !== null && days < 0
+              return (
+                <div key={v.id} style={{ padding: '10px 0', borderBottom: `1px solid ${G.creamDark}`, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 700, fontSize: 14 }}>{v.naam}</div>
+                    <div style={{ fontSize: 12, color: G.textLight }}>
+                      Gegeven: {new Date(v.datum).toLocaleDateString('nl-BE')}
+                      {v.dierenarts && ` · ${v.dierenarts}`}
                     </div>
-                    <button onClick={() => deleteVax(v.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: G.textLight, fontSize: 16 }}>🗑️</button>
+                    {v.volgende_datum && (
+                      <div style={{ fontSize: 12, marginTop: 2, fontWeight: 600, color: overdue ? G.red : urgent ? G.orangeMain : G.greenMain }}>
+                        {overdue ? '⚠️ Verlopen! ' : urgent ? '⏰ Binnenkort: ' : '📅 Volgende: '}
+                        {new Date(v.volgende_datum).toLocaleDateString('nl-BE')}
+                      </div>
+                    )}
                   </div>
-                )
-              })
-            )}
+                  <button onClick={() => deleteVax(v.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: G.textLight, fontSize: 16 }}>🗑️</button>
+                </div>
+              )
+            })}
           </div>
         </div>
       </div>
@@ -419,7 +412,6 @@ export default function PetsPanel({ userId }: { userId: string }) {
         <h2 style={{ fontFamily: 'Fredoka, sans-serif', fontSize: 24, color: G.greenDark }}>Mijn Huisdieren 🐾</h2>
         <button style={btn(G.greenMain)} onClick={() => { setForm({}); setView('add') }}>+ Huisdier Toevoegen</button>
       </div>
-
       {pets.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '52px 20px' }}>
           <div style={{ fontSize: 64, marginBottom: 16, opacity: .3 }}>🐾</div>
@@ -431,26 +423,21 @@ export default function PetsPanel({ userId }: { userId: string }) {
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
-          {pets.map(p => {
-            const upcomingVax = false // simplified for list view
-            return (
-              <div key={p.id} onClick={() => selectPet(p)}
-                style={{ background: G.white, borderRadius: 20, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,.06)', cursor: 'pointer', transition: 'all .2s', border: `2px solid transparent` }}
-                onMouseOver={e => (e.currentTarget.style.borderColor = G.greenPale)}
-                onMouseOut={e => (e.currentTarget.style.borderColor = 'transparent')}>
-                <div style={{ height: 120, background: G.greenPale, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 56, overflow: 'hidden' }}>
-                  {p.avatar_url ? <img src={p.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : speciesEmoji(p.species)}
-                </div>
-                <div style={{ padding: 16 }}>
-                  <div style={{ fontFamily: 'Fredoka, sans-serif', fontSize: 18, fontWeight: 700, marginBottom: 4 }}>{p.name}</div>
-                  <div style={{ fontSize: 12, color: G.textLight }}>{p.species}{p.breed ? ` · ${p.breed}` : ''}</div>
-                  {p.geboortedatum && <div style={{ fontSize: 12, color: G.textMid, marginTop: 4 }}>🎂 {age(p.geboortedatum)}</div>}
-                </div>
+          {pets.map(p => (
+            <div key={p.id} onClick={() => selectPet(p)}
+              style={{ background: G.white, borderRadius: 20, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,.06)', cursor: 'pointer', transition: 'all .2s', border: '2px solid transparent' }}
+              onMouseOver={e => (e.currentTarget.style.borderColor = G.greenPale)}
+              onMouseOut={e => (e.currentTarget.style.borderColor = 'transparent')}>
+              <div style={{ height: 120, background: G.greenPale, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 56, overflow: 'hidden' }}>
+                {p.avatar_url ? <img src={p.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={p.name} /> : speciesEmoji(p.species)}
               </div>
-            )
-          })}
-
-          {/* Add new card */}
+              <div style={{ padding: 16 }}>
+                <div style={{ fontFamily: 'Fredoka, sans-serif', fontSize: 18, fontWeight: 700, marginBottom: 4 }}>{p.name}</div>
+                <div style={{ fontSize: 12, color: G.textLight }}>{p.species}{p.breed ? ` · ${p.breed}` : ''}</div>
+                {p.geboortedatum && <div style={{ fontSize: 12, color: G.textMid, marginTop: 4 }}>🎂 {age(p.geboortedatum)}</div>}
+              </div>
+            </div>
+          ))}
           <div onClick={() => { setForm({}); setView('add') }}
             style={{ background: G.white, borderRadius: 20, border: `2px dashed ${G.creamDark}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 180, cursor: 'pointer', transition: 'all .2s' }}
             onMouseOver={e => { (e.currentTarget.style.borderColor = G.greenMain); (e.currentTarget.style.background = G.greenPale) }}
@@ -462,37 +449,4 @@ export default function PetsPanel({ userId }: { userId: string }) {
       )}
     </div>
   )
-const savePet = async () => {
-  if (!form.name || !form.species) return
-  setSaving(true)
-
-  const payload = {
-    owner_id: userId,
-    name: form.name,
-    species: form.species,
-    breed: form.breed || null,
-    geboortedatum: form.geboortedatum || null,
-    gender: form.gender || null,
-    weight_kg: form.weight_kg ? parseFloat(String(form.weight_kg)) : null,
-    chipped: form.chipped || false,
-    chip_number: form.chip_number || null,
-    sterilised: form.sterilised || false,
-    insurance: form.insurance || null,
-    allergies: form.allergies || null,
-    notes: form.notes || null,
-    avatar_url: form.avatar_url || null,
-  }
-
-  if (view === 'add') {
-    const { data, error } = await supabase.from('pets').insert(payload)
-    console.log('INSERT:', data, error)
-  } else {
-    const { data, error } = await supabase.from('pets').update(payload).eq('id', selectedPet!.id)
-    console.log('UPDATE:', data, error)
-  }
-
-  await loadPets()
-  setForm({})
-  setView('list')
-  setSaving(false)
 }
