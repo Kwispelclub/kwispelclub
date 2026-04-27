@@ -34,6 +34,7 @@ export default function AccountPage() {
   const [scrolled, setScrolled] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saveMsg, setSaveMsg] = useState('Opslaan')
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
   // Listings state
   const [eigenListings, setEigenListings] = useState<any[]>([])
@@ -250,12 +251,21 @@ export default function AccountPage() {
         footer{background:var(--green-dark);color:white;margin-top:48px}
         .footer-inner{max-width:1320px;margin:0 auto;padding:28px clamp(16px,4vw,48px);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:13px;opacity:.5}
         .footer-inner a{color:white;text-decoration:none;margin:0 12px}
+        .mob-nav-trigger{display:none}
         @media(max-width:900px){
           .account-layout{grid-template-columns:1fr}
-          .account-sidebar{flex-direction:row;overflow-x:auto;gap:4px;padding-bottom:8px}
+          .account-sidebar{position:relative}
           .profile-card{display:none}
-          .sidebar-nav{display:flex;gap:4px}
-          .sidebar-nav a{white-space:nowrap;padding:10px 14px;font-size:13px}
+          .sidebar-nav{display:none}
+          .mob-nav-trigger{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--white);border-radius:14px;box-shadow:0 2px 8px rgba(0,0,0,.06);cursor:pointer;border:none;width:100%;font-family:'Nunito',sans-serif;font-size:15px;font-weight:700;color:var(--text-dark);margin-bottom:16px}
+          .mob-nav-trigger .trigger-left{display:flex;align-items:center;gap:10px;font-size:15px}
+          .mob-nav-trigger .chevron{font-size:12px;transition:transform .2s;color:var(--text-light)}
+          .mob-nav-trigger .chevron.open{transform:rotate(180deg)}
+          .mob-dropdown{position:absolute;top:58px;left:0;right:0;background:var(--white);border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.12);z-index:50;overflow:hidden;border:1px solid var(--cream-dark)}
+          .mob-dropdown a{display:flex;align-items:center;gap:12px;padding:14px 18px;font-size:14px;font-weight:600;color:var(--text-mid);text-decoration:none;border-bottom:1px solid var(--cream-dark);cursor:pointer}
+          .mob-dropdown a:last-child{border-bottom:none}
+          .mob-dropdown a.active{background:var(--green-pale);color:var(--green-dark)}
+          .mob-dropdown a:hover{background:var(--cream)}
           .settings-grid{grid-template-columns:1fr}
           .stats-grid{grid-template-columns:repeat(2,1fr)}
         }
@@ -272,6 +282,34 @@ export default function AccountPage() {
             <div className="profile-role">{roleLabel}</div>
             {memberSince && <div className="profile-since">Lid sinds {memberSince}</div>}
           </div>
+
+          {/* Mobile dropdown trigger */}
+          <button className="mob-nav-trigger" onClick={() => setMobileNavOpen(!mobileNavOpen)}>
+            <span className="trigger-left">
+              <span>{navItems.find(i => i.id === activePanel)?.icon}</span>
+              <span>{navItems.find(i => i.id === activePanel)?.label}</span>
+            </span>
+            <span className={`chevron ${mobileNavOpen ? 'open' : ''}`}>▼</span>
+          </button>
+
+          {/* Mobile dropdown menu */}
+          {mobileNavOpen && (
+            <div className="mob-dropdown">
+              {navItems.map(item => (
+                <a key={item.id} className={activePanel === item.id ? 'active' : ''} onClick={() => { setActivePanel(item.id); setMobileNavOpen(false) }}>
+                  <span>{item.icon}</span>
+                  {item.label}
+                  {item.id === 'listings' && actieveListings.length > 0 && (
+                    <span style={{ marginLeft: 'auto', background: 'var(--green-main)', color: 'white', borderRadius: 50, padding: '1px 8px', fontSize: 11, fontWeight: 800 }}>
+                      {actieveListings.length}
+                    </span>
+                  )}
+                </a>
+              ))}
+            </div>
+          )}
+
+          {/* Desktop sidebar nav */}
           <nav className="sidebar-nav">
             {navItems.map(item => (
               <a key={item.id} className={activePanel === item.id ? 'active' : ''} onClick={() => setActivePanel(item.id)}>
