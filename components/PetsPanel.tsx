@@ -240,10 +240,11 @@ export default function PetsPanel({ userId }: { userId: string }) {
             <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: G.textMid, marginBottom: 5 }}>Geslacht</label>
             <select value={form.gender || ''} onChange={e => setForm(f => ({ ...f, gender: e.target.value }))}
               style={{ width: '100%', padding: '10px 14px', border: `2px solid ${G.creamDark}`, borderRadius: 10, fontFamily: 'Nunito, sans-serif', fontSize: 14, outline: 'none', background: G.white }}>
-              <option value="">Onbekend</option>
-              <option value="Mannelijk">Mannelijk</option>
-              <option value="Vrouwelijk">Vrouwelijk</option>
-            </select>
+              <option value="onbekend">Onbekend</option>
+<option value="reu">Reu (mannelijke hond)</option>
+<option value="teef">Teef (vrouwelijke hond)</option>
+<option value="kater">Kater (mannelijke kat)</option>
+<option value="poes">Poes (vrouwelijke kat)</option></select>
           </div>
         </div>
         <div>
