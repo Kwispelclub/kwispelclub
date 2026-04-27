@@ -462,4 +462,13 @@ export default function PetsPanel({ userId }: { userId: string }) {
       )}
     </div>
   )
-}
+const savePet = async () => {
+  if (!form.name || !form.species) return
+  setSaving(true)
+  const { data, error } = await supabase.from('pets').insert({ ...form, owner_id: userId })
+  console.log('INSERT RESULT:', data, error)  // ← tijdelijk toevoegen
+  await loadPets()
+  setForm({})
+  setView('list')
+  setSaving(false)
+}}
