@@ -22,7 +22,6 @@ export default function TweedeHandsPage() {
   const [loadingListings, setLoadingListings] = useState(true)
   const [showDemo, setShowDemo] = useState(false)
 
-  // Sell form
   const [sellTitel, setSellTitel] = useState('')
   const [sellDesc, setSellDesc] = useState('')
   const [sellCat, setSellCat] = useState('bench')
@@ -48,7 +47,6 @@ export default function TweedeHandsPage() {
       if (session?.user) loadEigenListings(session.user.id)
     })
     loadListings()
-    // Check admin settings voor demo
     fetch('/api/admin-settings').then(r => r.json()).then(d => {
       setShowDemo(d.settings?.demo_2dehands !== false)
     })
@@ -73,15 +71,33 @@ export default function TweedeHandsPage() {
 
   useEffect(() => { loadListings() }, [cat, search])
 
+  // Foto verkleinen voor upload
+  const resizeImage = (file: File, maxPx = 1000, quality = 0.82): Promise<Blob> =>
+    new Promise((resolve) => {
+      const img = new Image()
+      const url = URL.createObjectURL(file)
+      img.onload = () => {
+        const scale = Math.min(1, maxPx / Math.max(img.width, img.height))
+        const w = Math.round(img.width * scale)
+        const h = Math.round(img.height * scale)
+        const canvas = document.createElement('canvas')
+        canvas.width = w; canvas.height = h
+        canvas.getContext('2d')!.drawImage(img, 0, 0, w, h)
+        URL.revokeObjectURL(url)
+        canvas.toBlob(blob => resolve(blob!), 'image/jpeg', quality)
+      }
+      img.src = url
+    })
+
   const handleFotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files || !user) return
     setUploading(true)
     const urls: string[] = []
     for (const file of Array.from(files).slice(0, 4)) {
-      const ext = file.name.split('.').pop()
-      const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-      const { data, error } = await supabase.storage.from('listings').upload(path, file)
+      const blob = await resizeImage(file)
+      const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`
+      const { data, error } = await supabase.storage.from('listings').upload(path, blob, { contentType: 'image/jpeg' })
       if (!error && data) {
         const { data: url } = supabase.storage.from('listings').getPublicUrl(data.path)
         urls.push(url.publicUrl)
@@ -117,7 +133,6 @@ export default function TweedeHandsPage() {
     const data = await res.json()
     if (data.error) { setSellErr(data.error); setSellLoading(false); return }
 
-    // Bevestigingsmail
     await fetch('/api/send-email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -149,11 +164,7 @@ export default function TweedeHandsPage() {
     loadListings()
   }
 
-  // Toon echte listings + demo als er geen echte zijn
-  const displayListings = listings.length > 0
-    ? listings
-    : (showDemo ? DEMO_LISTINGS : [])
-
+  const displayListings = listings.length > 0 ? listings : (showDemo ? DEMO_LISTINGS : [])
   const filtered = displayListings.filter(l =>
     (cat === 'all' || l.categorie === cat) &&
     (!search || l.titel?.toLowerCase().includes(search.toLowerCase()))
@@ -173,13 +184,6 @@ export default function TweedeHandsPage() {
     .demo-notice{background:var(--orange-pale);border:2px dashed var(--orange-main);border-radius:12px;padding:14px 20px;text-align:center;font-size:13px;font-weight:600;color:var(--brown);margin-bottom:24px}.demo-notice span{color:var(--orange-main)}
     .eigen-listings{background:var(--green-pale);border-radius:20px;padding:24px;margin-bottom:24px}
     .eigen-listings h3{font-size:17px;color:var(--green-dark);margin-bottom:14px}
-    .eigen-item{display:flex;align-items:center;gap:14px;padding:12px;background:white;border-radius:12px;margin-bottom:8px}
-    .eigen-img{width:52px;height:52px;border-radius:10px;object-fit:cover;background:var(--cream-dark);flex-shrink:0}
-    .eigen-info{flex:1}.eigen-titel{font-weight:700;font-size:14px}.eigen-meta{font-size:12px;color:var(--text-light)}
-    .eigen-prijs{font-family:'Fredoka',sans-serif;font-size:16px;font-weight:700;color:var(--teal-dark)}
-    .status-badge{display:inline-flex;padding:3px 10px;border-radius:50px;font-size:11px;font-weight:700}
-    .sb-actief{background:var(--green-pale);color:var(--green-dark)}.sb-gereserveerd{background:var(--orange-pale);color:var(--orange-main)}.sb-verkocht{background:var(--teal-pale);color:var(--teal)}
-    .eigen-actions{display:flex;gap:6px;flex-wrap:wrap}
     .eigen-btn{padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;border:none;cursor:pointer;font-family:'Nunito',sans-serif;transition:all .2s}
     .eb-verkocht{background:var(--teal-pale);color:var(--teal)}.eb-verwijder{background:#FFF0F0;color:var(--red)}
     .filters-bar{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:28px;align-items:center}
@@ -243,7 +247,6 @@ export default function TweedeHandsPage() {
         </div>
       </section>
 
-      {/* LISTINGS */}
       <section className="section" id="listings">
         <div className="section-header">
           <h2>Huidige Advertenties ♻️</h2>
@@ -320,7 +323,6 @@ export default function TweedeHandsPage() {
         )}
       </section>
 
-      {/* SELL SECTION */}
       <section className="section" id="sell">
         <div className="sell-section">
           <div>
@@ -354,7 +356,6 @@ export default function TweedeHandsPage() {
                 <h3>Nieuwe Advertentie</h3>
                 <div className="form-sub">Vul alle velden in om je product aan te bieden.</div>
 
-                {/* Slots indicator */}
                 <div className="slots-info">
                   <span>Jouw slots:</span>
                   <div style={{ display: 'flex', gap: 6 }}>
@@ -365,7 +366,7 @@ export default function TweedeHandsPage() {
                 </div>
 
                 {eigenListings.length > 0 && (
-                  <div className="eigen-listings" style={{ background: 'rgba(255,255,255,.08)', borderRadius: 12, padding: 16, marginBottom: 16 }}>
+                  <div style={{ background: 'rgba(255,255,255,.08)', borderRadius: 12, padding: 16, marginBottom: 16 }}>
                     <h3 style={{ color: 'white', fontSize: 14, marginBottom: 10 }}>Jouw advertenties:</h3>
                     {eigenListings.map(l => (
                       <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,.1)', fontSize: 13, color: 'white' }}>
@@ -417,16 +418,15 @@ export default function TweedeHandsPage() {
                   </div>
                 </div>
 
-                {/* Foto upload */}
                 <div className="fg">
-                  <label>Foto's (max. 4)</label>
+                  <label>Foto's (max. 4) — automatisch verkleind</label>
                   {sellFotos.length > 0 && (
                     <div className="foto-preview">
                       {sellFotos.map((url, i) => <img key={i} src={url} className="foto-thumb" alt={`foto ${i+1}`} />)}
                     </div>
                   )}
                   <div className="foto-upload" onClick={() => fileRef.current?.click()}>
-                    {uploading ? '⏳ Uploaden...' : '📸 Klik om foto\'s toe te voegen'}
+                    {uploading ? '⏳ Uploaden & verkleinen...' : '📸 Klik om foto\'s toe te voegen'}
                   </div>
                   <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleFotoUpload} />
                 </div>
