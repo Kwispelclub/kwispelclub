@@ -1,14 +1,23 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
+import { createClient } from '@/lib/supabase'
 
 export default function OverOnsPage() {
   const obsRef = useRef<IntersectionObserver | null>(null)
+  const supabase = useMemo(() => createClient(), [])
+  const [teamleden, setTeamleden] = useState<any[]>([])
+
   useEffect(() => {
     obsRef.current = new IntersectionObserver(entries => {
       entries.forEach((e, i) => { if (e.isIntersecting) { setTimeout(() => e.target.classList.add('visible'), i * 60); obsRef.current?.unobserve(e.target) } })
     }, { threshold: 0.08 })
     document.querySelectorAll('.fade-up').forEach(el => obsRef.current?.observe(el))
+
+    // Laad team
+    supabase.from('team_members').select('*').eq('actief', true).order('volgorde').then(({ data }) => {
+      setTeamleden(data || [])
+    })
   }, [])
 
   const CSS = `
@@ -18,7 +27,12 @@ export default function OverOnsPage() {
     .section{max-width:1320px;margin:0 auto;padding:72px clamp(16px,4vw,48px)}.section-header{text-align:center;margin-bottom:48px}.section-header h2{font-size:clamp(28px,3.5vw,42px);color:var(--green-dark);margin-bottom:12px}.section-header p{color:var(--text-mid);font-size:16px;max-width:560px;margin:0 auto;line-height:1.6}
     .story-grid{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}.story-text h2{font-size:32px;color:var(--green-dark);margin-bottom:16px}.story-text p{font-size:16px;color:var(--text-mid);line-height:1.75;margin-bottom:14px}.story-img{border-radius:28px;overflow:hidden;height:400px}.story-img img{width:100%;height:100%;object-fit:cover}
     .values-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}.val-card{background:var(--white);border-radius:20px;padding:36px 28px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06);transition:all .3s;border:2px solid transparent}.val-card:hover{transform:translateY(-6px);box-shadow:0 8px 40px rgba(0,0,0,.12);border-color:var(--green-pale)}.val-icon{font-size:48px;margin-bottom:16px}.val-card h3{font-size:18px;color:var(--green-dark);margin-bottom:10px}.val-card p{font-size:14px;color:var(--text-mid);line-height:1.6}
-    .team-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}.team-card{background:var(--white);border-radius:20px;padding:32px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06);transition:all .3s}.team-card:hover{transform:translateY(-4px)}.team-av{width:90px;height:90px;border-radius:50%;margin:0 auto 16px;overflow:hidden;border:4px solid var(--green-pale)}.team-av img{width:100%;height:100%;object-fit:cover}.team-name{font-size:18px;font-weight:700;margin-bottom:4px}.team-role{font-size:13px;color:var(--orange-main);font-weight:700;margin-bottom:10px}.team-bio{font-size:13px;color:var(--text-mid);line-height:1.6}
+    .team-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+    .team-card{background:var(--white);border-radius:20px;padding:32px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06);transition:all .3s}.team-card:hover{transform:translateY(-4px)}
+    .team-card.placeholder{opacity:.5}
+    .team-av{width:90px;height:90px;border-radius:50%;margin:0 auto 16px;overflow:hidden;border:4px solid var(--green-pale);background:var(--cream);display:flex;align-items:center;justify-content:center;font-size:36px}
+    .team-av img{width:100%;height:100%;object-fit:cover}
+    .team-name{font-size:18px;font-weight:700;margin-bottom:4px}.team-role{font-size:13px;color:var(--orange-main);font-weight:700;margin-bottom:10px}.team-bio{font-size:13px;color:var(--text-mid);line-height:1.6}
     .timeline{max-width:640px;margin:0 auto;position:relative}.timeline::before{content:'';position:absolute;left:24px;top:0;bottom:0;width:3px;background:var(--green-pale)}.tl-item{display:flex;gap:20px;margin-bottom:32px;position:relative}.tl-dot{width:50px;height:50px;border-radius:50%;background:var(--green-main);color:white;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;z-index:1;box-shadow:0 2px 8px rgba(74,124,63,.3)}.tl-content{background:var(--white);border-radius:20px;padding:20px;flex:1;box-shadow:0 2px 8px rgba(0,0,0,.06)}.tl-date{font-size:12px;color:var(--text-light);font-weight:700;margin-bottom:6px}.tl-content h4{font-size:16px;margin-bottom:4px}.tl-content p{font-size:14px;color:var(--text-mid);line-height:1.5}
     .cta-card{background:linear-gradient(135deg,var(--green-dark),var(--green-main));border-radius:28px;padding:48px;text-align:center;color:white}.cta-card h2{font-size:28px;margin-bottom:12px;color:white}.cta-card p{opacity:.82;font-size:16px;margin-bottom:24px;max-width:460px;margin-left:auto;margin-right:auto}.cta-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
     .btn{display:inline-flex;align-items:center;gap:8px;padding:15px 30px;border-radius:50px;font-family:'Fredoka',sans-serif;font-size:15px;font-weight:600;text-decoration:none;border:none;cursor:pointer;transition:all .3s}.btn-primary{background:var(--orange-main);color:white;box-shadow:0 4px 20px rgba(232,145,58,.4)}.btn-primary:hover{background:#D4812E;transform:translateY(-3px)}.btn-white{background:rgba(255,255,255,.15);color:white;border:1.5px solid rgba(255,255,255,.3)}.btn-white:hover{background:rgba(255,255,255,.25)}
@@ -72,19 +86,17 @@ export default function OverOnsPage() {
       <section className="section" style={{ paddingTop: 0 }}>
         <div className="section-header fade-up"><h2>Ons Team 👥</h2><p>De mensen achter Kwispelclub</p></div>
         <div className="team-grid fade-up">
-          <div className="team-card">
-            <div className="team-av"><img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80" alt="Marc" /></div>
-            <div className="team-name">Marc</div>
-            <div className="team-role">Oprichter & Developer</div>
-            <div className="team-bio">Bouwt Kwispelclub van A tot Z. Combinatie van techniek en passie voor huisdieren, vanuit Bree, Limburg.</div>
-          </div>
-          {[['🐕','Jij?','Community Manager','We zoeken iemand die onze community mee wil opbouwen. Interesse? Neem contact op!'],
-            ['🐱','Jij?','Content & Marketing','Op zoek naar iemand met een passie voor huisdieren én content. Freelance of vast.']].map(([emoji,name,role,bio]) => (
-            <div key={role} className="team-card" style={{ opacity: .5 }}>
-              <div className="team-av" style={{ background:'var(--cream)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:36 }}>{emoji}</div>
-              <div className="team-name">{name}</div>
-              <div className="team-role">{role}</div>
-              <div className="team-bio">{bio}</div>
+          {teamleden.map(lid => (
+            <div key={lid.id} className={`team-card ${lid.is_placeholder ? 'placeholder' : ''}`}>
+              <div className="team-av">
+                {lid.foto_url
+                  ? <img src={lid.foto_url} alt={lid.naam} />
+                  : <span>{lid.is_placeholder ? (lid.rol.includes('Community') ? '🐕' : '🐱') : '👤'}</span>
+                }
+              </div>
+              <div className="team-name">{lid.naam}</div>
+              <div className="team-role">{lid.rol}</div>
+              <div className="team-bio">{lid.bio}</div>
             </div>
           ))}
         </div>

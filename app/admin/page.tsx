@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { SettingsPanel } from '@/components/AdminSettingsPanel'
 
-type Tab = 'dashboard' | 'kapsalons' | 'verkopers' | 'academy' | 'gebruikers' | 'listings' | 'bestellingen' | 'instellingen'
+type Tab = 'dashboard' | 'kapsalons' | 'verkopers' | 'academy' | 'gebruikers' | 'listings' | 'bestellingen' | 'team' | 'instellingen'
 
 const ADMIN_PASSWORD = 'Vrijdag@201024+'
 
@@ -24,6 +24,10 @@ export default function AdminPage() {
   const [bestellingen, setBestellingen] = useState<any[]>([])
   const [verkopers, setVerkopers] = useState<any[]>([])
   const [academyTrainers, setAcademyTrainers] = useState<any[]>([])
+  const [teamleden, setTeamleden] = useState<any[]>([])
+  const [editTeamlid, setEditTeamlid] = useState<any>(null)
+  const [teamSaving, setTeamSaving] = useState(false)
+  const [uploadingTeamFoto, setUploadingTeamFoto] = useState(false)
   const [stats, setStats] = useState({ kapsalons: 0, gebruikers: 0, listings: 0, bestellingen: 0, pending: 0, verkopers: 0, verkopersPending: 0 })
   const [dataLoading, setDataLoading] = useState(false)
   const [siteSettings, setSiteSettings] = useState<Record<string, any>>({})
@@ -57,13 +61,14 @@ export default function AdminPage() {
   const loadData = async () => {
     setDataLoading(true)
     try {
-      const [k, u, l, b, v, a, s] = await Promise.all([
+      const [k, u, l, b, v, a, t, s] = await Promise.all([
         supabase.from('kapsalons').select('*').order('created_at', { ascending: false }),
         supabase.from('profiles').select('*').order('created_at', { ascending: false }),
         supabase.from('listings').select('*').order('created_at', { ascending: false }),
         supabase.from('bestellingen').select('*').order('created_at', { ascending: false }),
         supabase.from('verkopers').select('*, profiles(first_name, last_name, email)').order('created_at', { ascending: false }),
         supabase.from('academy_verkopers').select('*, profiles(first_name, last_name, email)').order('created_at', { ascending: false }),
+        supabase.from('team_members').select('*').order('volgorde'),
         fetch('/api/admin-settings').then(r => r.json()),
       ])
       setKapsalons(k.data || [])
@@ -72,6 +77,7 @@ export default function AdminPage() {
       setBestellingen(b.data || [])
       setVerkopers(v.data || [])
       setAcademyTrainers(a.data || [])
+      setTeamleden(t.data || [])
       setSiteSettings(s.settings || {})
       setStats({
         kapsalons: k.data?.length || 0,
@@ -161,6 +167,47 @@ export default function AdminPage() {
   const updateTrainerVolgorde = async (id: string, volgorde: number) => {
     await supabase.from('academy_verkopers').update({ volgorde }).eq('id', id)
     loadData()
+  }
+
+  const saveTeamlid = async () => {
+    if (!editTeamlid) return
+    setTeamSaving(true)
+    if (editTeamlid.id) {
+      await supabase.from('team_members').update({
+        naam: editTeamlid.naam, rol: editTeamlid.rol, bio: editTeamlid.bio,
+        foto_url: editTeamlid.foto_url || null, volgorde: editTeamlid.volgorde || 0,
+        actief: editTeamlid.actief, is_placeholder: editTeamlid.is_placeholder,
+      }).eq('id', editTeamlid.id)
+    } else {
+      await supabase.from('team_members').insert({
+        naam: editTeamlid.naam, rol: editTeamlid.rol, bio: editTeamlid.bio,
+        foto_url: editTeamlid.foto_url || null, volgorde: editTeamlid.volgorde || 0,
+        actief: true, is_placeholder: editTeamlid.is_placeholder || false,
+      })
+    }
+    setEditTeamlid(null)
+    setTeamSaving(false)
+    loadData()
+  }
+
+  const deleteTeamlid = async (id: string) => {
+    if (!confirm('Teamlid verwijderen?')) return
+    await supabase.from('team_members').delete().eq('id', id)
+    loadData()
+  }
+
+  const handleTeamFotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !editTeamlid) return
+    setUploadingTeamFoto(true)
+    const ext = file.name.split('.').pop()
+    const path = `team/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+    const { data, error } = await supabase.storage.from('listings').upload(path, file, { upsert: true })
+    if (!error && data) {
+      const { data: url } = supabase.storage.from('listings').getPublicUrl(data.path)
+      setEditTeamlid((prev: any) => ({ ...prev, foto_url: url.publicUrl }))
+    }
+    setUploadingTeamFoto(false)
   }
 
   const updateCommissie = async (id: string, pct: string) => {
@@ -298,6 +345,7 @@ export default function AdminPage() {
     gebruikers: { title: 'Gebruikers', desc: `${stats.gebruikers} geregistreerde accounts` },
     listings: { title: '2de Hands Listings', desc: `${stats.listings} advertenties` },
     bestellingen: { title: 'Bestellingen', desc: `${stats.bestellingen} bestellingen` },
+    team: { title: 'Team', desc: `${teamleden.length} teamleden` },
     instellingen: { title: 'Site Instellingen', desc: 'Beheer demo-data en site-instellingen' },
   }
 
@@ -321,6 +369,7 @@ export default function AdminPage() {
               ['kapsalons', '✂️', 'Kapsalons', stats.pending > 0 ? stats.pending : null],
               ['verkopers', '🏪', 'Verkopers', stats.verkopersPending > 0 ? stats.verkopersPending : null],
               ['academy', '🎓', 'Academy', academyTrainers.filter((x:any) => x.status === 'in_afwachting').length || null],
+              ['team', '👥', 'Team', null],
               ['gebruikers', '👥', 'Gebruikers', null],
               ['listings', '♻️', '2de Hands', null],
               ['bestellingen', '📦', 'Bestellingen', null],
@@ -708,6 +757,109 @@ export default function AdminPage() {
                               : <span className="badge badge-orange">In behandeling</span>}
                           </td>
                           <td>{b.created_at ? formatDate(b.created_at) : '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            )}
+
+            {/* TEAM */}
+            {tab === 'team' && (
+              <div className="section-card">
+                <div className="section-card-header">
+                  <div><h2>Team Beheer</h2><p>Beheer de teamleden op de Over Ons pagina</p></div>
+                  <button className="btn-refresh" style={{ background: 'var(--green-main)', color: 'white', border: 'none' }}
+                    onClick={() => setEditTeamlid({ naam: '', rol: '', bio: '', foto_url: '', volgorde: teamleden.length + 1, actief: true, is_placeholder: false })}>
+                    + Teamlid Toevoegen
+                  </button>
+                </div>
+
+                {editTeamlid && (
+                  <div style={{ background: 'var(--green-pale)', borderRadius: 12, padding: 20, marginBottom: 20, border: '2px solid var(--green-main)' }}>
+                    <h3 style={{ fontFamily: 'Fredoka, sans-serif', fontSize: 16, marginBottom: 16, color: 'var(--green-dark)' }}>
+                      {editTeamlid.id ? 'Teamlid Bewerken' : 'Nieuw Teamlid'}
+                    </h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                      <div>
+                        <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-mid)', display: 'block', marginBottom: 4 }}>Naam *</label>
+                        <input value={editTeamlid.naam} onChange={e => setEditTeamlid((p: any) => ({ ...p, naam: e.target.value }))}
+                          style={{ width: '100%', padding: '9px 12px', border: '2px solid var(--cream-dark)', borderRadius: 8, fontFamily: 'Nunito, sans-serif', fontSize: 13 }} />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-mid)', display: 'block', marginBottom: 4 }}>Rol *</label>
+                        <input value={editTeamlid.rol} onChange={e => setEditTeamlid((p: any) => ({ ...p, rol: e.target.value }))}
+                          placeholder="Bijv. Oprichter & Developer"
+                          style={{ width: '100%', padding: '9px 12px', border: '2px solid var(--cream-dark)', borderRadius: 8, fontFamily: 'Nunito, sans-serif', fontSize: 13 }} />
+                      </div>
+                    </div>
+                    <div style={{ marginTop: 12 }}>
+                      <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-mid)', display: 'block', marginBottom: 4 }}>Bio</label>
+                      <textarea value={editTeamlid.bio} onChange={e => setEditTeamlid((p: any) => ({ ...p, bio: e.target.value }))}
+                        style={{ width: '100%', padding: '9px 12px', border: '2px solid var(--cream-dark)', borderRadius: 8, fontFamily: 'Nunito, sans-serif', fontSize: 13, minHeight: 70, resize: 'vertical' }} />
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
+                      <div>
+                        <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-mid)', display: 'block', marginBottom: 4 }}>Foto</label>
+                        {editTeamlid.foto_url && (
+                          <img src={editTeamlid.foto_url} alt="" style={{ width: 60, height: 60, borderRadius: '50%', objectFit: 'cover', marginBottom: 8, display: 'block' }} />
+                        )}
+                        <label style={{ display: 'block', padding: '8px 12px', border: '2px dashed var(--cream-dark)', borderRadius: 8, textAlign: 'center', cursor: 'pointer', fontSize: 12, fontWeight: 700, color: 'var(--text-mid)' }}>
+                          {uploadingTeamFoto ? '⏳ Uploaden...' : editTeamlid.foto_url ? '🔄 Foto wijzigen' : '📸 Foto uploaden'}
+                          <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleTeamFotoUpload} />
+                        </label>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        <div>
+                          <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-mid)', display: 'block', marginBottom: 4 }}>Volgorde</label>
+                          <input type="number" value={editTeamlid.volgorde} onChange={e => setEditTeamlid((p: any) => ({ ...p, volgorde: parseInt(e.target.value) }))}
+                            style={{ width: '100%', padding: '9px 12px', border: '2px solid var(--cream-dark)', borderRadius: 8, fontFamily: 'Nunito, sans-serif', fontSize: 13 }} />
+                        </div>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                          <input type="checkbox" checked={editTeamlid.is_placeholder} onChange={e => setEditTeamlid((p: any) => ({ ...p, is_placeholder: e.target.checked })) } />
+                          Open positie (grijs tonen)
+                        </label>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+                      <button className="btn-sm btn-approve" onClick={saveTeamlid} disabled={teamSaving}>
+                        {teamSaving ? '...' : '✓ Opslaan'}
+                      </button>
+                      <button className="btn-sm btn-view" onClick={() => setEditTeamlid(null)}>Annuleren</button>
+                    </div>
+                  </div>
+                )}
+
+                {teamleden.length === 0 ? (
+                  <div className="empty-state"><div className="ei">👥</div><p>Nog geen teamleden</p></div>
+                ) : (
+                  <table className="table">
+                    <thead><tr><th>Foto</th><th>Naam</th><th>Rol</th><th>Volgorde</th><th>Status</th><th>Actie</th></tr></thead>
+                    <tbody>
+                      {teamleden.map(lid => (
+                        <tr key={lid.id}>
+                          <td>
+                            {lid.foto_url
+                              ? <img src={lid.foto_url} alt={lid.naam} style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover' }} />
+                              : <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'var(--green-pale)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>👤</div>}
+                          </td>
+                          <td><strong>{lid.naam}</strong></td>
+                          <td style={{ fontSize: 13, color: 'var(--orange-main)', fontWeight: 700 }}>{lid.rol}</td>
+                          <td>{lid.volgorde}</td>
+                          <td>
+                            {lid.is_placeholder
+                              ? <span className="badge badge-gray">Open positie</span>
+                              : lid.actief
+                                ? <span className="badge badge-green">Actief</span>
+                                : <span className="badge badge-red">Inactief</span>}
+                          </td>
+                          <td>
+                            <div className="action-btns">
+                              <button className="btn-sm btn-edit" onClick={() => setEditTeamlid({ ...lid })}>✏️ Bewerken</button>
+                              <button className="btn-sm btn-reject" onClick={() => deleteTeamlid(lid.id)}>🗑️</button>
+                            </div>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
