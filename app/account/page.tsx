@@ -222,6 +222,13 @@ export default function AccountPage() {
                 {item.label}
               </a>
             ))}
+            <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--cream-dark)' }}>
+              <a onClick={async () => { await supabase.auth.signOut(); window.location.href = '/' }}
+                style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 12, color: '#E84E4E', fontWeight: 600, fontSize: 14, cursor: 'pointer', textDecoration: 'none' }}>
+                <span className="nav-icon">🚪</span>
+                Uitloggen
+              </a>
+            </div>
           </nav>
         </div>
 
