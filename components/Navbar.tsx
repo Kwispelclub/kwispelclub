@@ -27,6 +27,11 @@ export default function Navbar() {
     { href: '/over-ons', label: 'Over Ons' },
   ]
 
+  const extraLinks = [
+    { href: '/word-verkoper', label: '🏪 Word Verkoper' },
+    { href: '/academy-verkoper', label: '🎓 Word Trainer' },
+  ]
+
   const isActive = (href: string) => {
     if (href.includes('#')) return pathname === '/'
     return pathname === href || pathname.startsWith(href + '/')
@@ -45,6 +50,8 @@ export default function Navbar() {
         .kw-links a{text-decoration:none;color:#2C2C2C;font-weight:600;font-size:14px;padding:8px 14px;border-radius:10px;transition:all .2s;white-space:nowrap}
         .kw-links a:hover,.kw-links a.active{background:#E8F0E4;color:#2D5A27}
         .kw-right{margin-left:auto;display:flex;align-items:center;gap:8px;flex-shrink:0}
+        .kw-verkoper-btn{padding:8px 14px;border-radius:50px;background:#FFF3E0;color:#E8913A;font-family:'Fredoka',sans-serif;font-size:13px;font-weight:700;text-decoration:none;transition:all .2s;border:1.5px solid #F5A855;white-space:nowrap}
+        .kw-verkoper-btn:hover{background:#E8913A;color:white}
         .kw-user{display:flex;align-items:center;gap:6px;padding:5px 12px 5px 5px;border-radius:50px;background:white;border:2px solid #F5EDE0;cursor:pointer;text-decoration:none;flex-shrink:0}
         .kw-ua{width:30px;height:30px;border-radius:50%;background:#4A7C3F;color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0}
         .kw-user-name{font-size:13px;font-weight:700;color:#2C2C2C;white-space:nowrap}
@@ -58,11 +65,12 @@ export default function Navbar() {
         .kw-mob-links a{display:flex;align-items:center;padding:16px 24px;font-weight:600;font-size:16px;color:#2C2C2C;text-decoration:none;border-bottom:1px solid #F5EDE0;transition:background .15s}
         .kw-mob-links a:hover{background:#F5EDE0}
         .kw-mob-links a.active{color:#2D5A27;background:#E8F0E4}
-        .kw-mob-links a:last-child{border-bottom:none}
+        .kw-mob-divider{padding:8px 24px;font-size:11px;font-weight:800;color:#8A8A8A;letter-spacing:1px;text-transform:uppercase;background:#F5EDE0}
+        .kw-mob-extra .kw-mob-links a{background:#FFFBF5;font-size:15px}
         .kw-mob-account{padding:16px 24px;background:#F5EDE0;display:flex;gap:12px}
         .kw-mob-acc-btn{flex:1;padding:13px;border-radius:50px;background:#2D5A27;color:white;font-family:'Fredoka',sans-serif;font-size:15px;font-weight:600;text-decoration:none;text-align:center;border:none;cursor:pointer}
         .kw-mob-out-btn{padding:13px 20px;border-radius:50px;background:white;color:#2C2C2C;font-family:'Fredoka',sans-serif;font-size:15px;font-weight:600;text-decoration:none;text-align:center;border:2px solid #F5EDE0;cursor:pointer}
-        @media(max-width:1024px){.kw-links{display:none}.kw-ham{display:block}}
+        @media(max-width:1024px){.kw-links{display:none}.kw-ham{display:block}.kw-verkoper-btn{display:none}}
         @media(max-width:480px){.kw-user-name{display:none}.kw-user{padding:4px}.kw-brand{font-size:18px}}
       `}</style>
       <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -82,6 +90,7 @@ export default function Navbar() {
             ))}
           </ul>
           <div className="kw-right">
+            <a href="/word-verkoper" className="kw-verkoper-btn">🏪 Word Verkoper</a>
             {user ? (
               <a href="/account" className="kw-user">
                 <div className="kw-ua">
@@ -108,6 +117,16 @@ export default function Navbar() {
                   {l.label}
                 </a>
               ))}
+            </div>
+            <div className="kw-mob-divider">Voor verkopers & trainers</div>
+            <div className="kw-mob-extra">
+              <div className="kw-mob-links">
+                {extraLinks.map(l => (
+                  <a key={l.href} href={l.href} className={isActive(l.href) ? 'active' : ''} onClick={() => setMobileOpen(false)}>
+                    {l.label}
+                  </a>
+                ))}
+              </div>
             </div>
             <div className="kw-mob-account">
               {user ? (
