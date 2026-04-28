@@ -464,10 +464,10 @@ export default function AdminPage() {
                             {editCommissie?.id === v.id ? (
                               <div className="commissie-cell">
                                 <input className="commissie-input" type="number" min="0" max="50" step="0.5"
-                                  value={editCommissie.val}
+                                  value={editCommissie?.val ?? ''}
                                   onChange={e => setEditCommissie({ id: v.id, val: e.target.value })} />
                                 <span>%</span>
-                                <button className="btn-sm btn-approve" onClick={() => updateCommissie(v.id, editCommissie.val)}>✓</button>
+                                <button className="btn-sm btn-approve" onClick={() => editCommissie && updateCommissie(v.id, editCommissie.val)}>✓</button>
                                 <button className="btn-sm" onClick={() => setEditCommissie(null)} style={{ background: '#F0F4F8' }}>✗</button>
                               </div>
                             ) : (
