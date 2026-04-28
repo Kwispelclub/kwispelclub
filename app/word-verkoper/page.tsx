@@ -29,7 +29,10 @@ export default function WordVerkoperPage() {
       setUser(user)
       // Check of al verkoper
       const { data } = await supabase.from('verkopers').select('id,status').eq('profile_id', user.id).single()
-      if (data) setBestaatAl(true)
+      if (data) {
+        if (data.status === 'actief') { router.push('/verkoper/dashboard'); return }
+        setBestaatAl(true)
+      }
       setLoading(false)
     })
   }, [])
