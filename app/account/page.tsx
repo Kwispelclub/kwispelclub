@@ -201,10 +201,7 @@ export default function AccountPage() {
           .stats-grid{grid-template-columns:repeat(2,1fr)}
         }
       `}</style>
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
-    
 
       <div className="account-layout">
         {/* SIDEBAR */}
@@ -222,13 +219,6 @@ export default function AccountPage() {
                 {item.label}
               </a>
             ))}
-            <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--cream-dark)' }}>
-              <a className="" onClick={async () => { await supabase.auth.signOut(); window.location.href = '/' }}
-                style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 12, color: '#E84E4E', fontWeight: 600, fontSize: 14, cursor: 'pointer', textDecoration: 'none' }}>
-                <span className="nav-icon">🚪</span>
-                Uitloggen
-              </a>
-            </div>
           </nav>
         </div>
 
