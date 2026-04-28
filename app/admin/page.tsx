@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { SettingsPanel } from '@/components/AdminSettingsPanel'
 
-type Tab = 'dashboard' | 'kapsalons' | 'gebruikers' | 'listings' | 'bestellingen' | 'instellingen'
+type Tab = 'dashboard' | 'kapsalons' | 'verkopers' | 'gebruikers' | 'listings' | 'bestellingen' | 'instellingen'
 
 const ADMIN_PASSWORD = 'Vrijdag@201024+'
 
@@ -18,17 +18,18 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<Tab>('dashboard')
 
-  // Data
   const [kapsalons, setKapsalons] = useState<any[]>([])
   const [gebruikers, setGebruikers] = useState<any[]>([])
   const [listings, setListings] = useState<any[]>([])
   const [bestellingen, setBestellingen] = useState<any[]>([])
-  const [stats, setStats] = useState({ kapsalons: 0, gebruikers: 0, listings: 0, bestellingen: 0, pending: 0 })
+  const [verkopers, setVerkopers] = useState<any[]>([])
+  const [stats, setStats] = useState({ kapsalons: 0, gebruikers: 0, listings: 0, bestellingen: 0, pending: 0, verkopers: 0, verkopersPending: 0 })
   const [dataLoading, setDataLoading] = useState(false)
-
-  // Settings
   const [siteSettings, setSiteSettings] = useState<Record<string, any>>({})
   const [settingsSaved, setSettingsSaved] = useState(false)
+
+  // Verkoper commissie edit
+  const [editCommissie, setEditCommissie] = useState<{ id: string; val: string } | null>(null)
 
   useEffect(() => {
     const adminSession = sessionStorage.getItem('kw_admin')
@@ -39,9 +40,7 @@ export default function AdminPage() {
     })
   }, [])
 
-  useEffect(() => {
-    if (authed) loadData()
-  }, [authed])
+  useEffect(() => { if (authed) loadData() }, [authed])
 
   const handlePasswordCheck = () => {
     if (pwInput === ADMIN_PASSWORD) {
@@ -57,17 +56,19 @@ export default function AdminPage() {
   const loadData = async () => {
     setDataLoading(true)
     try {
-      const [k, u, l, b, s] = await Promise.all([
+      const [k, u, l, b, v, s] = await Promise.all([
         supabase.from('kapsalons').select('*').order('created_at', { ascending: false }),
         supabase.from('profiles').select('*').order('created_at', { ascending: false }),
         supabase.from('listings').select('*').order('created_at', { ascending: false }),
         supabase.from('bestellingen').select('*').order('created_at', { ascending: false }),
+        supabase.from('verkopers').select('*, profiles(first_name, last_name, email)').order('created_at', { ascending: false }),
         fetch('/api/admin-settings').then(r => r.json()),
       ])
       setKapsalons(k.data || [])
       setGebruikers(u.data || [])
       setListings(l.data || [])
       setBestellingen(b.data || [])
+      setVerkopers(v.data || [])
       setSiteSettings(s.settings || {})
       setStats({
         kapsalons: k.data?.length || 0,
@@ -75,10 +76,10 @@ export default function AdminPage() {
         listings: l.data?.length || 0,
         bestellingen: b.data?.length || 0,
         pending: k.data?.filter((x: any) => !x.geverifieerd).length || 0,
+        verkopers: v.data?.length || 0,
+        verkopersPending: v.data?.filter((x: any) => x.status === 'in_afwachting').length || 0,
       })
-    } catch (e) {
-      console.error(e)
-    }
+    } catch (e) { console.error(e) }
     setDataLoading(false)
   }
 
@@ -95,23 +96,48 @@ export default function AdminPage() {
 
   const approveKapsalon = async (id: string) => {
     await supabase.from('kapsalons').update({ geverifieerd: true, actief: true }).eq('id', id)
-    const kapsalon = kapsalons.find(k => k.id === id)
-    if (kapsalon?.email) {
-      await fetch('/api/send-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'kapsalon_goedgekeurd',
-          to: kapsalon.email,
-          data: { salonNaam: kapsalon.naam }
-        })
-      })
+    const k = kapsalons.find(x => x.id === id)
+    if (k?.email) {
+      await fetch('/api/send-email', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'kapsalon_goedgekeurd', to: k.email, data: { salonNaam: k.naam } }) })
     }
     loadData()
   }
 
   const rejectKapsalon = async (id: string) => {
     await supabase.from('kapsalons').update({ actief: false }).eq('id', id)
+    loadData()
+  }
+
+  const approveVerkoper = async (id: string) => {
+    const v = verkopers.find(x => x.id === id)
+    await supabase.from('verkopers').update({ status: 'actief', goedgekeurd_op: new Date().toISOString() }).eq('id', id)
+    // Update profile role
+    if (v?.profile_id) {
+      await supabase.from('profiles').update({ role: 'verkoper' }).eq('id', v.profile_id)
+    }
+    // Email
+    if (v?.profiles?.email) {
+      await fetch('/api/send-email', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'verkoper_goedgekeurd', to: v.profiles.email, data: { shopNaam: v.shop_naam, slug: v.slug } }) }).catch(() => {})
+    }
+    loadData()
+  }
+
+  const rejectVerkoper = async (id: string) => {
+    const v = verkopers.find(x => x.id === id)
+    await supabase.from('verkopers').update({ status: 'geweigerd' }).eq('id', id)
+    if (v?.profile_id) {
+      await supabase.from('profiles').update({ role: 'koper' }).eq('id', v.profile_id)
+    }
+    loadData()
+  }
+
+  const updateCommissie = async (id: string, pct: string) => {
+    const val = parseFloat(pct)
+    if (isNaN(val) || val < 0 || val > 50) return
+    await supabase.from('verkopers').update({ commissie_pct: val }).eq('id', id)
+    setEditCommissie(null)
     loadData()
   }
 
@@ -123,7 +149,7 @@ export default function AdminPage() {
   const formatDate = (d: string) => new Date(d).toLocaleDateString('nl-BE', { day: '2-digit', month: 'short', year: 'numeric' })
 
   const CSS = `
-    :root{--green-dark:#2D5A27;--green-main:#4A7C3F;--green-pale:#E8F0E4;--orange-main:#E8913A;--orange-pale:#FFF3E0;--cream:#FFF9F0;--cream-dark:#F5EDE0;--text-dark:#2C2C2C;--text-mid:#5A5A5A;--text-light:#8A8A8A;--white:#FFFFFF;--red:#E84E4E;--teal:#2A9D8F;--teal-pale:#E0F5F1}
+    :root{--green-dark:#2D5A27;--green-main:#4A7C3F;--green-pale:#E8F0E4;--orange-main:#E8913A;--orange-pale:#FFF3E0;--cream:#FFF9F0;--cream-dark:#F5EDE0;--text-dark:#2C2C2C;--text-mid:#5A5A5A;--text-light:#8A8A8A;--white:#FFFFFF;--red:#E84E4E;--teal:#2A9D8F;--teal-pale:#E0F5F1;--brown:#5C3D2E}
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Nunito',sans-serif;background:#F0F4F8;color:var(--text-dark);-webkit-font-smoothing:antialiased}
     h1,h2,h3,h4{font-family:'Fredoka',sans-serif}
@@ -133,7 +159,7 @@ export default function AdminPage() {
     .sidebar-logo .lp{width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:20px}
     .sidebar-logo .brand{font-family:'Fredoka',sans-serif;font-size:18px;font-weight:700}
     .sidebar-logo .admin-badge{font-size:10px;font-weight:700;background:var(--orange-main);padding:2px 8px;border-radius:50px;margin-left:4px}
-    .sidebar-nav{flex:1;padding:16px 12px}
+    .sidebar-nav{flex:1;padding:16px 12px;overflow-y:auto}
     .nav-item{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:10px;cursor:pointer;font-size:14px;font-weight:600;color:rgba(255,255,255,.65);transition:all .2s;margin-bottom:2px}
     .nav-item:hover{background:rgba(255,255,255,.08);color:white}
     .nav-item.active{background:rgba(255,255,255,.12);color:white}
@@ -175,11 +201,12 @@ export default function AdminPage() {
     .badge-red{background:#FFF0F0;color:var(--red)}
     .badge-gray{background:#F0F4F8;color:var(--text-light)}
     .badge-teal{background:var(--teal-pale);color:var(--teal)}
-    .action-btns{display:flex;gap:6px}
+    .action-btns{display:flex;gap:6px;flex-wrap:wrap}
     .btn-sm{padding:5px 12px;border-radius:6px;font-size:12px;font-weight:700;border:none;cursor:pointer;transition:all .2s;font-family:'Nunito',sans-serif}
     .btn-approve{background:var(--green-pale);color:var(--green-dark)}.btn-approve:hover{background:var(--green-main);color:white}
     .btn-reject{background:#FFF0F0;color:var(--red)}.btn-reject:hover{background:var(--red);color:white}
-    .btn-view{background:#F0F4F8;color:var(--text-mid)}.btn-view:hover{background:#E5EAF0;color:var(--text-dark)}
+    .btn-view{background:#F0F4F8;color:var(--text-mid)}.btn-view:hover{background:#E5EAF0}
+    .btn-edit{background:var(--teal-pale);color:var(--teal)}.btn-edit:hover{background:var(--teal);color:white}
     .empty-state{text-align:center;padding:40px;color:var(--text-light)}
     .empty-state .ei{font-size:40px;margin-bottom:10px;opacity:.4}
     .empty-state p{font-size:14px}
@@ -191,13 +218,15 @@ export default function AdminPage() {
     .role-verkoper{background:var(--teal-pale);color:var(--teal)}
     .role-kapsalon{background:var(--orange-pale);color:var(--orange-main)}
     .role-admin{background:linear-gradient(135deg,var(--green-dark),var(--green-main));color:white}
+    .commissie-cell{display:flex;align-items:center;gap:6px}
+    .commissie-input{width:60px;padding:4px 8px;border:1.5px solid var(--green-main);border-radius:6px;font-family:'Fredoka',sans-serif;font-size:14px;font-weight:700;color:var(--green-dark)}
     .pw-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#F0F4F8}
     .pw-card{background:white;border-radius:20px;padding:48px;max-width:400px;width:100%;box-shadow:0 4px 24px rgba(0,0,0,.08);text-align:center}
     .pw-card .icon{font-size:48px;margin-bottom:16px}
     .pw-card h2{font-size:24px;color:var(--green-dark);margin-bottom:8px}
     .pw-card p{font-size:14px;color:var(--text-mid);margin-bottom:24px;line-height:1.5}
     .pw-input{width:100%;padding:14px 16px;border:2px solid var(--cream-dark);border-radius:12px;font-family:'Nunito',sans-serif;font-size:15px;outline:none;text-align:center;letter-spacing:2px;transition:all .2s;margin-bottom:12px}
-    .pw-input:focus{border-color:var(--green-main);box-shadow:0 0 0 3px rgba(74,124,63,.1)}
+    .pw-input:focus{border-color:var(--green-main)}
     .pw-input.error{border-color:var(--red)}
     .pw-btn{width:100%;padding:14px;border-radius:50px;background:var(--green-main);color:white;border:none;font-family:'Fredoka',sans-serif;font-size:16px;font-weight:600;cursor:pointer;transition:all .2s}
     .pw-btn:hover{background:var(--green-dark)}
@@ -222,15 +251,9 @@ export default function AdminPage() {
           <h2>Admin Toegang</h2>
           <p>Voer het admin wachtwoord in om toegang te krijgen tot het beheerpaneel.</p>
           {pwError && <div className="pw-error">⚠️ Onjuist wachtwoord</div>}
-          <input
-            className={`pw-input ${pwError ? 'error' : ''}`}
-            type="password"
-            placeholder="••••••••••••"
-            value={pwInput}
+          <input className={`pw-input ${pwError ? 'error' : ''}`} type="password" placeholder="••••••••••••" value={pwInput}
             onChange={e => { setPwInput(e.target.value); setPwError(false) }}
-            onKeyDown={e => e.key === 'Enter' && handlePasswordCheck()}
-            autoFocus
-          />
+            onKeyDown={e => e.key === 'Enter' && handlePasswordCheck()} autoFocus />
           <button className="pw-btn" onClick={handlePasswordCheck}>Inloggen →</button>
         </div>
       </div>
@@ -240,11 +263,14 @@ export default function AdminPage() {
   const tabTitles: Record<Tab, { title: string; desc: string }> = {
     dashboard: { title: 'Dashboard', desc: 'Overzicht van alle activiteit op Kwispelclub' },
     kapsalons: { title: 'Kapsalons', desc: `${stats.kapsalons} geregistreerde salons` },
+    verkopers: { title: 'Verkopers', desc: `${stats.verkopers} verkopers` },
     gebruikers: { title: 'Gebruikers', desc: `${stats.gebruikers} geregistreerde accounts` },
     listings: { title: '2de Hands Listings', desc: `${stats.listings} advertenties` },
     bestellingen: { title: 'Bestellingen', desc: `${stats.bestellingen} bestellingen` },
     instellingen: { title: 'Site Instellingen', desc: 'Beheer demo-data en site-instellingen' },
   }
+
+  const totalPending = stats.pending + stats.verkopersPending
 
   return (
     <>
@@ -260,8 +286,9 @@ export default function AdminPage() {
           </div>
           <nav className="sidebar-nav">
             {([
-              ['dashboard', '📊', 'Dashboard', null],
+              ['dashboard', '📊', 'Dashboard', totalPending > 0 ? totalPending : null],
               ['kapsalons', '✂️', 'Kapsalons', stats.pending > 0 ? stats.pending : null],
+              ['verkopers', '🏪', 'Verkopers', stats.verkopersPending > 0 ? stats.verkopersPending : null],
               ['gebruikers', '👥', 'Gebruikers', null],
               ['listings', '♻️', '2de Hands', null],
               ['bestellingen', '📦', 'Bestellingen', null],
@@ -296,19 +323,20 @@ export default function AdminPage() {
             {/* DASHBOARD */}
             {tab === 'dashboard' && (
               <>
-                {stats.pending > 0 && (
+                {totalPending > 0 && (
                   <div className="pending-alert">
-                    ⚠️ Er {stats.pending === 1 ? 'is' : 'zijn'} <strong>{stats.pending} kapsalon{stats.pending !== 1 ? 's' : ''}</strong> die wacht{stats.pending === 1 ? '' : 'en'} op goedkeuring.
-                    <a onClick={() => setTab('kapsalons')} style={{ marginLeft: 8 }}>Bekijk nu →</a>
+                    ⚠️ Er {totalPending === 1 ? 'is' : 'zijn'} <strong>{totalPending} aanvraag{totalPending !== 1 ? 'en' : ''}</strong> in afwachting.
+                    {stats.pending > 0 && <a onClick={() => setTab('kapsalons')} style={{ marginLeft: 8 }}>Kapsalons ({stats.pending}) →</a>}
+                    {stats.verkopersPending > 0 && <a onClick={() => setTab('verkopers')} style={{ marginLeft: 8 }}>Verkopers ({stats.verkopersPending}) →</a>}
                   </div>
                 )}
                 <div className="stats-grid">
                   {[
                     { icon: '👥', val: stats.gebruikers, label: 'Gebruikers', cls: 'highlight' },
+                    { icon: '🏪', val: stats.verkopers, label: 'Verkopers', cls: '' },
                     { icon: '✂️', val: stats.kapsalons, label: 'Kapsalons', cls: '' },
                     { icon: '♻️', val: stats.listings, label: '2de Hands', cls: '' },
-                    { icon: '📦', val: stats.bestellingen, label: 'Bestellingen', cls: '' },
-                    { icon: '⏳', val: stats.pending, label: 'In afwachting', cls: stats.pending > 0 ? 'warning' : '' },
+                    { icon: '⏳', val: totalPending, label: 'In afwachting', cls: totalPending > 0 ? 'warning' : '' },
                   ].map(s => (
                     <div key={s.label} className={`stat-card ${s.cls}`}>
                       <div className="stat-icon">{s.icon}</div>
@@ -317,21 +345,49 @@ export default function AdminPage() {
                     </div>
                   ))}
                 </div>
+
+                {/* Recente verkoper aanvragen */}
+                {stats.verkopersPending > 0 && (
+                  <div className="section-card">
+                    <div className="section-card-header">
+                      <div><h2>🏪 Verkoper Aanvragen</h2><p>Wachten op goedkeuring</p></div>
+                    </div>
+                    <table className="table">
+                      <thead><tr><th>Shop</th><th>Naam</th><th>Categorieën</th><th>Datum</th><th>Actie</th></tr></thead>
+                      <tbody>
+                        {verkopers.filter(v => v.status === 'in_afwachting').slice(0, 5).map(v => (
+                          <tr key={v.id}>
+                            <td><strong>{v.shop_naam}</strong><div style={{ fontSize: 11, color: 'var(--text-light)' }}>/{v.slug}</div></td>
+                            <td>{v.profiles?.first_name} {v.profiles?.last_name}</td>
+                            <td style={{ fontSize: 12 }}>{v.categorieen?.slice(0, 2).join(', ') || '—'}</td>
+                            <td>{formatDate(v.created_at)}</td>
+                            <td>
+                              <div className="action-btns">
+                                <button className="btn-sm btn-approve" onClick={() => approveVerkoper(v.id)}>✓ Goedkeuren</button>
+                                <button className="btn-sm btn-reject" onClick={() => rejectVerkoper(v.id)}>✗ Weigeren</button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
                 <div className="section-card">
                   <div className="section-card-header">
-                    <div><h2>Recente Kapsalon Aanmeldingen</h2><p>Nieuwste registraties die wachten op goedkeuring</p></div>
+                    <div><h2>Recente Kapsalon Aanmeldingen</h2></div>
                   </div>
                   {kapsalons.filter(k => !k.geverifieerd).length === 0 ? (
                     <div className="empty-state"><div className="ei">✂️</div><p>Geen openstaande aanmeldingen</p></div>
                   ) : (
                     <table className="table">
-                      <thead><tr><th>Naam</th><th>Locatie</th><th>Type</th><th>Datum</th><th>Status</th><th>Actie</th></tr></thead>
+                      <thead><tr><th>Naam</th><th>Locatie</th><th>Datum</th><th>Status</th><th>Actie</th></tr></thead>
                       <tbody>
                         {kapsalons.filter(k => !k.geverifieerd).slice(0, 5).map(k => (
                           <tr key={k.id}>
                             <td><strong>{k.naam}</strong></td>
                             <td>{k.locatie || k.stad || '—'}</td>
-                            <td>{k.type_salon || '—'}</td>
                             <td>{k.created_at ? formatDate(k.created_at) : '—'}</td>
                             <td><span className="badge badge-orange">In afwachting</span></td>
                             <td>
@@ -346,29 +402,75 @@ export default function AdminPage() {
                     </table>
                   )}
                 </div>
-                <div className="section-card">
-                  <div className="section-card-header">
-                    <div><h2>Recente Gebruikers</h2><p>Nieuwste accounts</p></div>
-                  </div>
-                  {gebruikers.length === 0 ? (
-                    <div className="empty-state"><div className="ei">👥</div><p>Geen gebruikers gevonden</p></div>
-                  ) : (
-                    <table className="table">
-                      <thead><tr><th>Naam</th><th>Rol</th><th>Locatie</th><th>Datum</th></tr></thead>
-                      <tbody>
-                        {gebruikers.slice(0, 5).map(u => (
-                          <tr key={u.id}>
-                            <td><strong>{u.full_name || `${u.first_name || ''} ${u.last_name || ''}`.trim() || '—'}</strong></td>
-                            <td><span className={`role-pill role-${u.role || 'koper'}`}>{u.role || 'koper'}</span></td>
-                            <td>{u.locatie || u.stad || '—'}</td>
-                            <td>{u.created_at ? formatDate(u.created_at) : '—'}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                </div>
               </>
+            )}
+
+            {/* VERKOPERS */}
+            {tab === 'verkopers' && (
+              <div className="section-card">
+                <div className="section-card-header">
+                  <div><h2>Alle Verkopers</h2><p>{verkopers.length} aanvragen / shops</p></div>
+                  <a href="/word-verkoper" target="_blank" style={{ fontSize: 13, color: 'var(--green-main)', fontWeight: 700, textDecoration: 'none' }}>+ Aanmeldpagina bekijken</a>
+                </div>
+                {dataLoading ? <div className="loading-state">⏳ Laden...</div> : verkopers.length === 0 ? (
+                  <div className="empty-state"><div className="ei">🏪</div><p>Nog geen verkoper aanvragen</p></div>
+                ) : (
+                  <table className="table">
+                    <thead><tr><th>Shop</th><th>Eigenaar</th><th>Commissie %</th><th>Status</th><th>Datum</th><th>Actie</th></tr></thead>
+                    <tbody>
+                      {verkopers.map(v => (
+                        <tr key={v.id}>
+                          <td>
+                            <strong>{v.shop_naam}</strong>
+                            <div style={{ fontSize: 11, color: 'var(--text-light)' }}>kwispelclub.be/winkel/{v.slug}</div>
+                          </td>
+                          <td>
+                            <div>{v.profiles?.first_name} {v.profiles?.last_name}</div>
+                            <div style={{ fontSize: 11, color: 'var(--text-light)' }}>{v.profiles?.email}</div>
+                          </td>
+                          <td>
+                            {editCommissie?.id === v.id ? (
+                              <div className="commissie-cell">
+                                <input className="commissie-input" type="number" min="0" max="50" step="0.5"
+                                  value={editCommissie.val}
+                                  onChange={e => setEditCommissie({ id: v.id, val: e.target.value })} />
+                                <span>%</span>
+                                <button className="btn-sm btn-approve" onClick={() => updateCommissie(v.id, editCommissie.val)}>✓</button>
+                                <button className="btn-sm" onClick={() => setEditCommissie(null)} style={{ background: '#F0F4F8' }}>✗</button>
+                              </div>
+                            ) : (
+                              <div className="commissie-cell">
+                                <strong style={{ fontFamily: 'Fredoka, sans-serif', color: 'var(--teal)' }}>{v.commissie_pct}%</strong>
+                                <button className="btn-sm btn-edit" onClick={() => setEditCommissie({ id: v.id, val: String(v.commissie_pct) })}>✏️</button>
+                              </div>
+                            )}
+                          </td>
+                          <td>
+                            {v.status === 'actief' ? <span className="badge badge-green">✓ Actief</span>
+                              : v.status === 'in_afwachting' ? <span className="badge badge-orange">⏳ In afwachting</span>
+                              : v.status === 'geweigerd' ? <span className="badge badge-red">✗ Geweigerd</span>
+                              : <span className="badge badge-gray">{v.status}</span>}
+                          </td>
+                          <td>{formatDate(v.created_at)}</td>
+                          <td>
+                            <div className="action-btns">
+                              {v.status === 'in_afwachting' && <>
+                                <button className="btn-sm btn-approve" onClick={() => approveVerkoper(v.id)}>✓ Goedkeuren</button>
+                                <button className="btn-sm btn-reject" onClick={() => rejectVerkoper(v.id)}>✗ Weigeren</button>
+                              </>}
+                              {v.status === 'actief' && <>
+                                <a href={`/winkel/${v.slug}`} target="_blank" className="btn-sm btn-view" style={{ textDecoration: 'none' }}>🔗 Shop</a>
+                                <button className="btn-sm btn-reject" onClick={() => rejectVerkoper(v.id)}>Pauzeren</button>
+                              </>}
+                              {v.status === 'geweigerd' && <button className="btn-sm btn-approve" onClick={() => approveVerkoper(v.id)}>Heractiveren</button>}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
             )}
 
             {/* KAPSALONS */}
@@ -381,20 +483,17 @@ export default function AdminPage() {
                   <div className="empty-state"><div className="ei">✂️</div><p>Nog geen kapsalons geregistreerd</p></div>
                 ) : (
                   <table className="table">
-                    <thead><tr><th>Naam</th><th>Locatie</th><th>E-mail</th><th>Type</th><th>Status</th><th>Actie</th></tr></thead>
+                    <thead><tr><th>Naam</th><th>Locatie</th><th>E-mail</th><th>Status</th><th>Actie</th></tr></thead>
                     <tbody>
                       {kapsalons.map(k => (
                         <tr key={k.id}>
                           <td><strong>{k.naam}</strong></td>
                           <td>{k.locatie || k.stad || '—'}</td>
                           <td>{k.email || '—'}</td>
-                          <td style={{ fontSize: 12 }}>{k.type_salon || '—'}</td>
                           <td>
-                            {k.geverifieerd
-                              ? <span className="badge badge-green">✓ Geverifieerd</span>
-                              : k.actief === false
-                                ? <span className="badge badge-red">✗ Geweigerd</span>
-                                : <span className="badge badge-orange">⏳ In afwachting</span>}
+                            {k.geverifieerd ? <span className="badge badge-green">✓ Geverifieerd</span>
+                              : k.actief === false ? <span className="badge badge-red">✗ Geweigerd</span>
+                              : <span className="badge badge-orange">⏳ In afwachting</span>}
                           </td>
                           <td>
                             <div className="action-btns">
@@ -414,21 +513,20 @@ export default function AdminPage() {
             {tab === 'gebruikers' && (
               <div className="section-card">
                 <div className="section-card-header">
-                  <div><h2>Alle Gebruikers</h2><p>{gebruikers.length} geregistreerde accounts</p></div>
+                  <div><h2>Alle Gebruikers</h2><p>{gebruikers.length} accounts</p></div>
                 </div>
                 {dataLoading ? <div className="loading-state">⏳ Laden...</div> : gebruikers.length === 0 ? (
                   <div className="empty-state"><div className="ei">👥</div><p>Geen gebruikers gevonden</p></div>
                 ) : (
                   <table className="table">
-                    <thead><tr><th>Naam</th><th>Rol</th><th>E-mail</th><th>Locatie</th><th>Bedrijf</th><th>Datum</th></tr></thead>
+                    <thead><tr><th>Naam</th><th>Rol</th><th>Locatie</th><th>Bedrijf</th><th>Datum</th></tr></thead>
                     <tbody>
                       {gebruikers.map(u => (
                         <tr key={u.id}>
-                          <td><strong>{u.full_name || `${u.first_name || ''} ${u.last_name || ''}`.trim() || '—'}</strong></td>
+                          <td><strong>{`${u.first_name || ''} ${u.last_name || ''}`.trim() || '—'}</strong></td>
                           <td><span className={`role-pill role-${u.role || 'koper'}`}>{u.role || 'koper'}</span></td>
-                          <td style={{ fontSize: 12, color: 'var(--text-light)' }}>{u.id?.slice(0, 8)}...</td>
-                          <td>{u.locatie || u.stad || '—'}</td>
-                          <td>{u.bedrijfsnaam || u.salonnaam || '—'}</td>
+                          <td>{u.location || '—'}</td>
+                          <td>{u.company_name || '—'}</td>
                           <td>{u.created_at ? formatDate(u.created_at) : '—'}</td>
                         </tr>
                       ))}
@@ -445,7 +543,7 @@ export default function AdminPage() {
                   <div><h2>2de Hands Listings</h2><p>{listings.length} advertenties</p></div>
                 </div>
                 {dataLoading ? <div className="loading-state">⏳ Laden...</div> : listings.length === 0 ? (
-                  <div className="empty-state"><div className="ei">♻️</div><p>Nog geen listings geplaatst</p></div>
+                  <div className="empty-state"><div className="ei">♻️</div><p>Nog geen listings</p></div>
                 ) : (
                   <table className="table">
                     <thead><tr><th>Titel</th><th>Categorie</th><th>Prijs</th><th>Locatie</th><th>Status</th><th>Datum</th><th>Actie</th></tr></thead>
@@ -458,7 +556,6 @@ export default function AdminPage() {
                           <td>{l.locatie || '—'}</td>
                           <td>
                             {l.status === 'actief' ? <span className="badge badge-green">Actief</span>
-                              : l.status === 'gereserveerd' ? <span className="badge badge-orange">Gereserveerd</span>
                               : l.status === 'verkocht' ? <span className="badge badge-teal">Verkocht</span>
                               : <span className="badge badge-gray">{l.status}</span>}
                           </td>
@@ -466,7 +563,6 @@ export default function AdminPage() {
                           <td>
                             <div className="action-btns">
                               {l.status !== 'actief' && <button className="btn-sm btn-approve" onClick={() => approveListing(l.id)}>Activeren</button>}
-                              <button className="btn-sm btn-view">Bekijk</button>
                             </div>
                           </td>
                         </tr>
@@ -484,7 +580,7 @@ export default function AdminPage() {
                   <div><h2>Bestellingen</h2><p>{bestellingen.length} bestellingen</p></div>
                 </div>
                 {dataLoading ? <div className="loading-state">⏳ Laden...</div> : bestellingen.length === 0 ? (
-                  <div className="empty-state"><div className="ei">📦</div><p>Nog geen bestellingen geplaatst</p></div>
+                  <div className="empty-state"><div className="ei">📦</div><p>Nog geen bestellingen</p></div>
                 ) : (
                   <table className="table">
                     <thead><tr><th>Order #</th><th>Totaal</th><th>Status</th><th>Datum</th></tr></thead>
@@ -496,8 +592,7 @@ export default function AdminPage() {
                           <td>
                             {b.status === 'geleverd' ? <span className="badge badge-green">Geleverd</span>
                               : b.status === 'verzonden' ? <span className="badge badge-teal">Verzonden</span>
-                              : b.status === 'in_behandeling' ? <span className="badge badge-orange">In behandeling</span>
-                              : <span className="badge badge-gray">{b.status}</span>}
+                              : <span className="badge badge-orange">In behandeling</span>}
                           </td>
                           <td>{b.created_at ? formatDate(b.created_at) : '—'}</td>
                         </tr>
@@ -510,11 +605,7 @@ export default function AdminPage() {
 
             {/* INSTELLINGEN */}
             {tab === 'instellingen' && (
-              <SettingsPanel
-                siteSettings={siteSettings}
-                toggleSetting={toggleSetting}
-                settingsSaved={settingsSaved}
-              />
+              <SettingsPanel siteSettings={siteSettings} toggleSetting={toggleSetting} settingsSaved={settingsSaved} />
             )}
 
           </div>
