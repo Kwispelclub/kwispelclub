@@ -14,8 +14,7 @@ export default function Navbar() {
 
   useEffect(() => {
     window.addEventListener('scroll', () => setScrolled(window.scrollY > 10))
-    supabase.auth.getUser().then(({ data: { user } }) => setUser(user))
-    supabase.auth.onAuthStateChange((_e, session) => setUser(session?.user ?? null))
+    supabase.auth.getSession().then(({ data: { session } }) => setUser(session?.user ?? null))
   }, [])
 
   const links = [

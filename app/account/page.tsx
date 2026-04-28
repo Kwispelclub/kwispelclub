@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import type { User } from '@supabase/supabase-js'
@@ -26,7 +26,7 @@ function EmptyState({ icon, title, desc, cta, ctaHref, onCtaClick }: {
 
 export default function AccountPage() {
   const router = useRouter()
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
   const [user, setUser] = useState<User | null>(null)
   const [activePanel, setActivePanel] = useState<Panel>('overview')
   const [scrolled, setScrolled] = useState(false)
@@ -201,7 +201,10 @@ export default function AccountPage() {
           .stats-grid{grid-template-columns:repeat(2,1fr)}
         }
       `}</style>
+      <link rel="preconnect" href="https://fonts.googleapis.com" />
+      <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
+    
 
       <div className="account-layout">
         {/* SIDEBAR */}
