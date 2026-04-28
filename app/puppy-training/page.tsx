@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase'
 
 const MODULES = [
   { id:1, title:'Welkom & Voorbereiding', dur:'15 min', lessons:[{type:'video',title:'Introductie: Wat je kunt verwachten',dur:'5 min',done:true},{type:'article',title:'Checklist: Puppy-proof je huis',dur:'4 min',done:true},{type:'video',title:'De eerste 48 uur met je puppy',dur:'6 min',done:false}] },
@@ -21,12 +22,18 @@ const FAQS = [
 ]
 
 export default function PuppyTrainingPage() {
-  const [scrolled, setScrolled] = useState(false)
+  const supabase = createClient()
   const [openModules, setOpenModules] = useState<Set<number>>(new Set([1]))
   const [openFaqs, setOpenFaqs] = useState<Set<number>>(new Set())
   const [lessons, setLessons] = useState(() => MODULES.map(m => ({ ...m, lessons: m.lessons.map(l => ({ ...l })) })))
+  const [trainers, setTrainers] = useState<any[]>([])
 
-  useEffect(() => { window.addEventListener('scroll', () => setScrolled(window.scrollY > 20)) }, [])
+  useEffect(() => {
+    // Laad echte trainers
+    supabase.from('academy_verkopers').select('*').eq('status', 'actief').order('volgorde').then(({ data }) => {
+      setTrainers(data || [])
+    })
+  }, [])
 
   const toggleModule = (id: number) => setOpenModules(prev => { const n = new Set(prev); n.has(id)?n.delete(id):n.add(id); return n })
   const toggleFaq = (i: number) => setOpenFaqs(prev => { const n = new Set(prev); n.has(i)?n.delete(i):n.add(i); return n })
@@ -37,15 +44,11 @@ export default function PuppyTrainingPage() {
   const totalLessons = lessons.reduce((sum,m) => sum+m.lessons.length, 0)
   const doneLessons = lessons.reduce((sum,m) => sum+m.lessons.filter(l=>l.done).length, 0)
   const pct = Math.round(doneLessons/totalLessons*100)
-
   const lessonIcon = (type: string) => type==='video'?{bg:'var(--orange-pale)',color:'var(--orange-main)',icon:'▶'}:type==='quiz'?{bg:'#EDE8F5',color:'#6B4FA0',icon:'❓'}:{bg:'var(--green-pale)',color:'var(--green-dark)',icon:'📄'}
 
   const CSS = `
-    :root{--green-dark:#2D5A27;--green-main:#4A7C3F;--green-light:#6B9E5E;--green-pale:#E8F0E4;--orange-main:#E8913A;--orange-pale:#FFF3E0;--cream:#FFF9F0;--cream-dark:#F5EDE0;--text-dark:#2C2C2C;--text-mid:#5A5A5A;--text-light:#8A8A8A;--white:#FFFFFF;--red:#E84E4E}
+    :root{--green-dark:#2D5A27;--green-main:#4A7C3F;--green-light:#6B9E5E;--green-pale:#E8F0E4;--orange-main:#E8913A;--orange-pale:#FFF3E0;--cream:#FFF9F0;--cream-dark:#F5EDE0;--text-dark:#2C2C2C;--text-mid:#5A5A5A;--text-light:#8A8A8A;--white:#FFFFFF;--teal:#2A9D8F;--teal-pale:#E0F5F1}
     *{margin:0;padding:0;box-sizing:border-box}body{font-family:'Nunito',sans-serif;background:var(--cream);color:var(--text-dark);overflow-x:hidden;-webkit-font-smoothing:antialiased}h1,h2,h3,h4{font-family:'Fredoka',sans-serif}
-    .beta-bar{background:linear-gradient(90deg,var(--orange-main),#D4812E,var(--orange-main));background-size:200%;color:white;text-align:center;padding:10px 16px;font-size:13px;font-weight:600;animation:shimmer 3s ease infinite}@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-    .navbar{position:sticky;top:0;z-index:100;background:rgba(255,249,240,.88);backdrop-filter:blur(20px);border-bottom:1px solid rgba(0,0,0,.04);padding:0 clamp(16px,4vw,48px);transition:all .3s}.navbar.scrolled{box-shadow:0 4px 20px rgba(0,0,0,.08)}
-    .nav-inner{max-width:1320px;margin:0 auto;display:flex;align-items:center;height:72px;gap:8px}.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;margin-right:28px}.logo-paw{width:42px;height:42px;border-radius:12px;background:var(--green-dark);display:flex;align-items:center;justify-content:center;font-size:22px}.brand{font-family:'Fredoka',sans-serif;font-size:22px;font-weight:700;color:var(--green-dark)}.nav-links{display:flex;gap:2px;list-style:none}.nav-links a{text-decoration:none;color:var(--text-dark);font-weight:600;font-size:14px;padding:8px 16px;border-radius:10px;transition:all .2s}.nav-links a:hover,.nav-links a.active{background:var(--green-pale);color:var(--green-dark)}
     .breadcrumb{max-width:1320px;margin:0 auto;padding:20px clamp(16px,4vw,48px) 0;font-size:14px;color:var(--text-light)}.breadcrumb a{color:var(--green-main);text-decoration:none;font-weight:600}
     .page-hero{max-width:1320px;margin:0 auto;padding:24px clamp(16px,4vw,48px)}.hero-card{background:linear-gradient(135deg,var(--green-dark),var(--green-main),var(--green-light));border-radius:36px;overflow:hidden;position:relative;display:grid;grid-template-columns:1fr 1fr;min-height:400px}
     .hero-content{padding:56px;display:flex;flex-direction:column;justify-content:center;position:relative;z-index:2}.hero-tag{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.15);padding:6px 16px;border-radius:50px;color:rgba(255,255,255,.9);font-size:12px;font-weight:700;margin-bottom:20px;width:fit-content}.hero-content h1{font-size:clamp(32px,4vw,48px);color:white;line-height:1.1;margin-bottom:16px}.accent{color:#F5A855}.hero-content p{color:rgba(255,255,255,.82);font-size:16px;line-height:1.65;margin-bottom:28px;max-width:420px}.hero-img{position:relative;overflow:hidden}.hero-img img{width:100%;height:100%;object-fit:cover;mask-image:linear-gradient(to left,rgba(0,0,0,1) 50%,transparent 100%);-webkit-mask-image:linear-gradient(to left,rgba(0,0,0,1) 50%,transparent 100%)}
@@ -57,13 +60,30 @@ export default function PuppyTrainingPage() {
     .module-body{padding:0 24px 24px}.lesson-list{display:flex;flex-direction:column;gap:8px}.lesson-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:12px;background:var(--cream);font-size:14px;transition:all .2s;cursor:pointer}.lesson-item:hover{background:var(--green-pale)}.lesson-ic{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}.lesson-title{flex:1;font-weight:600}.lesson-dur{font-size:12px;color:var(--text-light)}.lesson-chk{width:24px;height:24px;border-radius:50%;border:2px solid var(--cream-dark);display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer;transition:all .2s;flex-shrink:0}.lesson-chk.done{background:var(--green-main);border-color:var(--green-main);color:white}
     .course-sidebar{position:sticky;top:96px}.sidebar-card{background:var(--white);border-radius:20px;padding:28px;box-shadow:0 4px 20px rgba(0,0,0,.08);margin-bottom:20px}.sidebar-card h3{font-size:18px;margin-bottom:16px;color:var(--green-dark)}.sidebar-stat{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--cream-dark);font-size:14px}.sidebar-stat:last-child{border-bottom:none}.stat-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}.stat-green{background:var(--green-pale)}.stat-orange{background:var(--orange-pale)}.sidebar-stat strong{display:block;font-size:14px}.sidebar-stat span{font-size:12px;color:var(--text-light)}
     .progress-bar{width:100%;height:10px;background:var(--cream-dark);border-radius:50px;overflow:hidden;margin:12px 0 8px}.progress-fill{height:100%;background:linear-gradient(90deg,var(--green-main),var(--green-light));border-radius:50px;transition:width .5s ease}.progress-text{font-size:13px;color:var(--text-mid);font-weight:600}
-    .trainer-card{display:flex;align-items:center;gap:14px;padding:16px;background:var(--cream);border-radius:12px;margin-top:16px}.trainer-av{width:56px;height:56px;border-radius:50%;overflow:hidden;flex-shrink:0}.trainer-av img{width:100%;height:100%;object-fit:cover}.trainer-name{font-weight:700;font-size:15px}.trainer-role{font-size:12px;color:var(--text-light)}
+    .trainers-section{background:var(--teal-pale);border-radius:28px;padding:48px;margin-bottom:0}
+    .trainers-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:24px;margin-top:32px}
+    .trainer-card{background:var(--white);border-radius:20px;padding:28px;box-shadow:0 2px 8px rgba(0,0,0,.06);display:flex;gap:18px;align-items:flex-start;transition:all .3s}
+    .trainer-card:hover{transform:translateY(-4px);box-shadow:0 8px 32px rgba(0,0,0,.1)}
+    .trainer-av{width:72px;height:72px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--green-pale);display:flex;align-items:center;justify-content:center;font-size:28px;border:3px solid var(--teal-pale)}
+    .trainer-av img{width:100%;height:100%;object-fit:cover}
+    .trainer-info{flex:1}
+    .trainer-naam{font-family:'Fredoka',sans-serif;font-size:18px;font-weight:700;color:var(--text-dark);margin-bottom:2px}
+    .trainer-spec{display:inline-flex;padding:3px 10px;border-radius:50px;background:var(--teal-pale);color:var(--teal);font-size:11px;font-weight:700;margin-bottom:10px}
+    .trainer-bio{font-size:13px;color:var(--text-mid);line-height:1.6;margin-bottom:12px}
+    .trainer-meta{display:flex;gap:12px;flex-wrap:wrap}
+    .trainer-meta span{font-size:12px;color:var(--text-light);font-weight:600}
+    .trainer-certs{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+    .cert-tag{padding:3px 10px;border-radius:50px;background:var(--green-pale);color:var(--green-dark);font-size:11px;font-weight:700}
+    .trainer-placeholder{background:var(--white);border-radius:20px;padding:28px;box-shadow:0 2px 8px rgba(0,0,0,.06);text-align:center;border:2px dashed rgba(42,157,143,.3)}
+    .trainer-placeholder p{font-size:14px;color:var(--text-mid);margin-bottom:16px}
+    .btn-trainer{display:inline-flex;padding:12px 24px;border-radius:50px;background:var(--teal);color:white;font-family:'Fredoka',sans-serif;font-size:14px;font-weight:600;text-decoration:none;transition:all .2s}
+    .btn-trainer:hover{background:#1a7a6e;transform:translateY(-2px)}
     .tips-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}.tip-card{background:var(--white);border-radius:20px;padding:28px;box-shadow:0 2px 8px rgba(0,0,0,.06);transition:all .3s}.tip-card:hover{transform:translateY(-4px)}.tip-num{width:40px;height:40px;border-radius:50%;background:var(--orange-pale);display:flex;align-items:center;justify-content:center;font-family:'Fredoka',sans-serif;font-size:18px;font-weight:700;color:var(--orange-main);margin-bottom:16px}.tip-card h4{font-size:16px;margin-bottom:8px}.tip-card p{font-size:14px;color:var(--text-mid);line-height:1.55}
     .faq-list{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:12px}.faq-item{background:var(--white);border-radius:20px;box-shadow:0 2px 8px rgba(0,0,0,.06);overflow:hidden}.faq-q{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;cursor:pointer;font-weight:700;font-size:15px;transition:background .2s}.faq-q:hover{background:var(--cream)}.faq-chev{font-size:16px;transition:transform .3s;color:var(--text-light)}.faq-chev.open{transform:rotate(180deg)}.faq-a{padding:0 24px 20px;font-size:14px;color:var(--text-mid);line-height:1.65}
     .cta-section{max-width:1320px;margin:0 auto;padding:0 clamp(16px,4vw,48px) 80px}.cta-card{background:linear-gradient(135deg,var(--green-dark),var(--green-main),var(--green-light));border-radius:36px;padding:56px 48px;color:white;text-align:center}.cta-card h2{font-size:clamp(26px,3vw,38px);margin-bottom:14px;color:white}.cta-card p{font-size:16px;opacity:.82;max-width:460px;margin:0 auto 28px;line-height:1.6}.cta-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
     footer{background:var(--green-dark);color:white}.footer-inner{max-width:1320px;margin:0 auto;padding:48px clamp(16px,4vw,48px) 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}.footer-logo{display:flex;align-items:center;gap:10px;text-decoration:none}.footer-logo .lp{background:rgba(255,255,255,.15);width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}.footer-logo .b{font-family:'Fredoka',sans-serif;font-size:20px;font-weight:700;color:white}.footer-links{display:flex;gap:24px}.footer-links a{color:white;opacity:.6;text-decoration:none;font-size:14px;transition:opacity .2s}.footer-links a:hover{opacity:1}.footer-copy{font-size:13px;opacity:.4;width:100%;text-align:center;padding-top:20px;border-top:1px solid rgba(255,255,255,.08)}
     @media(max-width:1024px){.course-overview{grid-template-columns:1fr}.course-sidebar{position:static}.hero-card{grid-template-columns:1fr}.hero-img{display:none}.tips-grid{grid-template-columns:repeat(2,1fr)}}
-    @media(max-width:768px){.nav-links{display:none}.tips-grid{grid-template-columns:1fr}.hero-content{padding:36px 24px}}
+    @media(max-width:768px){.tips-grid{grid-template-columns:1fr}.hero-content{padding:36px 24px}.trainers-grid{grid-template-columns:1fr}}
   `
 
   return (
@@ -71,8 +91,6 @@ export default function PuppyTrainingPage() {
       <style>{CSS}</style>
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-
-      
 
       <div className="breadcrumb"><a href="/">Home</a> › <a href="/#academy">Academy</a> › Puppy Training</div>
 
@@ -84,11 +102,54 @@ export default function PuppyTrainingPage() {
             <p>Leer je puppy de basisbegrippen van gehoorzaamheid, socialisatie en goede gewoontes. Van eerste commando's tot loslopen in het park.</p>
             <div style={{display:'flex',gap:12,flexWrap:'wrap'}}>
               <a href="#modules" className="btn btn-primary">Start de cursus →</a>
-              <a href="#tips" className="btn btn-white">Bekijk tips</a>
+              <a href="#trainers" className="btn btn-white">Onze trainers</a>
             </div>
           </div>
           <div className="hero-img">
             <img src="https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=700&q=80" alt="Puppy training" />
+          </div>
+        </div>
+      </section>
+
+      {/* TRAINERS SECTIE */}
+      <section className="section" id="trainers" style={{ paddingBottom: 0 }}>
+        <div className="trainers-section">
+          <div style={{ textAlign: 'center' }}>
+            <h2 style={{ fontSize: 'clamp(24px,3vw,36px)', color: 'var(--teal)', marginBottom: 8 }}>Onze Trainers 🎓</h2>
+            <p style={{ color: 'var(--text-mid)', fontSize: 15, maxWidth: 500, margin: '0 auto' }}>Gecertificeerde professionals die je begeleiden doorheen de cursus</p>
+          </div>
+          <div className="trainers-grid">
+            {trainers.map(t => (
+              <div key={t.id} className="trainer-card">
+                <div className="trainer-av">
+                  {t.foto_url ? <img src={t.foto_url} alt={t.naam} /> : '👩‍🏫'}
+                </div>
+                <div className="trainer-info">
+                  <div className="trainer-naam">{t.naam}</div>
+                  {t.specialisatie && <span className="trainer-spec">{t.specialisatie}</span>}
+                  <div className="trainer-bio">{t.bio}</div>
+                  <div className="trainer-meta">
+                    {t.ervaring_jaren && <span>🏅 {t.ervaring_jaren} jaar ervaring</span>}
+                    {t.website && <a href={t.website} target="_blank" style={{ fontSize: 12, color: 'var(--teal)', fontWeight: 700 }}>🌐 Website</a>}
+                    {t.instagram && <a href={`https://instagram.com/${t.instagram.replace('@','')}`} target="_blank" style={{ fontSize: 12, color: 'var(--teal)', fontWeight: 700 }}>📷 {t.instagram}</a>}
+                  </div>
+                  {t.certificaten?.length > 0 && (
+                    <div className="trainer-certs">
+                      {t.certificaten.map((c: string) => <span key={c} className="cert-tag">{c}</span>)}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            {/* Placeholder slot(s) */}
+            {Array.from({ length: Math.max(0, 2 - trainers.length) }).map((_, i) => (
+              <div key={`placeholder-${i}`} className="trainer-placeholder">
+                <div style={{ fontSize: 40, marginBottom: 12, opacity: .4 }}>👩‍🏫</div>
+                <p>Ben jij een gecertificeerde hondentrainer? Sluit je aan als Academy trainer.</p>
+                <a href="/academy-verkoper" className="btn-trainer">Word Trainer →</a>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -139,14 +200,6 @@ export default function PuppyTrainingPage() {
               <div className="sidebar-stat"><div className="stat-icon stat-green">🏆</div><div><strong>Certificaat</strong><span>Bij voltooiing</span></div></div>
               <div className="sidebar-stat"><div className="stat-icon stat-orange">📱</div><div><strong>Mobiel Vriendelijk</strong><span>Leer waar je wilt</span></div></div>
             </div>
-            <div className="sidebar-card">
-              <h3>Jouw Trainer</h3>
-              <div className="trainer-card">
-                <div className="trainer-av" style={{background:'var(--green-pale)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:24}}>👩‍🏫</div>
-                <div><div className="trainer-name">Voorbeeldtrainer</div><div className="trainer-role">Gecertificeerd Hondentrainer · Illustratief profiel</div></div>
-              </div>
-              <p style={{fontSize:13,color:'var(--text-mid)',marginTop:14,lineHeight:1.55}}>⚠️ <em>Voorbeeldprofiel</em> — Echte trainers worden toegevoegd zodra de Academy live gaat.</p>
-            </div>
           </div>
         </div>
       </section>
@@ -154,7 +207,11 @@ export default function PuppyTrainingPage() {
       <section className="section" id="tips">
         <div className="section-header"><h2>5 Gouden Puppy Tips 💡</h2><p>De belangrijkste dingen om te onthouden bij de opvoeding van je puppy</p></div>
         <div className="tips-grid">
-          {[['1','Wees consequent','Gebruik altijd dezelfde commando\'s en regels. Inconsequentie is de #1 fout bij puppy training.'],['2','Kort & positief trainen','Houd sessies kort (5-10 min) en eindig altijd op een positieve noot met een beloning.'],['3','Socialiseer vroeg','De eerste 16 weken zijn cruciaal. Laat je puppy zoveel mogelijk geluiden, mensen en dieren ervaren.'],['4','Geduld, geduld, geduld','Elke puppy leert in zijn eigen tempo. Straf nooit — beloon gewenst gedrag.'],['5','Maak het leuk!','Training moet een spel zijn. Een blije puppy leert 3x sneller dan een gestresste.']].map(([num,title,desc]) => (
+          {[['1','Wees consequent','Gebruik altijd dezelfde commando\'s en regels. Inconsequentie is de #1 fout bij puppy training.'],
+            ['2','Kort & positief trainen','Houd sessies kort (5-10 min) en eindig altijd op een positieve noot met een beloning.'],
+            ['3','Socialiseer vroeg','De eerste 16 weken zijn cruciaal. Laat je puppy zoveel mogelijk geluiden, mensen en dieren ervaren.'],
+            ['4','Geduld, geduld, geduld','Elke puppy leert in zijn eigen tempo. Straf nooit — beloon gewenst gedrag.'],
+            ['5','Maak het leuk!','Training moet een spel zijn. Een blije puppy leert 3x sneller dan een gestresste.']].map(([num,title,desc]) => (
             <div key={num} className="tip-card">
               <div className="tip-num">{num}</div>
               <h4>{title}</h4><p>{desc}</p>
@@ -188,7 +245,7 @@ export default function PuppyTrainingPage() {
           <p>Maak een gratis account aan en start vandaag nog met de puppy training cursus.</p>
           <div className="cta-btns">
             <a href="#modules" className="btn btn-primary">Start de cursus →</a>
-            <a href="/#academy" className="btn btn-white">Meer Academy cursussen</a>
+            <a href="/academy-verkoper" className="btn btn-white">Word Trainer</a>
           </div>
         </div>
       </div>

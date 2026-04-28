@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { SettingsPanel } from '@/components/AdminSettingsPanel'
 
-type Tab = 'dashboard' | 'kapsalons' | 'verkopers' | 'gebruikers' | 'listings' | 'bestellingen' | 'instellingen'
+type Tab = 'dashboard' | 'kapsalons' | 'verkopers' | 'academy' | 'gebruikers' | 'listings' | 'bestellingen' | 'instellingen'
 
 const ADMIN_PASSWORD = 'Vrijdag@201024+'
 
@@ -23,6 +23,7 @@ export default function AdminPage() {
   const [listings, setListings] = useState<any[]>([])
   const [bestellingen, setBestellingen] = useState<any[]>([])
   const [verkopers, setVerkopers] = useState<any[]>([])
+  const [academyTrainers, setAcademyTrainers] = useState<any[]>([])
   const [stats, setStats] = useState({ kapsalons: 0, gebruikers: 0, listings: 0, bestellingen: 0, pending: 0, verkopers: 0, verkopersPending: 0 })
   const [dataLoading, setDataLoading] = useState(false)
   const [siteSettings, setSiteSettings] = useState<Record<string, any>>({})
@@ -56,12 +57,13 @@ export default function AdminPage() {
   const loadData = async () => {
     setDataLoading(true)
     try {
-      const [k, u, l, b, v, s] = await Promise.all([
+      const [k, u, l, b, v, a, s] = await Promise.all([
         supabase.from('kapsalons').select('*').order('created_at', { ascending: false }),
         supabase.from('profiles').select('*').order('created_at', { ascending: false }),
         supabase.from('listings').select('*').order('created_at', { ascending: false }),
         supabase.from('bestellingen').select('*').order('created_at', { ascending: false }),
         supabase.from('verkopers').select('*, profiles(first_name, last_name, email)').order('created_at', { ascending: false }),
+        supabase.from('academy_verkopers').select('*, profiles(first_name, last_name, email)').order('created_at', { ascending: false }),
         fetch('/api/admin-settings').then(r => r.json()),
       ])
       setKapsalons(k.data || [])
@@ -69,6 +71,7 @@ export default function AdminPage() {
       setListings(l.data || [])
       setBestellingen(b.data || [])
       setVerkopers(v.data || [])
+      setAcademyTrainers(a.data || [])
       setSiteSettings(s.settings || {})
       setStats({
         kapsalons: k.data?.length || 0,
@@ -130,6 +133,33 @@ export default function AdminPage() {
     if (v?.profile_id) {
       await supabase.from('profiles').update({ role: 'koper' }).eq('id', v.profile_id)
     }
+    loadData()
+  }
+
+  const approveTrainer = async (id: string) => {
+    const t = academyTrainers.find(x => x.id === id)
+    const actief = academyTrainers.filter(x => x.status === 'actief').length
+    if (actief >= 2) { alert('Maximum van 2 actieve trainers bereikt. Pauzeer eerst een trainer.'); return }
+    await supabase.from('academy_verkopers').update({ status: 'actief' }).eq('id', id)
+    if (t?.profiles?.email) {
+      await fetch('/api/send-email', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'academy_goedgekeurd', to: t.profiles.email, data: { naam: t.naam } }) }).catch(() => {})
+    }
+    loadData()
+  }
+
+  const rejectTrainer = async (id: string) => {
+    await supabase.from('academy_verkopers').update({ status: 'geweigerd' }).eq('id', id)
+    loadData()
+  }
+
+  const pauseTrainer = async (id: string) => {
+    await supabase.from('academy_verkopers').update({ status: 'gepauzeerd' }).eq('id', id)
+    loadData()
+  }
+
+  const updateTrainerVolgorde = async (id: string, volgorde: number) => {
+    await supabase.from('academy_verkopers').update({ volgorde }).eq('id', id)
     loadData()
   }
 
@@ -264,6 +294,7 @@ export default function AdminPage() {
     dashboard: { title: 'Dashboard', desc: 'Overzicht van alle activiteit op Kwispelclub' },
     kapsalons: { title: 'Kapsalons', desc: `${stats.kapsalons} geregistreerde salons` },
     verkopers: { title: 'Verkopers', desc: `${stats.verkopers} verkopers` },
+    academy: { title: 'Academy Trainers', desc: `${academyTrainers.length} trainer aanvragen` },
     gebruikers: { title: 'Gebruikers', desc: `${stats.gebruikers} geregistreerde accounts` },
     listings: { title: '2de Hands Listings', desc: `${stats.listings} advertenties` },
     bestellingen: { title: 'Bestellingen', desc: `${stats.bestellingen} bestellingen` },
@@ -289,6 +320,7 @@ export default function AdminPage() {
               ['dashboard', '📊', 'Dashboard', totalPending > 0 ? totalPending : null],
               ['kapsalons', '✂️', 'Kapsalons', stats.pending > 0 ? stats.pending : null],
               ['verkopers', '🏪', 'Verkopers', stats.verkopersPending > 0 ? stats.verkopersPending : null],
+              ['academy', '🎓', 'Academy', academyTrainers.filter((x:any) => x.status === 'in_afwachting').length || null],
               ['gebruikers', '👥', 'Gebruikers', null],
               ['listings', '♻️', '2de Hands', null],
               ['bestellingen', '📦', 'Bestellingen', null],
@@ -463,6 +495,87 @@ export default function AdminPage() {
                                 <button className="btn-sm btn-reject" onClick={() => rejectVerkoper(v.id)}>Pauzeren</button>
                               </>}
                               {v.status === 'geweigerd' && <button className="btn-sm btn-approve" onClick={() => approveVerkoper(v.id)}>Heractiveren</button>}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            )}
+
+            {/* ACADEMY */}
+            {tab === 'academy' && (
+              <div className="section-card">
+                <div className="section-card-header">
+                  <div>
+                    <h2>Academy Trainers</h2>
+                    <p>Max. 2 actieve trainers — {academyTrainers.filter(t => t.status === 'actief').length}/2 actief</p>
+                  </div>
+                  <a href="/academy-verkoper" target="_blank" style={{ fontSize: 13, color: 'var(--teal)', fontWeight: 700, textDecoration: 'none' }}>+ Aanmeldpagina</a>
+                </div>
+
+                {/* Slots indicator */}
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '12px 16px', background: 'var(--teal-pale)', borderRadius: 10, marginBottom: 20 }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--teal)' }}>Slots:</span>
+                  {[0, 1].map(i => {
+                    const actief = academyTrainers.filter(t => t.status === 'actief')
+                    const trainer = actief[i]
+                    return (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 12px', borderRadius: 50, background: trainer ? 'var(--teal)' : 'white', border: '2px solid var(--teal)', fontSize: 12, fontWeight: 700, color: trainer ? 'white' : 'var(--teal)' }}>
+                        {trainer ? `✓ ${trainer.naam}` : `Slot ${i + 1} — Vrij`}
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {dataLoading ? <div className="loading-state">⏳ Laden...</div> : academyTrainers.length === 0 ? (
+                  <div className="empty-state"><div className="ei">🎓</div><p>Nog geen trainer aanvragen</p></div>
+                ) : (
+                  <table className="table">
+                    <thead><tr><th>Trainer</th><th>Specialisatie</th><th>Ervaring</th><th>Status</th><th>Volgorde</th><th>Datum</th><th>Actie</th></tr></thead>
+                    <tbody>
+                      {academyTrainers.map(t => (
+                        <tr key={t.id}>
+                          <td>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                              {t.foto_url
+                                ? <img src={t.foto_url} alt={t.naam} style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover' }} />
+                                : <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--teal-pale)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>👩‍🏫</div>}
+                              <div>
+                                <strong>{t.naam}</strong>
+                                <div style={{ fontSize: 11, color: 'var(--text-light)' }}>{t.profiles?.email}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td>{t.specialisatie || '—'}</td>
+                          <td>{t.ervaring_jaren ? `${t.ervaring_jaren} jaar` : '—'}</td>
+                          <td>
+                            {t.status === 'actief' ? <span className="badge badge-teal">✓ Actief</span>
+                              : t.status === 'in_afwachting' ? <span className="badge badge-orange">⏳ In afwachting</span>
+                              : t.status === 'gepauzeerd' ? <span className="badge badge-gray">⏸ Gepauzeerd</span>
+                              : <span className="badge badge-red">✗ Geweigerd</span>}
+                          </td>
+                          <td>
+                            <select
+                              value={t.volgorde || 0}
+                              onChange={e => updateTrainerVolgorde(t.id, parseInt(e.target.value))}
+                              style={{ padding: '4px 8px', borderRadius: 6, border: '1.5px solid #E5EAF0', fontFamily: 'Nunito, sans-serif', fontSize: 13 }}
+                            >
+                              {[0, 1, 2, 3, 4].map(n => <option key={n} value={n}>{n}</option>)}
+                            </select>
+                          </td>
+                          <td>{formatDate(t.created_at)}</td>
+                          <td>
+                            <div className="action-btns">
+                              {t.status === 'in_afwachting' && <>
+                                <button className="btn-sm btn-approve" onClick={() => approveTrainer(t.id)}>✓ Goedkeuren</button>
+                                <button className="btn-sm btn-reject" onClick={() => rejectTrainer(t.id)}>✗ Weigeren</button>
+                              </>}
+                              {t.status === 'actief' && <button className="btn-sm btn-reject" onClick={() => pauseTrainer(t.id)}>⏸ Pauzeren</button>}
+                              {(t.status === 'gepauzeerd' || t.status === 'geweigerd') && <button className="btn-sm btn-approve" onClick={() => approveTrainer(t.id)}>▶ Activeren</button>}
+                              {t.website && <a href={t.website} target="_blank" className="btn-sm btn-view" style={{ textDecoration: 'none' }}>🌐</a>}
                             </div>
                           </td>
                         </tr>
