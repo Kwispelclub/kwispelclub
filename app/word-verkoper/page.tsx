@@ -24,13 +24,14 @@ export default function WordVerkoperPage() {
   const [akkoord, setAkkoord] = useState(false)
 
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      const user = session?.user ?? null
       if (!user) { router.push('/auth?redirect=/word-verkoper'); return }
       setUser(user)
       // Check of al verkoper
       const { data } = await supabase.from('verkopers').select('id,status').eq('profile_id', user.id).single()
       if (data) {
-        if (data.status === 'actief') { router.push('/verkoper'); return }
+        if (data.status === 'actief') { router.push('/verkoper/dashboard'); return }
         setBestaatAl(true)
       }
       setLoading(false)
