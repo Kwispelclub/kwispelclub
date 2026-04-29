@@ -84,7 +84,7 @@ export default function CursusPage() {
         .select('les_id')
         .eq('user_id', session.user.id)
         .eq('cursus_id', id)
-      setVoortgang(new Set((prog || []).map((p: any) => p.les_id)))
+      setVoortgang(new Set<string>((prog || []).map((p: any) => p.les_id as string)))
     } else if (c.is_gratis) {
       setHeeftToegang(true)
     }
@@ -104,7 +104,7 @@ export default function CursusPage() {
     if (!user || !heeftToegang) return
     if (voortgang.has(lesId)) return
     await supabase.from('cursus_voortgang').upsert({ user_id: user.id, cursus_id: id, les_id: lesId })
-    setVoortgang(prev => new Set([...prev, lesId]))
+    setVoortgang(prev => new Set<string>([...Array.from(prev), lesId]))
   }
 
   const startBetaling = async () => {
