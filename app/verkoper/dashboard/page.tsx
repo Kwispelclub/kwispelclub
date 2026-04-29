@@ -15,14 +15,10 @@ export default function VerkoperDashboard() {
   const [tab, setTab] = useState<Tab>('overzicht')
   const [mollieMode, setMollieMode] = useState('test')
 
-  // Producten
   const [producten, setProducten] = useState<any[]>([])
   const [productenLoading, setProductenLoading] = useState(false)
-
-  // Bestellingen
   const [bestellingen, setBestellingen] = useState<any[]>([])
 
-  // Instellingen form
   const [shopNaam, setShopNaam] = useState('')
   const [beschrijving, setBeschrijving] = useState('')
   const [website, setWebsite] = useState('')
@@ -35,7 +31,6 @@ export default function VerkoperDashboard() {
   const logoRef = useRef<HTMLInputElement>(null)
   const bannerRef = useRef<HTMLInputElement>(null)
 
-  // Nieuw product form
   const [showProductForm, setShowProductForm] = useState(false)
   const [pNaam, setPNaam] = useState('')
   const [pBeschrijving, setPBeschrijving] = useState('')
@@ -53,18 +48,10 @@ export default function VerkoperDashboard() {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session?.user) { router.push('/auth?redirect=/verkoper/dashboard'); return }
       setUser(session.user)
-
-      // Laad verkoper profiel
-      const { data: v } = await supabase
-        .from('verkopers')
-        .select('*')
-        .eq('profile_id', session.user.id)
-        .single()
-
+      const { data: v } = await supabase.from('verkopers').select('*').eq('profile_id', session.user.id).single()
       if (!v) { router.push('/word-verkoper'); return }
       if (v.status === 'in_afwachting') { setVerkoper(v); setLoading(false); return }
       if (v.status === 'geweigerd') { router.push('/word-verkoper'); return }
-
       setVerkoper(v)
       setShopNaam(v.shop_naam || '')
       setBeschrijving(v.beschrijving || '')
@@ -72,12 +59,9 @@ export default function VerkoperDashboard() {
       setInstagram(v.instagram || '')
       setLogoUrl(v.logo_url || '')
       setBannerUrl(v.banner_url || '')
-
-      // Laad Mollie mode
       fetch('/api/admin-settings').then(r => r.json()).then(d => {
         setMollieMode(d.settings?.mollie_mode || process.env.NEXT_PUBLIC_MOLLIE_MODE || 'test')
       })
-
       await loadProducten(v.id)
       setLoading(false)
     })
@@ -93,12 +77,9 @@ export default function VerkoperDashboard() {
   const handleSaveInstellingen = async () => {
     setSaveMsg('Bezig...')
     await supabase.from('verkopers').update({
-      shop_naam: shopNaam,
-      beschrijving,
-      website: website || null,
-      instagram: instagram || null,
-      logo_url: logoUrl || null,
-      banner_url: bannerUrl || null,
+      shop_naam: shopNaam, beschrijving,
+      website: website || null, instagram: instagram || null,
+      logo_url: logoUrl || null, banner_url: bannerUrl || null,
       updated_at: new Date().toISOString(),
     }).eq('id', verkoper.id)
     setSaveMsg('✓ Opgeslagen!')
@@ -142,15 +123,9 @@ export default function VerkoperDashboard() {
     if (!pNaam || !pPrijs) { setPErr('Naam en prijs zijn verplicht'); return }
     setPSaving(true); setPErr('')
     const { error } = await supabase.from('producten').insert({
-      verkoper_id: verkoper.id,
-      naam: pNaam,
-      beschrijving: pBeschrijving || null,
-      prijs: parseFloat(pPrijs),
-      categorie: pCategorie,
-      img_url: pFotos[0] || null,
-      voorraad: pVoorraad ? parseInt(pVoorraad) : null,
-      actief: true,
-      dier: pDier || null,
+      verkoper_id: verkoper.id, naam: pNaam, beschrijving: pBeschrijving || null,
+      prijs: parseFloat(pPrijs), categorie: pCategorie, img_url: pFotos[0] || null,
+      voorraad: pVoorraad ? parseInt(pVoorraad) : null, actief: true, dier: pDier || null,
     })
     if (error) { setPErr(error.message); setPSaving(false); return }
     setPNaam(''); setPBeschrijving(''); setPPrijs(''); setPFotos([]); setPVoorraad('')
@@ -250,7 +225,6 @@ export default function VerkoperDashboard() {
     </>
   )
 
-  // Wachtend op goedkeuring
   if (verkoper?.status === 'in_afwachting') return (
     <>
       <style>{CSS}</style>
@@ -271,15 +245,11 @@ export default function VerkoperDashboard() {
   return (
     <>
       <style>{CSS}</style>
-
       <div className="layout">
-        {/* SIDEBAR */}
         <aside className="sidebar">
           <div className="sb-logo">
             <div className="sb-logo-inner" style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%' }}>
-              <div className="lp">
-                {logoUrl ? <img src={logoUrl} alt={shopNaam} /> : '🏪'}
-              </div>
+              <div className="lp">{logoUrl ? <img src={logoUrl} alt={shopNaam} /> : '🏪'}</div>
               <div>
                 <div className="brand">{shopNaam || 'Mijn Shop'}</div>
                 <div className="sub">Verkoper Dashboard</div>
@@ -300,12 +270,12 @@ export default function VerkoperDashboard() {
           </nav>
           <div className="sb-footer">
             <a href={`/winkel/${verkoper?.slug}`} target="_blank">🔗 Bekijk mijn shop</a>
+            <a href="/trainer/academy">🎓 Academy Beheer</a>
             <a href="/">🏠 Terug naar site</a>
             <a href="#" onClick={async () => { await supabase.auth.signOut(); window.location.href = '/' }} style={{ color: 'rgba(232,78,78,.7)' }}>🚪 Uitloggen</a>
           </div>
         </aside>
 
-        {/* MAIN */}
         <main className="main">
           <div className="top-bar">
             <div>
@@ -317,27 +287,18 @@ export default function VerkoperDashboard() {
               </h1>
               <p>{shopUrl}</p>
             </div>
-            {tab === 'producten' && (
-              <button className="btn btn-green" onClick={() => setShowProductForm(true)}>+ Nieuw Product</button>
-            )}
-            {tab === 'instellingen' && (
-              <button className="btn btn-green" onClick={handleSaveInstellingen}>{saveMsg}</button>
-            )}
+            {tab === 'producten' && <button className="btn btn-green" onClick={() => setShowProductForm(true)}>+ Nieuw Product</button>}
+            {tab === 'instellingen' && <button className="btn btn-green" onClick={handleSaveInstellingen}>{saveMsg}</button>}
           </div>
 
           <div className="content">
-
-            {/* MOLLIE TEST WARNING */}
             {mollieMode === 'test' && (
               <div className="mollie-warn">
                 <span className="mw-icon">⚠️</span>
-                <div>
-                  <strong>Testmodus actief</strong> — Betalingen via Mollie zijn momenteel in testmodus. Echte betalingen worden nog niet verwerkt. Klanten die nu bestellen ontvangen een testbevestiging. Schakel over naar live mode via de admin instellingen voor echte transacties.
-                </div>
+                <div><strong>Testmodus actief</strong> — Betalingen via Mollie zijn momenteel in testmodus. Echte betalingen worden nog niet verwerkt. Klanten die nu bestellen ontvangen een testbevestiging. Schakel over naar live mode via de admin instellingen voor echte transacties.</div>
               </div>
             )}
 
-            {/* OVERZICHT */}
             {tab === 'overzicht' && (
               <>
                 <div className="stats-row">
@@ -354,13 +315,10 @@ export default function VerkoperDashboard() {
                     </div>
                   ))}
                 </div>
-
                 <div className="card">
                   <div className="card-header"><h2>Mijn Shop</h2><a href={`/winkel/${verkoper?.slug}`} target="_blank" className="btn btn-ghost btn-sm">🔗 Bekijken</a></div>
                   <div className="shop-preview">
-                    <div className="shop-logo-prev">
-                      {logoUrl ? <img src={logoUrl} alt={shopNaam} /> : '🏪'}
-                    </div>
+                    <div className="shop-logo-prev">{logoUrl ? <img src={logoUrl} alt={shopNaam} /> : '🏪'}</div>
                     <div>
                       <div style={{ fontFamily: 'Fredoka, sans-serif', fontSize: 17, fontWeight: 700 }}>{shopNaam}</div>
                       <div style={{ fontSize: 12, color: 'var(--text-light)', marginBottom: 6 }}>kwispelclub.be/winkel/{verkoper?.slug}</div>
@@ -370,7 +328,6 @@ export default function VerkoperDashboard() {
                   </div>
                   {beschrijving && <p style={{ fontSize: 13, color: 'var(--text-mid)', lineHeight: 1.6 }}>{beschrijving}</p>}
                 </div>
-
                 <div className="card">
                   <div className="card-header"><h2>Recente Producten</h2><button className="btn btn-ghost btn-sm" onClick={() => setTab('producten')}>Alle producten →</button></div>
                   {producten.length === 0 ? (
@@ -397,7 +354,6 @@ export default function VerkoperDashboard() {
               </>
             )}
 
-            {/* PRODUCTEN */}
             {tab === 'producten' && (
               <>
                 {showProductForm && (
@@ -446,7 +402,6 @@ export default function VerkoperDashboard() {
                     </button>
                   </div>
                 )}
-
                 <div className="card">
                   <div className="card-header">
                     <h2>Alle Producten ({producten.length})</h2>
@@ -475,9 +430,7 @@ export default function VerkoperDashboard() {
                             <td><span className={`badge ${p.actief ? 'badge-green' : 'badge-gray'}`}>{p.actief ? 'Actief' : 'Inactief'}</span></td>
                             <td>
                               <div style={{ display: 'flex', gap: 6 }}>
-                                <button className="btn btn-ghost btn-sm" onClick={() => toggleProductActief(p.id, p.actief)}>
-                                  {p.actief ? '⏸ Pauzeer' : '▶ Activeer'}
-                                </button>
+                                <button className="btn btn-ghost btn-sm" onClick={() => toggleProductActief(p.id, p.actief)}>{p.actief ? '⏸ Pauzeer' : '▶ Activeer'}</button>
                                 <button className="btn btn-danger btn-sm" onClick={() => deleteProduct(p.id)}>🗑️</button>
                               </div>
                             </td>
@@ -490,7 +443,6 @@ export default function VerkoperDashboard() {
               </>
             )}
 
-            {/* BESTELLINGEN */}
             {tab === 'bestellingen' && (
               <div className="card">
                 <div className="card-header"><h2>Bestellingen</h2></div>
@@ -520,7 +472,6 @@ export default function VerkoperDashboard() {
               </div>
             )}
 
-            {/* INSTELLINGEN */}
             {tab === 'instellingen' && (
               <>
                 <div className="card">
@@ -546,7 +497,6 @@ export default function VerkoperDashboard() {
                     </div>
                   </div>
                 </div>
-
                 <div className="card">
                   <div className="card-header"><h2>📝 Shop Info</h2></div>
                   <div className="fg"><label>Shop naam *</label><input value={shopNaam} onChange={e => setShopNaam(e.target.value)} /></div>
@@ -562,7 +512,6 @@ export default function VerkoperDashboard() {
                     </div>
                   </div>
                 </div>
-
                 <div className="card">
                   <div className="card-header"><h2>💰 Commissie</h2></div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '14px 18px', background: 'var(--green-pale)', borderRadius: 12 }}>
@@ -573,13 +522,11 @@ export default function VerkoperDashboard() {
                     </div>
                   </div>
                 </div>
-
                 <button className="btn btn-green" onClick={handleSaveInstellingen} style={{ width: '100%', justifyContent: 'center', padding: 14, fontSize: 15 }}>
                   {saveMsg}
                 </button>
               </>
             )}
-
           </div>
         </main>
       </div>
