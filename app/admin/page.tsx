@@ -169,20 +169,21 @@ export default function AdminPage() {
     loadData()
   }
 
-  const saveTeamlid = async () => {
-    if (!editTeamlid) return
+  const saveTeamlid = async (lid?: any) => {
+    const data = lid || editTeamlid
+    if (!data) return
     setTeamSaving(true)
-    if (editTeamlid.id) {
+    if (data.id) {
       await supabase.from('team_members').update({
-        naam: editTeamlid.naam, rol: editTeamlid.rol, bio: editTeamlid.bio,
-        foto_url: editTeamlid.foto_url || null, volgorde: editTeamlid.volgorde || 0,
-        actief: editTeamlid.actief, is_placeholder: editTeamlid.is_placeholder,
-      }).eq('id', editTeamlid.id)
+        naam: data.naam, rol: data.rol, bio: data.bio,
+        foto_url: data.foto_url || null, volgorde: data.volgorde || 0,
+        actief: data.actief, is_placeholder: data.is_placeholder,
+      }).eq('id', data.id)
     } else {
       await supabase.from('team_members').insert({
-        naam: editTeamlid.naam, rol: editTeamlid.rol, bio: editTeamlid.bio,
-        foto_url: editTeamlid.foto_url || null, volgorde: editTeamlid.volgorde || 0,
-        actief: true, is_placeholder: editTeamlid.is_placeholder || false,
+        naam: data.naam, rol: data.rol, bio: data.bio,
+        foto_url: data.foto_url || null, volgorde: data.volgorde || 0,
+        actief: true, is_placeholder: data.is_placeholder || false,
       })
     }
     setEditTeamlid(null)
@@ -209,7 +210,9 @@ export default function AdminPage() {
       setEditTeamlid((prev: any) => ({ ...prev, foto_url: fotoUrl }))
       // Direct opslaan in DB als het een bestaand lid is
       if (editTeamlid.id) {
+        const updatedLid = { ...editTeamlid, foto_url: fotoUrl }
         await supabase.from('team_members').update({ foto_url: fotoUrl }).eq('id', editTeamlid.id)
+        setEditTeamlid(updatedLid)
         loadData()
       }
     }
