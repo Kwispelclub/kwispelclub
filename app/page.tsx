@@ -14,10 +14,16 @@ export default function HomePage() {
   const [showCookie, setShowCookie] = useState(false)
   const [breedTab, setBreedTab] = useState('honden')
   const [wishlisted, setWishlisted] = useState<Set<number>>(new Set())
+  const [settings, setSettings] = useState<Record<string, any>>({
+    demo_webshop: true, demo_verkopers: true, demo_reviews: true,
+  })
 
   useEffect(() => {
-    window.addEventListener('scroll', () => setScrolled(window.scrollY > 20))
+    fetch('/api/admin-settings').then(r => r.json()).then(d => {
+      if (d.settings) setSettings(prev => ({ ...prev, ...d.settings }))
+    }).catch(() => {})
 
+    window.addEventListener('scroll', () => setScrolled(window.scrollY > 20))
     obsRef.current = new IntersectionObserver(entries => {
       entries.forEach((e, i) => {
         if (e.isIntersecting) {
@@ -27,26 +33,17 @@ export default function HomePage() {
       })
     }, { threshold: 0.08 })
     document.querySelectorAll('.fade-up').forEach(el => obsRef.current?.observe(el))
-
-    if (!sessionStorage.getItem('kc_seen')) {
-      setTimeout(() => setShowPopup(true), 1500)
-    }
-    if (!localStorage.getItem('kc_cookies')) {
-      setTimeout(() => setShowCookie(true), 2000)
-    }
-
-    // Counter animation
+    if (!sessionStorage.getItem('kc_seen')) { setTimeout(() => setShowPopup(true), 1500) }
+    if (!localStorage.getItem('kc_cookies')) { setTimeout(() => setShowCookie(true), 2000) }
     const counterObs = new IntersectionObserver(entries => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           entry.target.querySelectorAll<HTMLElement>('[data-target]').forEach(el => {
             const t = parseFloat(el.dataset.target || '0')
             const isDecimal = el.dataset.decimal === 'true'
-            const dur = 2000
-            const s = performance.now()
+            const dur = 2000; const s = performance.now()
             const animate = (n: number) => {
-              const p = Math.min((n - s) / dur, 1)
-              const ease = 1 - Math.pow(1 - p, 3)
+              const p = Math.min((n - s) / dur, 1); const ease = 1 - Math.pow(1 - p, 3)
               el.textContent = isDecimal ? (t * ease).toFixed(1) : Math.floor(t * ease).toLocaleString('nl-BE') + '+'
               if (p < 1) requestAnimationFrame(animate)
             }
@@ -309,17 +306,13 @@ export default function HomePage() {
         @media(max-width:480px){.products-grid{grid-template-columns:1fr}.footer-inner{grid-template-columns:1fr;gap:24px}.stats-inner{grid-template-columns:1fr 1fr;gap:16px;padding:28px 20px}.breed-grid{grid-template-columns:repeat(2,1fr)}.cta-card{padding:48px 24px}}
       `}</style>
 
-      <div className="paw-bg">
-        {[...Array(5)].map((_, i) => <div key={i} className="paw">🐾</div>)}
-      </div>
+      <div className="paw-bg">{[...Array(5)].map((_, i) => <div key={i} className="paw">🐾</div>)}</div>
 
-      {/* Announce bar */}
       <div className="announce-bar">
         🚀 Kwispelclub is in opbouw! Webshop & boekingen zijn nog niet actief.
         <a href="#early-access">Registreer je voor early access →</a>
       </div>
 
-      {/* HERO */}
       <section className="hero">
         <div className="hero-card">
           <div className="blob b1"/><div className="blob b2"/><div className="blob b3"/>
@@ -334,19 +327,12 @@ export default function HomePage() {
           </div>
           <div className="hero-img">
             <img src="https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=800&q=80" alt="Twee honden spelen samen buiten" />
-            <div className="floating-badge fb1">
-              <div className="fb-icon g">⭐</div>
-              <div className="fb-text">4.9 / 5.0<span>12.500+ reviews</span></div>
-            </div>
-            <div className="floating-badge fb2">
-              <div className="fb-icon o">🐾</div>
-              <div className="fb-text">85+ Verkopers<span>Geverifieerd</span></div>
-            </div>
+            <div className="floating-badge fb1"><div className="fb-icon g">⭐</div><div className="fb-text">4.9 / 5.0<span>12.500+ reviews</span></div></div>
+            <div className="floating-badge fb2"><div className="fb-icon o">🐾</div><div className="fb-text">85+ Verkopers<span>Geverifieerd</span></div></div>
           </div>
         </div>
       </section>
 
-      {/* TRUST */}
       <div className="trust-bar fade-up">
         <div className="trust-inner">
           {[['g','✅','Geverifieerde Verkopers','100% betrouwbaar'],['o','🚚','Snelle Levering','Binnen 2-3 werkdagen'],['g','🐾','Dierenwelzijn Eerst','Ethisch & duurzaam'],['o','💬','Expert Advies','Dierenartsen & trainers']].map(([type,icon,title,sub]) => (
@@ -358,7 +344,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* FEATURES */}
       <section className="section" id="features">
         <div className="section-header fade-up"><h2>Alles op één plek 🐾</h2><p>Of je nu een puppy hebt of een senior kat — bij Kwispelclub vind je alles wat je nodig hebt.</p></div>
         <div className="features-grid">
@@ -366,16 +351,11 @@ export default function HomePage() {
             ['🎓','Academy','Video\'s en tips over puppy training, kattengedrag, voeding en gezondheid van experts.','Video\'s & info →','/puppy-training'],
             ['🤝','Marktplaats','Betrouwbare kopers & verkopers met geverifieerde matches en beveiligde chat.','Bekijk aanbod →','/2dehands'],
             ['💛','Community','Forums, chatbox & advies van gelijkgestemde dierenliefhebbers in jouw regio.','Doe mee →','#community']].map(([icon,title,desc,link,href]) => (
-            <div key={title} className="feature-card fade-up">
-              <div className="feature-icon">{icon}</div>
-              <h3>{title}</h3><p>{desc}</p>
-              <a href={href} className="feature-link">{link}</a>
-            </div>
+            <div key={title} className="feature-card fade-up"><div className="feature-icon">{icon}</div><h3>{title}</h3><p>{desc}</p><a href={href} className="feature-link">{link}</a></div>
           ))}
         </div>
       </section>
 
-      {/* STATS */}
       <div className="stats-bar fade-up">
         <div className="stats-inner">
           <div style={{position:'absolute',top:12,right:16,background:'rgba(255,255,255,.15)',padding:'4px 14px',borderRadius:50,fontSize:11,fontWeight:700,color:'rgba(255,255,255,.7)'}}>🎯 Onze doelen</div>
@@ -389,32 +369,33 @@ export default function HomePage() {
       {/* PRODUCTS */}
       <section className="section" id="shop">
         <div className="section-header fade-up"><h2>Aanbevolen Producten</h2><p>Topkwaliteit, geselecteerd door onze experts</p></div>
-        <div className="demo-notice fade-up">⚠️ <span>Voorbeeldproducten</span> — Deze producten zijn ter illustratie. De webshop is nog in opbouw.</div>
-        <div className="products-grid">
-          {products.map((p, i) => (
-            <div key={i} className="product-card fade-up">
-              <div className="product-img">
-                <img src={p.img} alt={p.name} />
-                <span className={`product-badge badge-${p.badgeType}`}>{p.badge}</span>
-                <button className={`product-wishlist ${wishlisted.has(i)?'liked':''}`} onClick={() => { const n=new Set(wishlisted); n.has(i)?n.delete(i):n.add(i); setWishlisted(n) }}>
-                  {wishlisted.has(i)?'♥':'♡'}
-                </button>
-              </div>
-              <div className="product-info">
-                <div className="product-brand">{p.brand}</div>
-                <div className="product-name">{p.name}</div>
-                <div className="product-meta">
-                  <div className="product-price">{p.oldPrice && <span className="old-price">{p.oldPrice}</span>}{p.price}</div>
-                  <div className="product-rating">⭐ {p.rating} <span>({p.reviews})</span></div>
+        {settings.demo_webshop && <div className="demo-notice fade-up">⚠️ <span>Voorbeeldproducten</span> — Deze producten zijn ter illustratie. De webshop is nog in opbouw.</div>}
+        {settings.demo_webshop && (
+          <div className="products-grid">
+            {products.map((p, i) => (
+              <div key={i} className="product-card fade-up">
+                <div className="product-img">
+                  <img src={p.img} alt={p.name} />
+                  <span className={`product-badge badge-${p.badgeType}`}>{p.badge}</span>
+                  <button className={`product-wishlist ${wishlisted.has(i)?'liked':''}`} onClick={() => { const n=new Set(wishlisted); n.has(i)?n.delete(i):n.add(i); setWishlisted(n) }}>
+                    {wishlisted.has(i)?'♥':'♡'}
+                  </button>
+                </div>
+                <div className="product-info">
+                  <div className="product-brand">{p.brand}</div>
+                  <div className="product-name">{p.name}</div>
+                  <div className="product-meta">
+                    <div className="product-price">{p.oldPrice && <span className="old-price">{p.oldPrice}</span>}{p.price}</div>
+                    <div className="product-rating">⭐ {p.rating} <span>({p.reviews})</span></div>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-        <div className="see-all fade-up"><a href="#" className="btn btn-outline">Bekijk alle producten →</a></div>
+            ))}
+          </div>
+        )}
+        {settings.demo_webshop && <div className="see-all fade-up"><a href="#" className="btn btn-outline">Bekijk alle producten →</a></div>}
       </section>
 
-      {/* BREED SELECTOR */}
       <section className="section">
         <div className="breed-section fade-up">
           <div className="section-header"><h2>Ontdek per Ras 🐕</h2><p>Vind specifieke producten en advies voor jouw ras</p></div>
@@ -424,17 +405,12 @@ export default function HomePage() {
           </div>
           <div className="breed-grid">
             {breedData[breedTab].map(b => (
-              <div key={b.name} className="breed-card">
-                <span className="breed-emoji">{b.emoji}</span>
-                <div className="breed-name">{b.name}</div>
-                <p>{b.count} producten</p>
-              </div>
+              <div key={b.name} className="breed-card"><span className="breed-emoji">{b.emoji}</span><div className="breed-name">{b.name}</div><p>{b.count} producten</p></div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ACADEMY */}
       <section className="section" id="academy">
         <div className="academy-section fade-up">
           <div className="section-header"><h2>Kwispelclub Academy 🎓</h2><p>Leer alles over de verzorging en training van je huisdier</p></div>
@@ -445,10 +421,7 @@ export default function HomePage() {
               { href:'#', img:'https://images.unsplash.com/photo-1518717758536-85ae29035b6d?w=500&q=80', tag:'algemeen', tagLabel:'Algemeen', title:'Voeding voor Senior Honden', desc:'De juiste voeding na het 7e levensjaar', dur:'15 min · Voedingsexpert' },
             ].map(a => (
               <div key={a.title} className="academy-card" onClick={() => window.location.href=a.href}>
-                <div className="academy-thumb">
-                  <img src={a.img} alt={a.title} />
-                  <div className="play-btn">▶</div>
-                </div>
+                <div className="academy-thumb"><img src={a.img} alt={a.title} /><div className="play-btn">▶</div></div>
                 <div className="academy-info">
                   <span className={`academy-tag ${a.tag}`}>{a.tagLabel}</span>
                   <h4>{a.title}</h4><p>{a.desc}</p>
@@ -460,7 +433,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* MARKETPLACE */}
       <section className="section" id="marketplace">
         <div className="section-header fade-up"><h2>Koper-Verkoper Area 🤝</h2><p>Veilig handelen met geverifieerde matches</p></div>
         <div className="mp-layout fade-up">
@@ -488,45 +460,47 @@ export default function HomePage() {
       {/* SELLERS */}
       <section className="section" id="sellers">
         <div className="section-header fade-up"><h2>Uitgelichte Verkopers ⭐</h2><p>Ontdek onze meest populaire verkopers en fokkers</p></div>
-        <div className="demo-notice fade-up">⚠️ <span>Voorbeeldverkopers</span> — Ben je verkoper? <a href="#early-access" style={{color:'var(--orange-main)',fontWeight:700}}>Registreer je hier →</a></div>
-        <div className="sellers-grid fade-up">
-          {[['🏪','Huisdiershop De Poot','Premium Voeding & Snacks','⭐⭐⭐⭐⭐ 4.9 (312 reviews)'],['🐕‍🦺','Golden Dreams Kennel','Golden Retriever Fokker','⭐⭐⭐⭐⭐ 5.0 (89 reviews)'],['🧶','KattenKracht','Speelgoed & Accessoires','⭐⭐⭐⭐ 4.7 (156 reviews)']].map(([logo,name,cat,rating]) => (
-            <div key={name} className="seller-card">
-              <div className="seller-logo">{logo}</div>
-              <h4>{name}</h4>
-              <div className="seller-cat">{cat}</div>
-              <div className="seller-rating">{rating}</div>
-              <div className="seller-verified">✓ Geverifieerd</div>
-            </div>
-          ))}
-        </div>
+        {settings.demo_verkopers && <div className="demo-notice fade-up">⚠️ <span>Voorbeeldverkopers</span> — Ben je verkoper? <a href="#early-access" style={{color:'var(--orange-main)',fontWeight:700}}>Registreer je hier →</a></div>}
+        {settings.demo_verkopers && (
+          <div className="sellers-grid fade-up">
+            {[['🏪','Huisdiershop De Poot','Premium Voeding & Snacks','⭐⭐⭐⭐⭐ 4.9 (312 reviews)'],['🐕‍🦺','Golden Dreams Kennel','Golden Retriever Fokker','⭐⭐⭐⭐⭐ 5.0 (89 reviews)'],['🧶','KattenKracht','Speelgoed & Accessoires','⭐⭐⭐⭐ 4.7 (156 reviews)']].map(([logo,name,cat,rating]) => (
+              <div key={name} className="seller-card">
+                <div className="seller-logo">{logo}</div>
+                <h4>{name}</h4><div className="seller-cat">{cat}</div>
+                <div className="seller-rating">{rating}</div>
+                <div className="seller-verified">✓ Geverifieerd</div>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* TESTIMONIALS */}
       <section className="section">
         <div className="testimonials-section fade-up">
           <div className="section-header"><h2>Wat onze klanten zeggen 💬</h2><p>Echte ervaringen van baasjes zoals jij</p></div>
-          <div className="demo-notice">⚠️ <span>Voorbeeldreviews</span> — Dit zijn fictieve reviews ter illustratie van het platform.</div>
-          <div className="testimonials-grid">
-            {[
-              { stars:'⭐⭐⭐⭐⭐', text:'"Eindelijk een platform dat ik volledig vertrouw. De verkopers zijn betrouwbaar en mijn hond is dol op de premium brokken!"', img:'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&q=80', name:'Sofie V.', role:'Baasje van Max (Labrador)' },
-              { stars:'⭐⭐⭐⭐⭐', text:'"De Academy video\'s hebben me enorm geholpen met de training van mijn puppy. En de community is super behulpzaam!"', img:'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80', name:'Thomas D.', role:'Baasje van Bella (Beagle)' },
-              { stars:'⭐⭐⭐⭐⭐', text:'"Via de marktplaats heb ik een geweldige fokker gevonden. Alles geverifieerd, super veilig. Aanrader!"', img:'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&q=80', name:'Lisa M.', role:'Baasje van Luna (Maine Coon)' },
-            ].map(t => (
-              <div key={t.name} className="testimonial-card">
-                <div className="t-stars">{t.stars}</div>
-                <div className="t-text">{t.text}</div>
-                <div className="t-author">
-                  <div className="t-avatar"><img src={t.img} alt={t.name} /></div>
-                  <div><div className="t-name">{t.name}</div><div className="t-role">{t.role}</div></div>
+          {settings.demo_reviews && <div className="demo-notice">⚠️ <span>Voorbeeldreviews</span> — Dit zijn fictieve reviews ter illustratie van het platform.</div>}
+          {settings.demo_reviews && (
+            <div className="testimonials-grid">
+              {[
+                { stars:'⭐⭐⭐⭐⭐', text:'"Eindelijk een platform dat ik volledig vertrouw. De verkopers zijn betrouwbaar en mijn hond is dol op de premium brokken!"', img:'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&q=80', name:'Sofie V.', role:'Baasje van Max (Labrador)' },
+                { stars:'⭐⭐⭐⭐⭐', text:'"De Academy video\'s hebben me enorm geholpen met de training van mijn puppy. En de community is super behulpzaam!"', img:'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80', name:'Thomas D.', role:'Baasje van Bella (Beagle)' },
+                { stars:'⭐⭐⭐⭐⭐', text:'"Via de marktplaats heb ik een geweldige fokker gevonden. Alles geverifieerd, super veilig. Aanrader!"', img:'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&q=80', name:'Lisa M.', role:'Baasje van Luna (Maine Coon)' },
+              ].map(t => (
+                <div key={t.name} className="testimonial-card">
+                  <div className="t-stars">{t.stars}</div>
+                  <div className="t-text">{t.text}</div>
+                  <div className="t-author">
+                    <div className="t-avatar"><img src={t.img} alt={t.name} /></div>
+                    <div><div className="t-name">{t.name}</div><div className="t-role">{t.role}</div></div>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
-      {/* COMMUNITY */}
       <section className="section" id="community">
         <div className="community-section fade-up">
           <h2>Word deel van de Community 💛</h2>
@@ -539,22 +513,17 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* NEWSLETTER */}
       <div className="nl-section fade-up">
         <div className="nl-card">
           <div className="nl-content"><h2>Blijf op de hoogte 📬</h2><p>Ontvang wekelijks tips, exclusieve aanbiedingen en het laatste nieuws over jouw huisdier.</p></div>
           <div className="nl-form">
             {nlDone ? <div style={{color:'var(--green-main)',fontWeight:700,fontSize:16}}>✓ Aangemeld!</div> : (
-              <>
-                <input type="email" placeholder="Jouw e-mailadres" value={nlEmail} onChange={e => setNlEmail(e.target.value)} />
-                <button onClick={() => nlEmail.includes('@') && setNlDone(true)}>Aanmelden</button>
-              </>
+              <><input type="email" placeholder="Jouw e-mailadres" value={nlEmail} onChange={e => setNlEmail(e.target.value)} /><button onClick={() => nlEmail.includes('@') && setNlDone(true)}>Aanmelden</button></>
             )}
           </div>
         </div>
       </div>
 
-      {/* CTA / EARLY ACCESS */}
       <section className="cta-section" id="early-access">
         <div className="cta-card fade-up">
           <div className="blob b1"/><div className="blob b2"/>
@@ -576,7 +545,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* FOOTER */}
       <footer>
         <div className="footer-inner">
           <div className="footer-brand">
@@ -584,18 +552,9 @@ export default function HomePage() {
             <p>Het #1 platform voor huisdierliefhebbers in België en Nederland. Premium producten, expert advies en een warme community.</p>
             <div className="footer-social"><a href="#">📘</a><a href="#">📷</a><a href="#">🎵</a><a href="#">▶️</a></div>
           </div>
-          <div className="footer-col">
-            <h5>Shop</h5>
-            <a href="#">Hondenvoeding</a><a href="#">Kattenvoeding</a><a href="#">Speelgoed</a><a href="#">Accessoires</a><a href="#">Verzorging</a>
-          </div>
-          <div className="footer-col">
-            <h5>Platform</h5>
-            <a href="/puppy-training">Academy</a><a href="/2dehands">2de Hands</a><a href="/kapsalons">Kapsalons</a><a href="/blog">Blog</a><a href="/verkoper">Word Verkoper</a>
-          </div>
-          <div className="footer-col">
-            <h5>Support</h5>
-            <a href="/contact">Contact</a><a href="/contact#faq">FAQ</a><a href="/privacy">Privacybeleid</a><a href="/privacy">Voorwaarden</a><a href="/over-ons">Over Ons</a>
-          </div>
+          <div className="footer-col"><h5>Shop</h5><a href="#">Hondenvoeding</a><a href="#">Kattenvoeding</a><a href="#">Speelgoed</a><a href="#">Accessoires</a><a href="#">Verzorging</a></div>
+          <div className="footer-col"><h5>Platform</h5><a href="/puppy-training">Academy</a><a href="/2dehands">2de Hands</a><a href="/kapsalons">Kapsalons</a><a href="/blog">Blog</a><a href="/verkoper">Word Verkoper</a></div>
+          <div className="footer-col"><h5>Support</h5><a href="/contact">Contact</a><a href="/contact#faq">FAQ</a><a href="/privacy">Privacybeleid</a><a href="/privacy">Voorwaarden</a><a href="/over-ons">Over Ons</a></div>
         </div>
         <div className="footer-bottom">
           <span>© 2026 Kwispelclub. Alle rechten voorbehouden.</span>
@@ -604,16 +563,13 @@ export default function HomePage() {
         </div>
       </footer>
 
-      {/* LAUNCH POPUP */}
       {showPopup && (
         <div className="modal-overlay" onClick={e => e.target===e.currentTarget && (setShowPopup(false), sessionStorage.setItem('kc_seen','1'))}>
           <div className="modal">
             <div className="lm-emoji">🐾</div>
             <h2>Welkom bij Kwispelclub!</h2>
             <p>We zijn druk bezig met het bouwen van hét huisdierplatform voor België en Nederland. Wat je nu ziet is een voorproefje.</p>
-            <div className="lm-feats">
-              {['🛍️ Webshop — binnenkort','✂️ Boekingen — binnenkort','💬 Community — binnenkort','🎓 Academy — binnenkort'].map(f => <span key={f} className="lm-feat">{f}</span>)}
-            </div>
+            <div className="lm-feats">{['🛍️ Webshop — binnenkort','✂️ Boekingen — binnenkort','💬 Community — binnenkort','🎓 Academy — binnenkort'].map(f => <span key={f} className="lm-feat">{f}</span>)}</div>
             <p style={{fontSize:14}}><b>Wil je als eerste weten wanneer we live gaan?</b></p>
             <div className="lm-form">
               <input type="email" placeholder="Jouw e-mailadres" id="popupEmail" />
@@ -624,7 +580,6 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* COOKIE BANNER */}
       {showCookie && (
         <div className="cookie-banner">
           <div className="cookie-inner">
