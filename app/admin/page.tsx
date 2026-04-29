@@ -201,11 +201,17 @@ export default function AdminPage() {
     if (!file || !editTeamlid) return
     setUploadingTeamFoto(true)
     const ext = file.name.split('.').pop()
-    const path = `team/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-    const { data, error } = await supabase.storage.from('listings').upload(path, file, { upsert: true })
+    const uploadPath = `team/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+    const { data, error } = await supabase.storage.from('listings').upload(uploadPath, file, { upsert: true })
     if (!error && data) {
       const { data: url } = supabase.storage.from('listings').getPublicUrl(data.path)
-      setEditTeamlid((prev: any) => ({ ...prev, foto_url: url.publicUrl }))
+      const fotoUrl = url.publicUrl
+      setEditTeamlid((prev: any) => ({ ...prev, foto_url: fotoUrl }))
+      // Direct opslaan in DB als het een bestaand lid is
+      if (editTeamlid.id) {
+        await supabase.from('team_members').update({ foto_url: fotoUrl }).eq('id', editTeamlid.id)
+        loadData()
+      }
     }
     setUploadingTeamFoto(false)
   }
