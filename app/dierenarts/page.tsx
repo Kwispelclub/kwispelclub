@@ -156,13 +156,12 @@ export default function DierenartsPagina() {
         <p>Officiële organisaties en informatie over dierengezondheid in België en Nederland</p>
         <div className="links-grid">
           {[
-            ['🏛️', 'Orde der Dierenartsen', 'Officiële orde van Belgische dierenartsen', 'https://www.ordev.be'],
-            ['🇧🇪', 'FAVV België', 'Federaal Agentschap voor Voedselveiligheid', 'https://www.favv.be'],
-            ['🇳🇱', 'KNMvD Nederland', 'Koninklijke Nederlandse Maatschappij voor Diergeneeskunde', 'https://www.knmvd.nl'],
-            ['💉', 'Vaccinaties Hond', 'Aanbevolen vaccinatieschema voor honden', 'https://www.ordev.be'],
-            ['🐱', 'Vaccinaties Kat', 'Aanbevolen vaccinatieschema voor katten', 'https://www.ordev.be'],
-            ['☎️', 'Antigifcentrum', 'Bij vergiftiging: 070 245 245 (BE)', 'tel:070245245'],
-          ].map(([icon, title, desc, href]) => (
+            ['🏛️', 'Orde der Dierenartsen', 'Officiële orde van Belgische dierenartsen', 'https://www.ordev.be/nl'],
+['🇧🇪', 'FAVV België', 'Federaal Agentschap voor Voedselveiligheid', 'https://www.favv-afsca.be'],
+['🇳🇱', 'KNMvD Nederland', 'Koninklijke Nederlandse Maatschappij voor Diergeneeskunde', 'https://www.knmvd.nl'],
+['💉', 'Vaccinaties Hond', 'Info over vergiftiging bij honden', 'https://www.antigifcentrum.be/natuur/dieren/vergiftiging-van-dieren'],
+['🐱', 'Vergiftiging Kat', 'Giftige stoffen voor katten', 'https://www.antigifcentrum.be/natuur/dieren/vergiftiging-van-dieren'],
+['☎️', 'Antigifcentrum', 'Bij vergiftiging: 070 245 245 (BE)', 'tel:070245245'],
             <a key={title} href={href} target="_blank" rel="noopener noreferrer" className="link-card">
               <div className="link-icon">{icon}</div>
               <div className="link-info">
