@@ -20,6 +20,7 @@ export default function Navbar() {
   const links = [
     { href: '/#shop', label: 'Shop' },
     { href: '/kapsalons', label: 'Kapsalons' },
+    { href: '/dierenarts', label: 'Dierenarts' },
     { href: '/2dehands', label: '2de Hands' },
     { href: '/puppy-training', label: 'Academy' },
     { href: '/blog', label: 'Blog' },
