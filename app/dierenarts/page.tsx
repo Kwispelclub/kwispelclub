@@ -127,7 +127,7 @@ export default function DierenartsPagina() {
             loading="lazy"
             allowFullScreen
             referrerPolicy="no-referrer-when-downgrade"
-            src={`https://www.google.com/maps/embed/v1/search?key=AIzaSyB-mTCsAuoGU76UVEM-mDz2BKmB5pHUL7A&q=dierenarts+${encodeURIComponent(zoekStad)}&language=nl&region=BE`}
+            src={`https://www.google.com/maps/embed/v1/search?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY}&q=dierenarts+${encodeURIComponent(zoekStad)}&language=nl&region=BE`}
           />
           <div className="map-notice">
             💡 Tip: Klik op "Bekijk grotere kaart" voor routebeschrijving en extra info
