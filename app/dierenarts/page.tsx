@@ -77,7 +77,7 @@ export default function DierenartsPagina() {
     <>
       <style>{CSS}</style>
 
-      <div className="breadcrumb"><a href="/">Home</a> › Dierenarts Zoeken</div>
+      <div className="breadcrumb"><a href="/">Home</a> {`›`} Dierenarts Zoeken</div>
 
       {/* HERO */}
       <div className="page-hero">
