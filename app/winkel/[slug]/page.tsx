@@ -11,6 +11,7 @@ export default function WinkelPage() {
   const [products, setProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+  const [isEigenaar, setIsEigenaar] = useState(false)
 
   useEffect(() => {
     loadVerkoper()
@@ -37,6 +38,8 @@ export default function WinkelPage() {
 
     setProducts(p || [])
     setLoading(false)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user && v.profile_id === user.id) setIsEigenaar(true)
 
     // Views teller
     await supabase.from('verkopers').update({ views: (v.views || 0) + 1 }).eq('id', v.id)
@@ -137,6 +140,18 @@ export default function WinkelPage() {
           </div>
         </div>
       </div>
+{isEigenaar && (
+  <a href="/verkoper/dashboard" style={{
+    display: 'inline-flex', alignItems: 'center', gap: 8,
+    padding: '10px 20px', borderRadius: 50,
+    background: 'var(--green-main)', color: 'white',
+    fontFamily: 'Fredoka, sans-serif', fontSize: 14, fontWeight: 600,
+    textDecoration: 'none', margin: '0 clamp(16px,4vw,48px) 16px'
+  }}>
+    ⚙️ Beheer mijn shop →
+  </a>
+)}
+
 
       <div className="shop-body">
         <aside className="sidebar">
