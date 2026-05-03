@@ -5,9 +5,167 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { SettingsPanel } from '@/components/AdminSettingsPanel'
 
-type Tab = 'dashboard' | 'kapsalons' | 'verkopers' | 'academy' | 'gebruikers' | 'listings' | 'bestellingen' | 'team' | 'instellingen'
+type Tab = 'dashboard' | 'kapsalons' | 'verkopers' | 'academy' | 'gebruikers' | 'listings' | 'bestellingen' | 'team' | 'instellingen'| 'instellingen' | 'banners'
 
 const ADMIN_PASSWORD = 'Vrijdag@201024+'
+// ===== BANNERS TAB (plak dit in de main content sectie) =====
+const BannersTab = ({ banners, editBanner, setEditBanner, bannerSaving, setBannerSaving, supabase, loadData }: any) => {
+
+  const saveBanner = async () => {
+    if (!editBanner) return
+    setBannerSaving(true)
+    await supabase.from('page_banners').update({
+      actief: editBanner.actief,
+      tekst: editBanner.tekst,
+      kleur: editBanner.kleur,
+      link_url: editBanner.link_url || null,
+      link_tekst: editBanner.link_tekst || null,
+    }).eq('id', editBanner.id)
+    setEditBanner(null)
+    setBannerSaving(false)
+    loadData()
+  }
+
+  const toggleBanner = async (id: string, actief: boolean) => {
+    await supabase.from('page_banners').update({ actief }).eq('id', id)
+    loadData()
+  }
+
+  const KLEUREN = ['orange', 'green', 'red', 'blue', 'teal']
+  const KLEUR_LABELS: Record<string, string> = {
+    orange: '🟠 Oranje', green: '🟢 Groen', red: '🔴 Rood', blue: '🔵 Blauw', teal: '🩵 Teal'
+  }
+
+  return (
+    <div className="section-card">
+      <div className="section-card-header">
+        <div>
+          <h2>📢 Pagina Banners</h2>
+          <p>Stel per pagina een aankondigingsbanner in</p>
+        </div>
+      </div>
+
+      {editBanner && (
+        <div style={{ background: 'var(--orange-pale)', borderRadius: 12, padding: 20, marginBottom: 20, border: '2px solid var(--orange-main)' }}>
+          <h3 style={{ fontFamily: 'Fredoka, sans-serif', fontSize: 16, marginBottom: 16, color: 'var(--brown)' }}>
+            Banner bewerken — {editBanner.pagina}
+          </h3>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-mid)', display: 'block', marginBottom: 4 }}>Tekst *</label>
+              <input value={editBanner.tekst} onChange={e => setEditBanner((p: any) => ({ ...p, tekst: e.target.value }))}
+                placeholder="Bijv. Gratis verzending vandaag! 🚚"
+                style={{ width: '100%', padding: '9px 12px', border: '2px solid var(--cream-dark)', borderRadius: 8, fontFamily: 'Nunito, sans-serif', fontSize: 13 }} />
+            </div>
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-mid)', display: 'block', marginBottom: 4 }}>Kleur</label>
+              <select value={editBanner.kleur} onChange={e => setEditBanner((p: any) => ({ ...p, kleur: e.target.value }))}
+                style={{ width: '100%', padding: '9px 12px', border: '2px solid var(--cream-dark)', borderRadius: 8, fontFamily: 'Nunito, sans-serif', fontSize: 13 }}>
+                {KLEUREN.map(k => <option key={k} value={k}>{KLEUR_LABELS[k]}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-mid)', display: 'block', marginBottom: 4 }}>Actief</label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginTop: 10 }}>
+                <input type="checkbox" checked={editBanner.actief} onChange={e => setEditBanner((p: any) => ({ ...p, actief: e.target.checked })) } />
+                <span style={{ fontSize: 13, fontWeight: 600 }}>Banner tonen op deze pagina</span>
+              </label>
+            </div>
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-mid)', display: 'block', marginBottom: 4 }}>Link URL (optioneel)</label>
+              <input value={editBanner.link_url || ''} onChange={e => setEditBanner((p: any) => ({ ...p, link_url: e.target.value }))}
+                placeholder="https://kwispelclub.be/..."
+                style={{ width: '100%', padding: '9px 12px', border: '2px solid var(--cream-dark)', borderRadius: 8, fontFamily: 'Nunito, sans-serif', fontSize: 13 }} />
+            </div>
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-mid)', display: 'block', marginBottom: 4 }}>Link tekst (optioneel)</label>
+              <input value={editBanner.link_tekst || ''} onChange={e => setEditBanner((p: any) => ({ ...p, link_tekst: e.target.value }))}
+                placeholder="Bijv. Meer info"
+                style={{ width: '100%', padding: '9px 12px', border: '2px solid var(--cream-dark)', borderRadius: 8, fontFamily: 'Nunito, sans-serif', fontSize: 13 }} />
+            </div>
+          </div>
+
+          {/* Preview */}
+          {editBanner.tekst && (
+            <div style={{ marginTop: 16 }}>
+              <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-mid)', display: 'block', marginBottom: 6 }}>Preview:</label>
+              <div style={{
+                background: editBanner.kleur === 'orange' ? 'linear-gradient(90deg,#E8913A,#D4812E)'
+                  : editBanner.kleur === 'red' ? 'linear-gradient(90deg,#C0392B,#922B21)'
+                  : editBanner.kleur === 'blue' ? 'linear-gradient(90deg,#2471A3,#1A5276)'
+                  : editBanner.kleur === 'teal' ? 'linear-gradient(90deg,#2A9D8F,#1A7A6E)'
+                  : 'linear-gradient(90deg,#2D5A27,#4A7C3F)',
+                color: 'white', padding: '10px 16px', borderRadius: 8,
+                textAlign: 'center', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12
+              }}>
+                <span>{editBanner.tekst}</span>
+                {editBanner.link_url && editBanner.link_tekst && (
+                  <span style={{ padding: '3px 12px', borderRadius: 50, background: 'rgba(255,255,255,.2)', border: '1.5px solid rgba(255,255,255,.3)', fontSize: 12 }}>
+                    {editBanner.link_tekst} →
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+            <button className="btn-sm btn-approve" onClick={saveBanner} disabled={bannerSaving}>
+              {bannerSaving ? '...' : '✓ Opslaan'}
+            </button>
+            <button className="btn-sm btn-view" onClick={() => setEditBanner(null)}>Annuleren</button>
+          </div>
+        </div>
+      )}
+
+      <table className="table">
+        <thead>
+          <tr>
+            <th>Pagina</th>
+            <th>Tekst</th>
+            <th>Kleur</th>
+            <th>Link</th>
+            <th>Status</th>
+            <th>Actie</th>
+          </tr>
+        </thead>
+        <tbody>
+          {banners.map((b: any) => (
+            <tr key={b.id}>
+              <td><strong style={{ fontFamily: 'Fredoka, sans-serif', color: 'var(--green-dark)' }}>{b.pagina}</strong></td>
+              <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 13 }}>
+                {b.tekst || <span style={{ color: 'var(--text-light)', fontStyle: 'italic' }}>Geen tekst</span>}
+              </td>
+              <td>
+                <span style={{
+                  display: 'inline-flex', padding: '3px 10px', borderRadius: 50, fontSize: 11, fontWeight: 700,
+                  background: b.kleur === 'orange' ? '#FFF3E0' : b.kleur === 'red' ? '#FFF0F0' : b.kleur === 'blue' ? '#EBF5FB' : b.kleur === 'teal' ? '#E0F5F1' : '#E8F0E4',
+                  color: b.kleur === 'orange' ? '#E8913A' : b.kleur === 'red' ? '#C0392B' : b.kleur === 'blue' ? '#2471A3' : b.kleur === 'teal' ? '#2A9D8F' : '#2D5A27',
+                }}>
+                  {b.kleur}
+                </span>
+              </td>
+              <td style={{ fontSize: 12, color: 'var(--text-light)' }}>
+                {b.link_url ? <a href={b.link_url} target="_blank" style={{ color: 'var(--teal)', fontWeight: 700 }}>{b.link_tekst || 'Link'}</a> : '—'}
+              </td>
+              <td>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={b.actief}
+                    onChange={e => toggleBanner(b.id, e.target.checked)} />
+                  <span style={{ fontSize: 12, fontWeight: 700, color: b.actief ? 'var(--green-dark)' : 'var(--text-light)' }}>
+                    {b.actief ? 'Aan' : 'Uit'}
+                  </span>
+                </label>
+              </td>
+              <td>
+                <button className="btn-sm btn-edit" onClick={() => setEditBanner({ ...b })}>✏️ Bewerken</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
 
 export default function AdminPage() {
   const router = useRouter()
@@ -34,6 +192,9 @@ export default function AdminPage() {
   const [settingsSaved, setSettingsSaved] = useState(false)
 
   // Verkoper commissie edit
+  const [banners, setBanners] = useState<any[]>([])
+const [editBanner, setEditBanner] = useState<any>(null)
+const [bannerSaving, setBannerSaving] = useState(false)
   const [editCommissie, setEditCommissie] = useState<{ id: string; val: string } | null>(null)
 
   useEffect(() => {
@@ -61,7 +222,7 @@ export default function AdminPage() {
   const loadData = async () => {
     setDataLoading(true)
     try {
-      const [k, u, l, b, v, a, t, s] = await Promise.all([
+      const [k, u, l, b, v, a, t, s, bn] = await Promise.all([
         supabase.from('kapsalons').select('*').order('created_at', { ascending: false }),
         supabase.from('profiles').select('*').order('created_at', { ascending: false }),
         supabase.from('listings').select('*').order('created_at', { ascending: false }),
@@ -70,7 +231,7 @@ export default function AdminPage() {
         supabase.from('academy_verkopers').select('*, profiles(first_name, last_name, email)').order('created_at', { ascending: false }),
         supabase.from('team_members').select('*').order('volgorde'),
         fetch('/api/admin-settings').then(r => r.json()),
-      ])
+supabase.from('page_banners').select('*').order('pagina'),      ])
       setKapsalons(k.data || [])
       setGebruikers(u.data || [])
       setListings(l.data || [])
@@ -79,6 +240,7 @@ export default function AdminPage() {
       setAcademyTrainers(a.data || [])
       setTeamleden(t.data || [])
       setSiteSettings(s.settings || {})
+      setBanners(bn.data || [])
       setStats({
         kapsalons: k.data?.length || 0,
         gebruikers: u.data?.length || 0,
@@ -355,7 +517,7 @@ export default function AdminPage() {
     listings: { title: '2de Hands Listings', desc: `${stats.listings} advertenties` },
     bestellingen: { title: 'Bestellingen', desc: `${stats.bestellingen} bestellingen` },
     team: { title: 'Team', desc: `${teamleden.length} teamleden` },
-    instellingen: { title: 'Site Instellingen', desc: 'Beheer demo-data en site-instellingen' },
+    instellingen: { title: 'Site Instellingen'banners: { title: 'Pagina Banners', desc: 'Beheer aankondigingsbanner per pagina' }, desc: 'Beheer demo-data en site-instellingen' },
   }
 
   const totalPending = stats.pending + stats.verkopersPending
@@ -383,6 +545,7 @@ export default function AdminPage() {
               ['listings', '♻️', '2de Hands', null],
               ['bestellingen', '📦', 'Bestellingen', null],
               ['instellingen', '⚙️', 'Instellingen', null],
+              ['banners', '📢', 'Banners', null],
             ] as [Tab, string, string, number | null][]).map(([id, icon, label, badge]) => (
               <div key={id} className={`nav-item ${tab === id ? 'active' : ''}`} onClick={() => setTab(id)}>
                 <span className="ni">{icon}</span>

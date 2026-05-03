@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Navbar from '@/components/Navbar'
 import KwispelChat from '@/components/KwispelChat'
+import AnnounceBanner from '@/components/AnnounceBanner'
 
 export const metadata: Metadata = {
   title: 'Kwispelclub — Voor elke baas & elk huisdier',
@@ -11,6 +12,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="nl">
       <body>
+        <AnnounceBanner />
         <Navbar />
         {children}
         <KwispelChat />
