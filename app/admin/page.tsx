@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { SettingsPanel } from '@/components/AdminSettingsPanel'
 
-type Tab = 'dashboard' | 'kapsalons' | 'verkopers' | 'academy' | 'gebruikers' | 'listings' | 'bestellingen' | 'team' | 'instellingen'| 'instellingen' | 'banners'
+type Tab = 'dashboard' | 'kapsalons' | 'verkopers' | 'academy' | 'gebruikers' | 'listings' | 'bestellingen' | 'team' | 'instellingen' | 'banners'
 
 const ADMIN_PASSWORD = 'Vrijdag@201024+'
 // ===== BANNERS TAB (plak dit in de main content sectie) =====
@@ -200,8 +200,8 @@ const [bannerSaving, setBannerSaving] = useState(false)
   useEffect(() => {
     const adminSession = sessionStorage.getItem('kw_admin')
     if (adminSession === 'true') setAuthed(true)
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) { router.push('/auth?redirect=/admin'); return }
+   supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session?.user) { router.push('/auth?redirect=/admin'); return }
       setLoading(false)
     })
   }, [])
@@ -518,7 +518,7 @@ supabase.from('page_banners').select('*').order('pagina'),      ])
     bestellingen: { title: 'Bestellingen', desc: `${stats.bestellingen} bestellingen` },
     team: { title: 'Team', desc: `${teamleden.length} teamleden` },
     instellingen: { title: 'Site Instellingen', desc: 'Beheer demo-data en site-instellingen' },
-banners: { title: 'Pagina Banners', desc: 'Beheer aankondigingsbanner per pagina' },
+    banners: { title: 'Pagina Banners', desc: 'Beheer aankondigingsbanner per pagina' },
   }
 
   const totalPending = stats.pending + stats.verkopersPending
