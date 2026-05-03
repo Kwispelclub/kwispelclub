@@ -896,10 +896,13 @@ supabase.from('page_banners').select('*').order('pagina'),      ])
                           </td>
                           <td>{l.created_at ? formatDate(l.created_at) : '—'}</td>
                           <td>
-                            <div className="action-btns">
-                              {l.status !== 'actief' && <button className="btn-sm btn-approve" onClick={() => approveListing(l.id)}>Activeren</button>}
-                            </div>
-                          </td>
+  <div className="action-btns">
+    {l.status !== 'actief' && (
+      <button className="btn-sm btn-approve" onClick={() => approveListing(l.id)}>Activeren</button>
+    )}
+    <button className="btn-sm btn-reject" onClick={() => deleteListing(l.id)}>🗑️ Verwijderen</button>
+  </div>
+</td>
                         </tr>
                       ))}
                     </tbody>
