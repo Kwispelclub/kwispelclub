@@ -253,9 +253,7 @@ export default function TweedeHandsPage() {
           <p>{listings.length > 0 ? `${listings.length} advertentie${listings.length !== 1 ? 's' : ''} beschikbaar` : 'Tweedehands huisdierproducten van onze community'}</p>
         </div>
 
-        {listings.length === 0 && showDemo && (
-          <div className="demo-notice">⚠️ <span>Voorbeeldadvertenties</span> — Nog geen echte listings. Wees de eerste!</div>
-        )}
+        
 
         <div className="filters-bar">
           <div className="filter-group">
