@@ -28,8 +28,6 @@ export default function VerkoperDashboard() {
   const [bannerUrl, setBannerUrl] = useState('')
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [uploadingBanner, setUploadingBanner] = useState(false)
-  const logoRef = useRef<HTMLInputElement>(null)
-  const bannerRef = useRef<HTMLInputElement>(null)
 
   const [showProductForm, setShowProductForm] = useState(false)
   const [pNaam, setPNaam] = useState('')
@@ -62,14 +60,18 @@ export default function VerkoperDashboard() {
       fetch('/api/admin-settings').then(r => r.json()).then(d => {
         setMollieMode(d.settings?.mollie_mode || process.env.NEXT_PUBLIC_MOLLIE_MODE || 'test')
       })
-      await loadProducten(v.id)
+      await loadProducten(v.profile_id)
       setLoading(false)
     })
   }, [])
 
-  const loadProducten = async (verkoperId: string) => {
+  const loadProducten = async (profileId: string) => {
     setProductenLoading(true)
-    const { data } = await supabase.from('producten').select('*').eq('verkoper_id', verkoperId).order('created_at', { ascending: false })
+    const { data } = await supabase
+      .from('products')
+      .select('*')
+      .eq('seller_id', profileId)
+      .order('created_at', { ascending: false })
     setProducten(data || [])
     setProductenLoading(false)
   }
@@ -90,7 +92,7 @@ export default function VerkoperDashboard() {
     if (type === 'logo') setUploadingLogo(true)
     else setUploadingBanner(true)
     const ext = file.name.split('.').pop()
-    const path = `verkoper/${verkoper.id}-${type}-${Date.now()}.${ext}`
+    const path = `verkoper/${verkoper.profile_id}-${type}-${Date.now()}.${ext}`
     const { data, error } = await supabase.storage.from('listings').upload(path, file, { upsert: true })
     if (!error && data) {
       const { data: url } = supabase.storage.from('listings').getPublicUrl(data.path)
@@ -108,7 +110,7 @@ export default function VerkoperDashboard() {
     const urls: string[] = []
     for (const file of Array.from(files).slice(0, 4)) {
       const ext = file.name.split('.').pop()
-      const path = `producten/${verkoper.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+      const path = `producten/${verkoper.profile_id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
       const { data, error } = await supabase.storage.from('listings').upload(path, file)
       if (!error && data) {
         const { data: url } = supabase.storage.from('listings').getPublicUrl(data.path)
@@ -122,27 +124,32 @@ export default function VerkoperDashboard() {
   const handleSaveProduct = async () => {
     if (!pNaam || !pPrijs) { setPErr('Naam en prijs zijn verplicht'); return }
     setPSaving(true); setPErr('')
-    const { error } = await supabase.from('producten').insert({
-      verkoper_id: verkoper.id, naam: pNaam, beschrijving: pBeschrijving || null,
-      prijs: parseFloat(pPrijs), categorie: pCategorie, img_url: pFotos[0] || null,
-      voorraad: pVoorraad ? parseInt(pVoorraad) : null, actief: true, dier: pDier || null,
+    const { error } = await supabase.from('products').insert({
+      seller_id: verkoper.profile_id,
+      name: pNaam,
+      description: pBeschrijving || null,
+      price: parseFloat(pPrijs),
+      status: 'actief',
+      image_url: pFotos[0] || null,
+      stock: pVoorraad ? parseInt(pVoorraad) : null,
+      species_target: pDier || null,
     })
     if (error) { setPErr(error.message); setPSaving(false); return }
     setPNaam(''); setPBeschrijving(''); setPPrijs(''); setPFotos([]); setPVoorraad('')
     setShowProductForm(false)
-    await loadProducten(verkoper.id)
+    await loadProducten(verkoper.profile_id)
     setPSaving(false)
   }
 
-  const toggleProductActief = async (id: string, actief: boolean) => {
-    await supabase.from('producten').update({ actief: !actief }).eq('id', id)
-    await loadProducten(verkoper.id)
+  const toggleProductActief = async (id: string, isActief: boolean) => {
+    await supabase.from('products').update({ status: isActief ? 'verborgen' : 'actief' }).eq('id', id)
+    await loadProducten(verkoper.profile_id)
   }
 
   const deleteProduct = async (id: string) => {
     if (!confirm('Product verwijderen?')) return
-    await supabase.from('producten').delete().eq('id', id)
-    await loadProducten(verkoper.id)
+    await supabase.from('products').delete().eq('id', id)
+    await loadProducten(verkoper.profile_id)
   }
 
   const formatDate = (d: string) => new Date(d).toLocaleDateString('nl-BE', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -211,7 +218,6 @@ export default function VerkoperDashboard() {
     .product-img{width:52px;height:52px;border-radius:8px;object-fit:cover;background:var(--cream)}
     .empty{text-align:center;padding:40px;color:var(--text-light)}
     .empty .ei{font-size:36px;margin-bottom:10px;opacity:.4}
-    .foto-grid{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
     .foto-thumb{width:60px;height:60px;border-radius:8px;object-fit:cover}
     .pending-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;padding:40px}
     .pending-screen .pi{font-size:64px;margin-bottom:20px}
@@ -239,7 +245,7 @@ export default function VerkoperDashboard() {
     </>
   )
 
-  const actieveProducten = producten.filter(p => p.actief).length
+  const actieveProducten = producten.filter(p => p.status === 'actief').length
   const shopUrl = `kwispelclub.be/winkel/${verkoper?.slug}`
 
   return (
@@ -248,7 +254,7 @@ export default function VerkoperDashboard() {
       <div className="layout">
         <aside className="sidebar">
           <div className="sb-logo">
-            <div className="sb-logo-inner" style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%' }}>
               <div className="lp">{logoUrl ? <img src={logoUrl} alt={shopNaam} /> : '🏪'}</div>
               <div>
                 <div className="brand">{shopNaam || 'Mijn Shop'}</div>
@@ -270,7 +276,6 @@ export default function VerkoperDashboard() {
           </nav>
           <div className="sb-footer">
             <a href={`/winkel/${verkoper?.slug}`} target="_blank">🔗 Bekijk mijn shop</a>
-            <a href="/trainer/academy">🎓 Academy Beheer</a>
             <a href="/">🏠 Terug naar site</a>
             <a href="#" onClick={async () => { await supabase.auth.signOut(); window.location.href = '/' }} style={{ color: 'rgba(232,78,78,.7)' }}>🚪 Uitloggen</a>
           </div>
@@ -295,10 +300,11 @@ export default function VerkoperDashboard() {
             {mollieMode === 'test' && (
               <div className="mollie-warn">
                 <span className="mw-icon">⚠️</span>
-                <div><strong>Testmodus actief</strong> — Betalingen via Mollie zijn momenteel in testmodus. Echte betalingen worden nog niet verwerkt. Klanten die nu bestellen ontvangen een testbevestiging. Schakel over naar live mode via de admin instellingen voor echte transacties.</div>
+                <div><strong>Testmodus actief</strong> — Betalingen via Mollie zijn momenteel in testmodus. Echte betalingen worden nog niet verwerkt.</div>
               </div>
             )}
 
+            {/* OVERZICHT */}
             {tab === 'overzicht' && (
               <>
                 <div className="stats-row">
@@ -316,7 +322,10 @@ export default function VerkoperDashboard() {
                   ))}
                 </div>
                 <div className="card">
-                  <div className="card-header"><h2>Mijn Shop</h2><a href={`/winkel/${verkoper?.slug}`} target="_blank" className="btn btn-ghost btn-sm">🔗 Bekijken</a></div>
+                  <div className="card-header">
+                    <h2>Mijn Shop</h2>
+                    <a href={`/winkel/${verkoper?.slug}`} target="_blank" className="btn btn-ghost btn-sm">🔗 Bekijken</a>
+                  </div>
                   <div className="shop-preview">
                     <div className="shop-logo-prev">{logoUrl ? <img src={logoUrl} alt={shopNaam} /> : '🏪'}</div>
                     <div>
@@ -329,7 +338,10 @@ export default function VerkoperDashboard() {
                   {beschrijving && <p style={{ fontSize: 13, color: 'var(--text-mid)', lineHeight: 1.6 }}>{beschrijving}</p>}
                 </div>
                 <div className="card">
-                  <div className="card-header"><h2>Recente Producten</h2><button className="btn btn-ghost btn-sm" onClick={() => setTab('producten')}>Alle producten →</button></div>
+                  <div className="card-header">
+                    <h2>Recente Producten</h2>
+                    <button className="btn btn-ghost btn-sm" onClick={() => setTab('producten')}>Alle producten →</button>
+                  </div>
                   {producten.length === 0 ? (
                     <div className="empty"><div className="ei">📦</div><p>Nog geen producten. Voeg je eerste product toe!</p></div>
                   ) : (
@@ -339,11 +351,13 @@ export default function VerkoperDashboard() {
                         {producten.slice(0, 5).map(p => (
                           <tr key={p.id}>
                             <td style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                              {p.img_url ? <img src={p.img_url} className="product-img" alt={p.naam} /> : <div className="product-img" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, borderRadius: 8 }}>📦</div>}
-                              <strong>{p.naam}</strong>
+                              {p.image_url
+                                ? <img src={p.image_url} className="product-img" alt={p.name} />
+                                : <div className="product-img" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>📦</div>}
+                              <strong>{p.name}</strong>
                             </td>
-                            <td style={{ fontFamily: 'Fredoka, sans-serif', fontWeight: 700, color: 'var(--teal)' }}>€{parseFloat(p.prijs).toFixed(2)}</td>
-                            <td><span className={`badge ${p.actief ? 'badge-green' : 'badge-gray'}`}>{p.actief ? 'Actief' : 'Inactief'}</span></td>
+                            <td style={{ fontFamily: 'Fredoka, sans-serif', fontWeight: 700, color: 'var(--teal)' }}>€{parseFloat(p.price).toFixed(2)}</td>
+                            <td><span className={`badge ${p.status === 'actief' ? 'badge-green' : 'badge-gray'}`}>{p.status === 'actief' ? 'Actief' : 'Inactief'}</span></td>
                             <td style={{ fontSize: 12, color: 'var(--text-light)' }}>{formatDate(p.created_at)}</td>
                           </tr>
                         ))}
@@ -354,6 +368,7 @@ export default function VerkoperDashboard() {
               </>
             )}
 
+            {/* PRODUCTEN */}
             {tab === 'producten' && (
               <>
                 {showProductForm && (
@@ -411,26 +426,27 @@ export default function VerkoperDashboard() {
                     <div className="empty"><div className="ei">📦</div><p>Nog geen producten. Voeg je eerste product toe!</p></div>
                   ) : (
                     <table className="table">
-                      <thead><tr><th>Product</th><th>Categorie</th><th>Prijs</th><th>Voorraad</th><th>Status</th><th>Actie</th></tr></thead>
+                      <thead><tr><th>Product</th><th>Beschrijving</th><th>Prijs</th><th>Voorraad</th><th>Status</th><th>Actie</th></tr></thead>
                       <tbody>
                         {producten.map(p => (
                           <tr key={p.id}>
                             <td>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                {p.img_url ? <img src={p.img_url} className="product-img" alt={p.naam} /> : <div className="product-img" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, borderRadius: 8 }}>📦</div>}
-                                <div>
-                                  <strong style={{ fontSize: 13 }}>{p.naam}</strong>
-                                  {p.beschrijving && <div style={{ fontSize: 11, color: 'var(--text-light)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.beschrijving}</div>}
-                                </div>
+                                {p.image_url
+                                  ? <img src={p.image_url} className="product-img" alt={p.name} />
+                                  : <div className="product-img" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>📦</div>}
+                                <strong style={{ fontSize: 13 }}>{p.name}</strong>
                               </div>
                             </td>
-                            <td style={{ fontSize: 12, color: 'var(--text-mid)' }}>{p.categorie || '—'}</td>
-                            <td style={{ fontFamily: 'Fredoka, sans-serif', fontWeight: 700, color: 'var(--teal)' }}>€{parseFloat(p.prijs).toFixed(2)}</td>
-                            <td style={{ fontSize: 13 }}>{p.voorraad ?? '∞'}</td>
-                            <td><span className={`badge ${p.actief ? 'badge-green' : 'badge-gray'}`}>{p.actief ? 'Actief' : 'Inactief'}</span></td>
+                            <td style={{ fontSize: 12, color: 'var(--text-mid)', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.description || '—'}</td>
+                            <td style={{ fontFamily: 'Fredoka, sans-serif', fontWeight: 700, color: 'var(--teal)' }}>€{parseFloat(p.price).toFixed(2)}</td>
+                            <td style={{ fontSize: 13 }}>{p.stock ?? '∞'}</td>
+                            <td><span className={`badge ${p.status === 'actief' ? 'badge-green' : 'badge-gray'}`}>{p.status === 'actief' ? 'Actief' : 'Inactief'}</span></td>
                             <td>
                               <div style={{ display: 'flex', gap: 6 }}>
-                                <button className="btn btn-ghost btn-sm" onClick={() => toggleProductActief(p.id, p.actief)}>{p.actief ? '⏸ Pauzeer' : '▶ Activeer'}</button>
+                                <button className="btn btn-ghost btn-sm" onClick={() => toggleProductActief(p.id, p.status === 'actief')}>
+                                  {p.status === 'actief' ? '⏸ Pauzeer' : '▶ Activeer'}
+                                </button>
                                 <button className="btn btn-danger btn-sm" onClick={() => deleteProduct(p.id)}>🗑️</button>
                               </div>
                             </td>
@@ -443,6 +459,7 @@ export default function VerkoperDashboard() {
               </>
             )}
 
+            {/* BESTELLINGEN */}
             {tab === 'bestellingen' && (
               <div className="card">
                 <div className="card-header"><h2>Bestellingen</h2></div>
@@ -459,9 +476,9 @@ export default function VerkoperDashboard() {
                     <tbody>
                       {bestellingen.map(b => (
                         <tr key={b.id}>
-                          <td><strong>#{b.order_nummer || b.id?.slice(0, 8)}</strong></td>
-                          <td>{b.klant_naam || '—'}</td>
-                          <td style={{ fontFamily: 'Fredoka, sans-serif', fontWeight: 700, color: 'var(--green-dark)' }}>€{b.totaal?.toFixed(2) || '—'}</td>
+                          <td><strong>#{b.order_number || b.id?.slice(0, 8)}</strong></td>
+                          <td>{b.shipping_address?.name || '—'}</td>
+                          <td style={{ fontFamily: 'Fredoka, sans-serif', fontWeight: 700, color: 'var(--green-dark)' }}>€{b.total?.toFixed(2) || '—'}</td>
                           <td><span className="badge badge-orange">{b.status}</span></td>
                           <td style={{ fontSize: 12, color: 'var(--text-light)' }}>{formatDate(b.created_at)}</td>
                         </tr>
@@ -472,6 +489,7 @@ export default function VerkoperDashboard() {
               </div>
             )}
 
+            {/* INSTELLINGEN */}
             {tab === 'instellingen' && (
               <>
                 <div className="card">
@@ -518,7 +536,7 @@ export default function VerkoperDashboard() {
                     <span style={{ fontFamily: 'Fredoka, sans-serif', fontSize: 28, fontWeight: 700, color: 'var(--green-dark)' }}>{verkoper?.commissie_pct || 15}%</span>
                     <div>
                       <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--green-dark)' }}>Jouw commissietarief</div>
-                      <div style={{ fontSize: 12, color: 'var(--text-mid)' }}>Stel dit in via de admin. Neem contact op voor aanpassing.</div>
+                      <div style={{ fontSize: 12, color: 'var(--text-mid)' }}>Neem contact op voor aanpassing.</div>
                     </div>
                   </div>
                 </div>
