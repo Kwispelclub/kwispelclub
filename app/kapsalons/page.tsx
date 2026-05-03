@@ -182,7 +182,7 @@ export default function KapsalonsPage() {
     <>
       <style>{CSS}</style>
 
-      <div className="beta-bar">🚀 Kwispelclub is in opbouw! Boekingen zijn nog niet actief.</div>
+      
       <div className="breadcrumb"><a href="/">Home</a> › Hondenkapsalons</div>
 
       <section className="page-hero">

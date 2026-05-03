@@ -308,10 +308,7 @@ export default function HomePage() {
 
       <div className="paw-bg">{[...Array(5)].map((_, i) => <div key={i} className="paw">🐾</div>)}</div>
 
-      <div className="announce-bar">
-        🚀 Kwispelclub is in opbouw! Webshop & boekingen zijn nog niet actief.
-        <a href="#early-access">Registreer je voor early access →</a>
-      </div>
+      
 
       <section className="hero">
         <div className="hero-card">
