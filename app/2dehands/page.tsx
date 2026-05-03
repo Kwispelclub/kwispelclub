@@ -164,7 +164,7 @@ export default function TweedeHandsPage() {
     loadListings()
   }
 
-  const displayListings = listings.length > 0 ? listings : (showDemo ? DEMO_LISTINGS : [])
+  const displayListings = listings
   const filtered = displayListings.filter(l =>
     (cat === 'all' || l.categorie === cat) &&
     (!search || l.titel?.toLowerCase().includes(search.toLowerCase()))
