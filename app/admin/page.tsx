@@ -393,6 +393,11 @@ supabase.from('page_banners').select('*').order('pagina'),      ])
     await supabase.from('listings').update({ status: 'actief' }).eq('id', id)
     loadData()
   }
+  const deleteListing = async (id: string) => {
+  if (!confirm('Advertentie definitief verwijderen?')) return
+  await supabase.from('listings').delete().eq('id', id)
+  loadData()
+}
 
   const formatDate = (d: string) => new Date(d).toLocaleDateString('nl-BE', { day: '2-digit', month: 'short', year: 'numeric' })
 
