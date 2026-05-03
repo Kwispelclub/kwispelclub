@@ -31,7 +31,7 @@ export default function WinkelPage() {
     const { data: p } = await supabase
       .from('products')
       .select('*')
-      .eq('seller_id', v.id)
+      .eq('seller_id', v.profile_id)
       .eq('status', 'actief') 
       .order('created_at', { ascending: false })
 
@@ -55,8 +55,7 @@ export default function WinkelPage() {
     .shop-logo{width:88px;height:88px;border-radius:20px;border:4px solid white;overflow:hidden;background:white;box-shadow:0 4px 16px rgba(0,0,0,.12);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:36px}
     .shop-logo img{width:100%;height:100%;object-fit:cover}
     .shop-meta{flex:1;padding-bottom:4px}
-    .shop-naam{font-family:'Fredoka',sans-serif;font-size:28px;font-weight:700;color:var(--text-dark);margin-bottom:4px}
-    .shop-badges{display:flex;gap:8px;flex-wrap:wrap}
+    .shop-naam{font-family:'Fredoka',sans-serif;font-size:28px;font-weight:700;color:white;margin-bottom:4px;text-shadow:0 2px 8px rgba(0,0,0,.4)} .shop-badges{display:flex;gap:8px;flex-wrap:wrap}
     .badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:50px;font-size:11px;font-weight:700}
     .badge-green{background:var(--green-pale);color:var(--green-dark)}
     .badge-orange{background:var(--orange-pale);color:var(--orange-main)}
