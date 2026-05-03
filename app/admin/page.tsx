@@ -517,7 +517,8 @@ supabase.from('page_banners').select('*').order('pagina'),      ])
     listings: { title: '2de Hands Listings', desc: `${stats.listings} advertenties` },
     bestellingen: { title: 'Bestellingen', desc: `${stats.bestellingen} bestellingen` },
     team: { title: 'Team', desc: `${teamleden.length} teamleden` },
-    instellingen: { title: 'Site Instellingen'banners: { title: 'Pagina Banners', desc: 'Beheer aankondigingsbanner per pagina' }, desc: 'Beheer demo-data en site-instellingen' },
+    instellingen: { title: 'Site Instellingen', desc: 'Beheer demo-data en site-instellingen' },
+banners: { title: 'Pagina Banners', desc: 'Beheer aankondigingsbanner per pagina' },
   }
 
   const totalPending = stats.pending + stats.verkopersPending
@@ -1040,7 +1041,11 @@ supabase.from('page_banners').select('*').order('pagina'),      ])
               </div>
             )}
 
-            {/* INSTELLINGEN */}
+            {/* INSTELLINGEN */}{/* BANNERS */}
+{tab === 'banners' && (
+  <BannersTab banners={banners} editBanner={editBanner} setEditBanner={setEditBanner}
+    bannerSaving={bannerSaving} setBannerSaving={setBannerSaving} supabase={supabase} loadData={loadData} />
+)}
             {tab === 'instellingen' && (
               <SettingsPanel siteSettings={siteSettings} toggleSetting={toggleSetting} settingsSaved={settingsSaved} />
             )}
