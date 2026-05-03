@@ -108,10 +108,12 @@ export default function WinkelPage() {
   const profile = verkoper.profiles
   const lidSinds = profile?.created_at ? new Date(profile.created_at).toLocaleDateString('nl-BE', { month: 'long', year: 'numeric' }) : '—'
 
-  return (
+ return (
     <>
       <style>{CSS}</style>
       <a href="/" className="back">← Terug naar Kwispelclub</a>
+
+      
 
       <div className="banner">
         {verkoper.banner_url
@@ -163,7 +165,7 @@ export default function WinkelPage() {
         </aside>
 
         <div className="products-section">
-          <h2 ({products.length})</h2>
+          <h2>Producten ({products.length})</h2>
           {products.length === 0 ? (
             <div className="empty-products">
               <div className="ei">📦</div>
