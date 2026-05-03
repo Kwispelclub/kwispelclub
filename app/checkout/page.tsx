@@ -20,7 +20,6 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState<'cart' | 'gegevens' | 'betaling'>('cart')
 
-  // Levergegevens
   const [voornaam, setVoornaam] = useState('')
   const [achternaam, setAchternaam] = useState('')
   const [email, setEmail] = useState('')
@@ -39,8 +38,6 @@ export default function CheckoutPage() {
         setEmail(user.email || '')
       }
     })
-
-    // Laad winkelwagen uit localStorage
     try {
       const saved = localStorage.getItem('kc_cart')
       if (saved) setCart(JSON.parse(saved))
@@ -61,13 +58,6 @@ export default function CheckoutPage() {
     })
   }
 
-  const generateOrderNummer = () => {
-    const year = new Date().getFullYear()
-    const rand = Math.floor(Math.random() * 900) + 100
-    const ms = Date.now().toString().slice(-4)
-    return `KC-${year}-${rand}${ms}`
-  }
-
   const handleCheckout = async () => {
     if (!voornaam || !email || !straat || !postcode || !stad) {
       alert('Vul alle verplichte velden in')
@@ -77,30 +67,39 @@ export default function CheckoutPage() {
     setLoading(true)
 
     try {
-      const orderNummer = generateOrderNummer()
-
-      // 1. Maak bestelling aan in Supabase
-      const { data: bestelling, error: bestellingError } = await supabase
-        .from('bestellingen')
+      // 1. Maak order aan in Supabase
+      // ✅ was 'bestellingen' → nu 'orders'
+      const { data: order, error: orderError } = await supabase
+        .from('orders')
         .insert({
-          user_id: user?.id || null,
-          order_nummer: orderNummer,
-          status: 'in_behandeling',
-          totaal: totaalInclVerzending,
+          buyer_id: user?.id,
+          status: 'pending',
+          subtotal: totaal,
+          shipping_cost: verzending,
+          total: totaalInclVerzending,
+          shipping_address: {
+            name: `${voornaam} ${achternaam}`,
+            street: `${straat} ${nr}`,
+            postcode,
+            city: stad,
+            country: land,
+          },
+          payment_method: 'mollie',
         })
         .select()
         .single()
 
-      if (bestellingError) throw bestellingError
+      if (orderError) throw orderError
 
-      // 2. Voeg items toe
-      await supabase.from('bestelling_items').insert(
+      // 2. Voeg order items toe
+      // ✅ was 'bestelling_items' → nu 'order_items'
+      await supabase.from('order_items').insert(
         cart.map(item => ({
-          bestelling_id: bestelling.id,
-          product_naam: item.naam,
-          product_emoji: item.emoji,
-          aantal: item.aantal,
-          prijs: item.prijs,
+          order_id: order.id,
+          product_name: item.naam,       // ✅ was product_naam
+          quantity: item.aantal,          // ✅ was aantal
+          unit_price: item.prijs,         // ✅ was prijs
+          total_price: item.prijs * item.aantal,
         }))
       )
 
@@ -110,9 +109,9 @@ export default function CheckoutPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           amount: totaalInclVerzending.toFixed(2),
-          description: `Bestelling ${orderNummer} — Kwispelclub`,
-          orderId: bestelling.id,
-          orderNummer,
+          description: `Bestelling — Kwispelclub`,
+          orderId: order.id,
+          orderNummer: order.order_number,  // ✅ was order_nummer
           customerEmail: email,
           customerName: `${voornaam} ${achternaam}`,
           items: cart.map(i => ({ naam: i.naam, aantal: i.aantal, prijs: i.prijs })),
@@ -122,7 +121,7 @@ export default function CheckoutPage() {
       const { checkoutUrl, error } = await res.json()
       if (error) throw new Error(error)
 
-      // 4. Redirect naar Mollie checkout
+      // 4. Redirect naar Mollie
       localStorage.removeItem('kc_cart')
       window.location.href = checkoutUrl
 
@@ -173,7 +172,6 @@ export default function CheckoutPage() {
   return (
     <>
       <style>{CSS}</style>
-      <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
       <div className="checkout-wrap">
         <div className="checkout-header">
@@ -192,7 +190,6 @@ export default function CheckoutPage() {
 
         <div className="checkout-layout">
           <div>
-            {/* WINKELWAGEN */}
             {step === 'cart' && (
               <div className="main-card">
                 <h2>🛒 Winkelwagen</h2>
@@ -203,28 +200,25 @@ export default function CheckoutPage() {
                     <a href="/#shop" style={{ color: 'var(--green-main)', fontWeight: 700, textDecoration: 'none', fontSize: 14, marginTop: 8, display: 'block' }}>Bekijk producten →</a>
                   </div>
                 ) : (
-                  <>
-                    {cart.map(item => (
-                      <div key={item.id} className="cart-item">
-                        <div className="cart-emoji">{item.emoji}</div>
-                        <div className="cart-info">
-                          <div className="cart-naam">{item.naam}</div>
-                          <div className="cart-prijs">€{item.prijs.toFixed(2)} per stuk</div>
-                        </div>
-                        <div className="cart-qty">
-                          <button className="qty-btn" onClick={() => updateAantal(item.id, -1)}>−</button>
-                          <span className="qty-num">{item.aantal}</span>
-                          <button className="qty-btn" onClick={() => updateAantal(item.id, 1)}>+</button>
-                        </div>
-                        <div className="cart-subtotaal">€{(item.prijs * item.aantal).toFixed(2)}</div>
+                  cart.map(item => (
+                    <div key={item.id} className="cart-item">
+                      <div className="cart-emoji">{item.emoji}</div>
+                      <div className="cart-info">
+                        <div className="cart-naam">{item.naam}</div>
+                        <div className="cart-prijs">€{item.prijs.toFixed(2)} per stuk</div>
                       </div>
-                    ))}
-                  </>
+                      <div className="cart-qty">
+                        <button className="qty-btn" onClick={() => updateAantal(item.id, -1)}>−</button>
+                        <span className="qty-num">{item.aantal}</span>
+                        <button className="qty-btn" onClick={() => updateAantal(item.id, 1)}>+</button>
+                      </div>
+                      <div className="cart-subtotaal">€{(item.prijs * item.aantal).toFixed(2)}</div>
+                    </div>
+                  ))
                 )}
               </div>
             )}
 
-            {/* LEVERGEGEVENS */}
             {step === 'gegevens' && (
               <div className="main-card">
                 <h2>📦 Levergegevens</h2>
@@ -251,7 +245,6 @@ export default function CheckoutPage() {
             )}
           </div>
 
-          {/* SAMENVATTING */}
           <div className="summary-card">
             <h3>Samenvatting</h3>
             {cart.map(item => (
