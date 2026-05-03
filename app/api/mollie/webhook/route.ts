@@ -10,7 +10,6 @@ function getMollieClient() {
   return createMollieClient({ apiKey })
 }
 
-// Supabase service role client voor server-side writes
 function getSupabase() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -37,17 +36,21 @@ export async function POST(request: NextRequest) {
 
     switch (payment.status) {
       case 'paid': {
-        // 1. Update bestelling status in Supabase
+        // 1. Update order status in Supabase
+        // ✅ was 'bestellingen' → nu 'orders' (schema tabelnaam)
         await supabase
-          .from('bestellingen')
-          .update({ status: 'bevestigd', updated_at: new Date().toISOString() })
+          .from('orders')
+          .update({ status: 'betaald', updated_at: new Date().toISOString() })
           .eq('id', orderId)
 
         // 2. Stuur bevestigingsmail
         const parsedItems = JSON.parse(items || '[]')
         const totaal = parseFloat(payment.amount.value)
 
-        await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/send-email`, {
+        // ✅ APP_URL via NEXT_PUBLIC_SITE_URL (consistent met rest van project)
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://kwispelclub.be'
+
+        await fetch(`${siteUrl}/api/send-email`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -60,16 +63,17 @@ export async function POST(request: NextRequest) {
               totaal,
             }
           })
-        })
+        }).catch(err => console.error('Email fout na betaling:', err))
         break
       }
 
       case 'failed':
       case 'expired':
       case 'canceled': {
-        // Update bestelling als geannuleerd
+        // ✅ was 'bestellingen' → nu 'orders'
+        // ✅ status 'geannuleerd' matcht het schema CHECK constraint
         await supabase
-          .from('bestellingen')
+          .from('orders')
           .update({ status: 'geannuleerd', updated_at: new Date().toISOString() })
           .eq('id', orderId)
         break
@@ -77,9 +81,10 @@ export async function POST(request: NextRequest) {
 
       case 'pending':
       case 'authorized': {
+        // ✅ 'pending' matcht het schema (geen 'in_behandeling')
         await supabase
-          .from('bestellingen')
-          .update({ status: 'in_behandeling', updated_at: new Date().toISOString() })
+          .from('orders')
+          .update({ status: 'pending', updated_at: new Date().toISOString() })
           .eq('id', orderId)
         break
       }

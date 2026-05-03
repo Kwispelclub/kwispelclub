@@ -14,8 +14,8 @@ export default function BedanktContent() {
   useEffect(() => {
     if (!orderId) { setLoading(false); return }
     supabase
-      .from('bestellingen')
-      .select('*, bestelling_items(*)')
+      .from('orders')                          // ✅ was 'bestellingen'
+      .select('*, order_items(*)')             // ✅ was 'bestelling_items'
       .eq('id', orderId)
       .single()
       .then(({ data }) => { setBestelling(data); setLoading(false) })
@@ -59,15 +59,15 @@ export default function BedanktContent() {
           <p>Je betaling is ontvangen. We sturen je een bevestiging per e-mail.</p>
           {bestelling && (
             <div className="order-box">
-              <div className="order-row"><span>Order #</span><span>{bestelling.order_nummer}</span></div>
+              <div className="order-row"><span>Order #</span><span>{bestelling.order_number}</span></div>
               <div className="order-row"><span>Status</span><span>✅ Bevestigd</span></div>
-              {bestelling.bestelling_items?.map((item: any) => (
+              {bestelling.order_items?.map((item: any) => (
                 <div key={item.id} className="order-row">
-                  <span>{item.product_emoji} {item.product_naam} × {item.aantal}</span>
-                  <span>€{(item.prijs * item.aantal).toFixed(2)}</span>
+                  <span>{item.product_name} × {item.quantity}</span>
+                  <span>€{(item.unit_price * item.quantity).toFixed(2)}</span>
                 </div>
               ))}
-              <div className="order-row"><span>Totaal</span><span>€{bestelling.totaal?.toFixed(2)}</span></div>
+              <div className="order-row"><span>Totaal</span><span>€{bestelling.total?.toFixed(2)}</span></div>
             </div>
           )}
           <div className="btns">

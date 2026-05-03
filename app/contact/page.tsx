@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { createClient } from '@/lib/supabase'
 
 const FAQS = [
   { cat: 'account', q: 'Hoe maak ik een account aan?', a: 'Ga naar de registratiepagina en kies je rol: koper, verkoper of kapsalon. Vul het formulier in en bevestig je e-mailadres. Je kunt ook registreren via Google.' },
@@ -26,6 +27,7 @@ export default function ContactPage() {
   const [subject, setSubject] = useState('Algemene vraag')
   const [submitted, setSubmitted] = useState(false)
   const [err, setErr] = useState(false)
+  const [sending, setSending] = useState(false)
   const obsRef = useRef<IntersectionObserver | null>(null)
 
   useEffect(() => {
@@ -38,9 +40,28 @@ export default function ContactPage() {
   const toggleFaq = (i: number) => setOpenFaqs(prev => { const n = new Set(prev); n.has(i) ? n.delete(i) : n.add(i); return n })
   const filtered = FAQS.filter(f => faqCat === 'all' || f.cat === faqCat)
 
-  const handleSubmit = () => {
+  // ✅ Sla bericht op in Supabase contact_messages tabel
+  const handleSubmit = async () => {
     if (!name || !email || !message) { setErr(true); return }
-    setSubmitted(true); setErr(false)
+    setSending(true)
+    setErr(false)
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.from('contact_messages').insert({
+        name,
+        email,
+        subject,
+        message,
+        status: 'nieuw',
+      })
+      if (error) throw error
+      setSubmitted(true)
+    } catch (e) {
+      console.error('Contact fout:', e)
+      setErr(true)
+    } finally {
+      setSending(false)
+    }
   }
 
   const CSS = `
@@ -53,7 +74,7 @@ export default function ContactPage() {
     .form-card{background:var(--white);border-radius:28px;padding:36px;box-shadow:0 4px 20px rgba(0,0,0,.08)}.form-card h2{font-size:24px;color:var(--green-dark);margin-bottom:24px}
     .field{margin-bottom:18px}.field label{display:block;font-size:13px;font-weight:700;margin-bottom:6px;color:var(--text-dark)}.field input,.field select,.field textarea{width:100%;padding:13px 16px;border:2px solid var(--cream-dark);border-radius:12px;font-family:'Nunito',sans-serif;font-size:14px;outline:none;transition:all .2s;background:var(--white)}.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--green-light);box-shadow:0 0 0 3px rgba(107,158,94,.1)}.field textarea{resize:vertical;min-height:120px}
     .field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:15px 30px;border-radius:50px;font-family:'Fredoka',sans-serif;font-size:15px;font-weight:600;border:none;cursor:pointer;transition:all .3s;width:100%}.btn-primary{background:var(--green-main);color:white;box-shadow:0 4px 16px rgba(74,124,63,.3)}.btn-primary:hover{background:var(--green-dark);transform:translateY(-2px)}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:15px 30px;border-radius:50px;font-family:'Fredoka',sans-serif;font-size:15px;font-weight:600;border:none;cursor:pointer;transition:all .3s;width:100%}.btn-primary{background:var(--green-main);color:white;box-shadow:0 4px 16px rgba(74,124,63,.3)}.btn-primary:hover{background:var(--green-dark);transform:translateY(-2px)}.btn-primary:disabled{opacity:.6;cursor:not-allowed;transform:none}
     .form-err{background:#FFF0F0;border:1px solid var(--red);border-radius:10px;padding:10px 14px;font-size:13px;color:var(--red);margin-bottom:16px;font-weight:600}
     .form-success{text-align:center;padding:20px 0}.form-success .si{font-size:56px;margin-bottom:12px}.form-success h3{font-size:20px;color:var(--green-dark);margin-bottom:8px}.form-success p{font-size:14px;color:var(--text-mid)}
     .info-cards{display:flex;flex-direction:column;gap:20px}
@@ -101,7 +122,7 @@ export default function ContactPage() {
               </div>
             ) : (
               <>
-                {err && <div className="form-err">⚠️ Vul alle verplichte velden in</div>}
+                {err && <div className="form-err">⚠️ Vul alle verplichte velden in of probeer opnieuw</div>}
                 <div className="field-row">
                   <div className="field"><label>Naam *</label><input placeholder="Jouw naam" value={name} onChange={e => setName(e.target.value)} /></div>
                   <div className="field"><label>E-mailadres *</label><input type="email" placeholder="jan@voorbeeld.be" value={email} onChange={e => setEmail(e.target.value)} /></div>
@@ -113,7 +134,9 @@ export default function ContactPage() {
                   </select>
                 </div>
                 <div className="field"><label>Bericht *</label><textarea placeholder="Vertel ons hoe we kunnen helpen..." value={message} onChange={e => setMessage(e.target.value)} /></div>
-                <button className="btn btn-primary" onClick={handleSubmit}>Verstuur Bericht →</button>
+                <button className="btn btn-primary" onClick={handleSubmit} disabled={sending}>
+                  {sending ? 'Versturen...' : 'Verstuur Bericht →'}
+                </button>
               </>
             )}
           </div>
@@ -121,8 +144,8 @@ export default function ContactPage() {
           <div className="info-cards">
             <div className="info-card">
               <h3>📞 Contactgegevens</h3>
-              {[['📧', 'E-mail', <a href="mailto:info@kwispelclub.be">info@kwispelclub.be</a>],
-                ['🔒', 'Privacy vragen', <a href="mailto:privacy@kwispelclub.be">privacy@kwispelclub.be</a>],
+              {[['📧', 'E-mail', <a key="e" href="mailto:info@kwispelclub.be">info@kwispelclub.be</a>],
+                ['🔒', 'Privacy vragen', <a key="p" href="mailto:privacy@kwispelclub.be">privacy@kwispelclub.be</a>],
                 ['📍', 'Adres', 'Bree, Limburg, België']].map(([icon, label, val]) => (
                 <div key={label as string} className="info-row">
                   <div className="info-icon">{icon}</div>
