@@ -291,7 +291,7 @@ export default function AccountPage() {
             <EmptyState
               icon="📦"
               title="Nog geen bestellingen"
-              desc="Zodra de shop open is kun je producten bestellen voor jouw huisdier. Alles staat hier overzichtelijk bijeen."
+              desc="Zodra de shop open is kun je products bestellen voor jouw huisdier. Alles staat hier overzichtelijk bijeen."
               cta="Bekijk de Shop"
               ctaHref="/#shop"
             />
@@ -303,7 +303,7 @@ export default function AccountPage() {
             <EmptyState
               icon="❤️"
               title="Nog geen favorieten"
-              desc="Bewaar producten, kapsalons of cursussen als favoriet. Je vindt ze dan snel terug via dit overzicht."
+              desc="Bewaar products, kapsalons of cursussen als favoriet. Je vindt ze dan snel terug via dit overzicht."
               cta="Ontdek de Shop"
               ctaHref="/#shop"
             />

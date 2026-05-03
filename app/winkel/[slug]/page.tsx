@@ -8,7 +8,7 @@ export default function WinkelPage() {
   const { slug } = useParams<{ slug: string }>()
   const supabase = createClient()
   const [verkoper, setVerkoper] = useState<any>(null)
-  const [producten, setProducten] = useState<any[]>([])
+  const [products, setProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
 
@@ -27,15 +27,15 @@ export default function WinkelPage() {
     if (!v) { setNotFound(true); setLoading(false); return }
     setVerkoper(v)
 
-    // Laad producten van deze verkoper
+    // Laad products van deze verkoper
     const { data: p } = await supabase
-      .from('producten')
+      .from('products')
       .select('*')
-      .eq('verkoper_id', v.id)
-      .eq('actief', true)
+      .eq('seller_id', v.id)
+      .eq('status', 'actief') 
       .order('created_at', { ascending: false })
 
-    setProducten(p || [])
+    setProducts(p || [])
     setLoading(false)
 
     // Views teller
@@ -163,22 +163,22 @@ export default function WinkelPage() {
         </aside>
 
         <div className="products-section">
-          <h2>Producten ({producten.length})</h2>
-          {producten.length === 0 ? (
+          <h2 ({products.length})</h2>
+          {products.length === 0 ? (
             <div className="empty-products">
               <div className="ei">📦</div>
               <p>Nog geen producten in deze shop.</p>
             </div>
           ) : (
             <div className="products-grid">
-              {producten.map(p => (
+              {products.map(p => (
                 <div key={p.id} className="product-card">
-                  {p.foto_urls?.[0]
-                    ? <img src={p.foto_urls[0]} alt={p.naam} className="product-img" />
+                  {p.image_url
+                    ? <img src={p.image_url} alt={p.name} className="product-img" />
                     : <div className="product-img-placeholder">🐾</div>}
                   <div className="product-body">
-                    <div className="product-naam">{p.naam}</div>
-                    <div className="product-prijs">€{parseFloat(p.prijs).toFixed(2)}</div>
+                    <div className="product-naam">{p.name}</div>
+                    <div className="product-prijs">€{parseFloat(p.price).toFixed(2)}</div>
                   </div>
                 </div>
               ))}
