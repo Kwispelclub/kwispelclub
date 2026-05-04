@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+
+# Blokkeer privé pagina's
+Disallow: /admin
+Disallow: /verkoper/dashboard
+Disallow: /api/
+Disallow: /auth
+
+# Sitemap
+Sitemap: https://www.kwispelclub.be/sitemap.xml
