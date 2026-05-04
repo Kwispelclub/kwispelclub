@@ -210,6 +210,24 @@ function cursusAankoopEmail(data: { cursusTitel: string; cursusId: string }) {
   return { subject: `🎓 Cursus "${data.cursusTitel}" gekocht — Kwispelclub`, html: baseTemplate(content) }
 }
 
+// ─── NIEUW BERICHT NOTIFICATIE ────────────────────────────────
+function nieuwBerichtEmail(data: { receiverName: string; senderName: string; message: string; conversationId: string }) {
+  const content = `
+    <div style="text-align:center;margin-bottom:28px;">
+      <div style="font-size:56px;margin-bottom:8px;">💬</div>
+      ${h1(`Nieuw bericht van ${data.senderName}!`)}
+      ${p(`Hoi ${data.receiverName}, je hebt een nieuw bericht ontvangen op Kwispelclub.`)}
+    </div>
+    <div style="background:#FFF9F0;border-radius:12px;padding:20px;margin:20px 0;border-left:4px solid #4A7C3F;">
+      <p style="font-size:14px;color:#5A5A5A;line-height:1.7;margin:0;">${data.message}</p>
+    </div>
+    <div style="text-align:center;">${btn('Bekijk & Beantwoord →', `${APP_URL}/account?panel=berichten&conv=${data.conversationId}`)}</div>
+    <hr style="border:none;border-top:1px solid #F5EDE0;margin:28px 0;">
+    ${p('Je ontvangt deze email omdat iemand je een bericht heeft gestuurd via Kwispelclub.')}
+  `
+  return { subject: `💬 Nieuw bericht van ${data.senderName} — Kwispelclub`, html: baseTemplate(content) }
+}
+
 // ─── CONTACT BERICHT NOTIFICATIE ──────────────────────────────
 function contactBerichtEmail(data: { name: string; email: string; subject: string; message: string }) {
   const content = `
@@ -261,6 +279,9 @@ export async function POST(request: NextRequest) {
         break
       case 'cursus_aankoop':                    // ✅ was missing!
         emailContent = cursusAankoopEmail(data)
+        break
+      case 'nieuw_bericht':
+        emailContent = nieuwBerichtEmail(data)
         break
       case 'contact_bericht':                   // ✅ notificatie naar info@kwispelclub.be
         emailContent = contactBerichtEmail(data)
