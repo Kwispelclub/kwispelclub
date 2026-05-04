@@ -55,6 +55,18 @@ export default function ContactPage() {
         status: 'nieuw',
       })
       if (error) throw error
+
+      // ✅ Stuur notificatie naar info@kwispelclub.be
+      await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'contact_bericht',
+          to: 'info@kwispelclub.be',
+          data: { name, email, subject, message }
+        })
+      }).catch(() => {}) // niet blokkeren als email faalt
+
       setSubmitted(true)
     } catch (e) {
       console.error('Contact fout:', e)

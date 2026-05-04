@@ -210,6 +210,21 @@ function cursusAankoopEmail(data: { cursusTitel: string; cursusId: string }) {
   return { subject: `🎓 Cursus "${data.cursusTitel}" gekocht — Kwispelclub`, html: baseTemplate(content) }
 }
 
+// ─── CONTACT BERICHT NOTIFICATIE ──────────────────────────────
+function contactBerichtEmail(data: { name: string; email: string; subject: string; message: string }) {
+  const content = `
+    <div style="text-align:center;margin-bottom:28px;">
+      <div style="font-size:56px;margin-bottom:8px;">📬</div>
+      ${h1('Nieuw contactbericht!')}
+      ${p(`Je hebt een nieuw bericht ontvangen via het contactformulier.`)}
+    </div>
+    ${infoBox([['Van', data.name], ['E-mail', data.email], ['Onderwerp', data.subject]])}
+    <p style="font-size:15px;line-height:1.7;color:#5A5A5A;margin:20px 0;padding:16px;background:#FFF9F0;border-radius:12px;border-left:4px solid #4A7C3F;">${data.message}</p>
+    <div style="text-align:center;">${btn('Beantwoord via e-mail →', `mailto:${data.email}`)}</div>
+  `
+  return { subject: `📬 Nieuw bericht: ${data.subject} — ${data.name}`, html: baseTemplate(content) }
+}
+
 // ─── API ROUTE HANDLER ─────────────────────────────────────────
 export async function POST(request: NextRequest) {
   try {
@@ -246,6 +261,9 @@ export async function POST(request: NextRequest) {
         break
       case 'cursus_aankoop':                    // ✅ was missing!
         emailContent = cursusAankoopEmail(data)
+        break
+      case 'contact_bericht':                   // ✅ notificatie naar info@kwispelclub.be
+        emailContent = contactBerichtEmail(data)
         break
       default:
         return NextResponse.json({ error: `Onbekend type: ${type}` }, { status: 400 })
