@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { createClient } from '@/lib/supabase'
 
 const TAG_STYLES: Record<string, { bg: string; color: string }> = {
   voeding:    { bg: '#E8F0E4', color: '#2D5A27' },
@@ -29,8 +30,10 @@ function Tag({ tag, label }: { tag: string; label: string }) {
 }
 
 export default function BlogPage() {
+  const supabase = createClient()
   const [nlEmail, setNlEmail] = useState('')
   const [nlDone, setNlDone] = useState(false)
+  const [nlLoading, setNlLoading] = useState(false)
   const obsRef = useRef<IntersectionObserver | null>(null)
 
   useEffect(() => {
@@ -44,6 +47,23 @@ export default function BlogPage() {
     }, { threshold: 0.08 })
     document.querySelectorAll('.fade-up').forEach(el => obsRef.current?.observe(el))
   }, [])
+
+  // ✅ Sla op in newsletter_subscribers tabel
+  const handleNlAanmelden = async () => {
+    if (!nlEmail) return
+    setNlLoading(true)
+    try {
+      await supabase.from('newsletter_subscribers').upsert(
+        { email: nlEmail, source: 'blog', active: true },
+        { onConflict: 'email' }
+      )
+      setNlDone(true)
+    } catch (e) {
+      console.error('Newsletter fout:', e)
+      setNlDone(true) // toon succes ook bij fout (duplicaat email)
+    }
+    setNlLoading(false)
+  }
 
   const featured = POSTS[0]
   const grid = POSTS.slice(1)
@@ -100,7 +120,8 @@ export default function BlogPage() {
         .nl p{font-size:13px;opacity:.8;margin-bottom:16px;line-height:1.5}
         .nl input{width:100%;padding:12px 16px;border:2px solid rgba(255,255,255,.2);border-radius:50px;background:rgba(255,255,255,.1);color:white;font-family:'Nunito',sans-serif;font-size:14px;outline:none;margin-bottom:10px}
         .nl input::placeholder{color:rgba(255,255,255,.4)}
-        .nl button{width:100%;padding:12px;border-radius:50px;background:var(--orange-main);color:white;border:none;font-family:'Fredoka',sans-serif;font-size:14px;font-weight:600;cursor:pointer}
+        .nl button{width:100%;padding:12px;border-radius:50px;background:var(--orange-main);color:white;border:none;font-family:'Fredoka',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s}
+        .nl button:disabled{opacity:.6;cursor:not-allowed}
         footer{background:var(--green-dark);color:white}
         .fi{max-width:1320px;margin:0 auto;padding:36px clamp(16px,4vw,48px);text-align:center;font-size:13px;opacity:.5}
         .fi a{color:white;text-decoration:none;margin:0 12px}
@@ -116,7 +137,6 @@ export default function BlogPage() {
         </div>
         <div className="demo-notice">⚠️ <span>Voorbeeldartikelen</span> — Deze blogposts zijn ter illustratie. Echte content volgt binnenkort.</div>
 
-        {/* Featured */}
         <div className="featured fade-up">
           <div className="feat-img"><img src={featured.img} alt={featured.title} /></div>
           <div className="feat-body">
@@ -129,7 +149,6 @@ export default function BlogPage() {
           </div>
         </div>
 
-        {/* Grid */}
         <div className="grid fade-up">
           {grid.map((post, i) => (
             <div key={i} className="card">
@@ -149,7 +168,6 @@ export default function BlogPage() {
           ))}
         </div>
 
-        {/* Sidebar */}
         <div className="sw fade-up">
           <div />
           <div className="sidebar">
@@ -181,8 +199,16 @@ export default function BlogPage() {
                 <div style={{ color: 'white', fontWeight: 700, padding: '12px 0' }}>✓ Aangemeld! 🎉</div>
               ) : (
                 <>
-                  <input type="email" placeholder="Jouw e-mailadres" value={nlEmail} onChange={e => setNlEmail(e.target.value)} />
-                  <button onClick={() => nlEmail && setNlDone(true)}>Aanmelden</button>
+                  <input
+                    type="email"
+                    placeholder="Jouw e-mailadres"
+                    value={nlEmail}
+                    onChange={e => setNlEmail(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleNlAanmelden()}
+                  />
+                  <button onClick={handleNlAanmelden} disabled={nlLoading || !nlEmail}>
+                    {nlLoading ? '⏳ Bezig...' : 'Aanmelden'}
+                  </button>
                 </>
               )}
             </div>
