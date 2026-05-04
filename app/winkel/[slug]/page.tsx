@@ -12,6 +12,7 @@ export default function WinkelPage() {
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
   const [isEigenaar, setIsEigenaar] = useState(false)
+  const [addedIds, setAddedIds] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     loadVerkoper()
@@ -28,12 +29,11 @@ export default function WinkelPage() {
     if (!v) { setNotFound(true); setLoading(false); return }
     setVerkoper(v)
 
-    // Laad products van deze verkoper
     const { data: p } = await supabase
       .from('products')
       .select('*')
       .eq('seller_id', v.profile_id)
-      .eq('status', 'actief') 
+      .eq('status', 'actief')
       .order('created_at', { ascending: false })
 
     setProducts(p || [])
@@ -41,8 +41,38 @@ export default function WinkelPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (user && v.profile_id === user.id) setIsEigenaar(true)
 
-    // Views teller
     await supabase.from('verkopers').update({ views: (v.views || 0) + 1 }).eq('id', v.id)
+  }
+
+  // ✅ Voeg product toe aan winkelwagen (localStorage)
+  const addToCart = (p: any) => {
+    try {
+      const saved = localStorage.getItem('kc_cart')
+      const cart = saved ? JSON.parse(saved) : []
+      const existing = cart.findIndex((i: any) => i.id === p.id)
+      if (existing >= 0) {
+        cart[existing].aantal += 1
+      } else {
+        cart.push({
+          id: p.id,
+          naam: p.name,
+          prijs: parseFloat(p.price),
+          aantal: 1,
+          emoji: '🐾',
+          img: p.image_url || null,
+        })
+      }
+      localStorage.setItem('kc_cart', JSON.stringify(cart))
+      window.dispatchEvent(new Event('cart-updated'))
+
+      // Toon "Toegevoegd!" feedback
+      setAddedIds(prev => new Set(prev).add(p.id))
+      setTimeout(() => {
+        setAddedIds(prev => { const n = new Set(prev); n.delete(p.id); return n })
+      }, 2000)
+    } catch (e) {
+      console.error('Cart fout:', e)
+    }
   }
 
   const CSS = `
@@ -58,7 +88,8 @@ export default function WinkelPage() {
     .shop-logo{width:88px;height:88px;border-radius:20px;border:4px solid white;overflow:hidden;background:white;box-shadow:0 4px 16px rgba(0,0,0,.12);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:36px}
     .shop-logo img{width:100%;height:100%;object-fit:cover}
     .shop-meta{flex:1;padding-bottom:4px}
-    .shop-naam{font-family:'Fredoka',sans-serif;font-size:28px;font-weight:700;color:white;margin-bottom:4px;text-shadow:0 2px 8px rgba(0,0,0,.4)} .shop-badges{display:flex;gap:8px;flex-wrap:wrap}
+    .shop-naam{font-family:'Fredoka',sans-serif;font-size:28px;font-weight:700;color:white;margin-bottom:4px;text-shadow:0 2px 8px rgba(0,0,0,.4)}
+    .shop-badges{display:flex;gap:8px;flex-wrap:wrap}
     .badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:50px;font-size:11px;font-weight:700}
     .badge-green{background:var(--green-pale);color:var(--green-dark)}
     .badge-orange{background:var(--orange-pale);color:var(--orange-main)}
@@ -74,13 +105,18 @@ export default function WinkelPage() {
     .cat-tag{padding:4px 10px;border-radius:50px;background:var(--green-pale);color:var(--green-dark);font-size:12px;font-weight:700}
     .products-section h2{font-size:22px;color:var(--text-dark);margin-bottom:20px}
     .products-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
-    .product-card{background:var(--white);border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.05);transition:all .3s;border:1.5px solid transparent}
+    .product-card{background:var(--white);border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.05);transition:all .3s;border:1.5px solid transparent;display:flex;flex-direction:column}
     .product-card:hover{transform:translateY(-4px);box-shadow:0 8px 32px rgba(0,0,0,.1);border-color:var(--green-pale)}
     .product-img{width:100%;height:180px;object-fit:cover;background:var(--cream)}
     .product-img-placeholder{width:100%;height:180px;display:flex;align-items:center;justify-content:center;font-size:40px;background:var(--cream)}
-    .product-body{padding:14px}
-    .product-naam{font-weight:700;font-size:14px;margin-bottom:4px;color:var(--text-dark)}
+    .product-body{padding:14px;flex:1;display:flex;flex-direction:column;gap:8px}
+    .product-naam{font-weight:700;font-size:14px;color:var(--text-dark);flex:1}
+    .product-desc{font-size:12px;color:var(--text-mid);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
     .product-prijs{font-family:'Fredoka',sans-serif;font-size:20px;font-weight:700;color:var(--green-main)}
+    .btn-cart{width:100%;padding:10px;border-radius:50px;border:none;font-family:'Fredoka',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;margin-top:4px}
+    .btn-cart-add{background:var(--green-main);color:white}
+    .btn-cart-add:hover{background:var(--green-dark)}
+    .btn-cart-added{background:var(--green-pale);color:var(--green-dark)}
     .empty-products{text-align:center;padding:60px 20px;color:var(--text-light);background:var(--white);border-radius:16px}
     .empty-products .ei{font-size:40px;margin-bottom:12px;opacity:.4}
     .not-found{text-align:center;padding:80px 20px;max-width:400px;margin:0 auto}
@@ -110,12 +146,10 @@ export default function WinkelPage() {
   const profile = verkoper.profiles
   const lidSinds = profile?.created_at ? new Date(profile.created_at).toLocaleDateString('nl-BE', { month: 'long', year: 'numeric' }) : '—'
 
- return (
+  return (
     <>
       <style>{CSS}</style>
       <a href="/" className="back">← Terug naar Kwispelclub</a>
-
-      
 
       <div className="banner">
         {verkoper.banner_url
@@ -140,18 +174,18 @@ export default function WinkelPage() {
           </div>
         </div>
       </div>
-{isEigenaar && (
-  <a href="/verkoper/dashboard" style={{
-    display: 'inline-flex', alignItems: 'center', gap: 8,
-    padding: '10px 20px', borderRadius: 50,
-    background: 'var(--green-main)', color: 'white',
-    fontFamily: 'Fredoka, sans-serif', fontSize: 14, fontWeight: 600,
-    textDecoration: 'none', margin: '0 clamp(16px,4vw,48px) 16px'
-  }}>
-    ⚙️ Beheer mijn shop →
-  </a>
-)}
 
+      {isEigenaar && (
+        <a href="/verkoper/dashboard" style={{
+          display: 'inline-flex', alignItems: 'center', gap: 8,
+          padding: '10px 20px', borderRadius: 50,
+          background: 'var(--green-main)', color: 'white',
+          fontFamily: 'Fredoka, sans-serif', fontSize: 14, fontWeight: 600,
+          textDecoration: 'none', margin: '0 clamp(16px,4vw,48px) 16px'
+        }}>
+          ⚙️ Beheer mijn shop →
+        </a>
+      )}
 
       <div className="shop-body">
         <aside className="sidebar">
@@ -159,15 +193,13 @@ export default function WinkelPage() {
             <h3>Over de shop</h3>
             <p className="desc-text">{verkoper.beschrijving}</p>
           </div>
-
           <div className="info-card">
             <h3>Info</h3>
             {profile?.location && <div className="info-row">📍 {profile.location}</div>}
             <div className="info-row">📅 Lid sinds {lidSinds}</div>
             {verkoper.website && <div className="info-row">🌐 <a href={verkoper.website} target="_blank" rel="noopener">Website</a></div>}
-            {verkoper.instagram && <div className="info-row">📷 <a href={`https://instagram.com/${verkoper.instagram.replace('@','')}`} target="_blank" rel="noopener">{verkoper.instagram}</a></div>}
+            {verkoper.instagram && <div className="info-row">📷 <a href={`https://instagram.com/${verkoper.instagram.replace('@', '')}`} target="_blank" rel="noopener">{verkoper.instagram}</a></div>}
           </div>
-
           {verkoper.categorieen?.length > 0 && (
             <div className="info-card">
               <h3>Categorieën</h3>
@@ -176,6 +208,16 @@ export default function WinkelPage() {
               </div>
             </div>
           )}
+          {/* ✅ Winkelwagen knop in sidebar */}
+          <a href="/checkout" style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            padding: '14px 20px', borderRadius: 50,
+            background: 'var(--orange-main)', color: 'white',
+            fontFamily: 'Fredoka, sans-serif', fontSize: 15, fontWeight: 600,
+            textDecoration: 'none', textAlign: 'center'
+          }}>
+            🛒 Naar winkelwagen
+          </a>
         </aside>
 
         <div className="products-section">
@@ -194,7 +236,15 @@ export default function WinkelPage() {
                     : <div className="product-img-placeholder">🐾</div>}
                   <div className="product-body">
                     <div className="product-naam">{p.name}</div>
+                    {p.description && <div className="product-desc">{p.description}</div>}
                     <div className="product-prijs">€{parseFloat(p.price).toFixed(2)}</div>
+                    {/* ✅ Winkelwagen knop */}
+                    <button
+                      className={`btn-cart ${addedIds.has(p.id) ? 'btn-cart-added' : 'btn-cart-add'}`}
+                      onClick={() => addToCart(p)}
+                    >
+                      {addedIds.has(p.id) ? '✓ Toegevoegd!' : '🛒 In winkelwagen'}
+                    </button>
                   </div>
                 </div>
               ))}
