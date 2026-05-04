@@ -10,12 +10,12 @@ export default function AnnounceBanner() {
   const [banner, setBanner] = useState<any>(null)
 
   useEffect(() => {
-    // Zoek eerst exact match, dan fallback naar '/'
+    // ✅ maybeSingle() ipv single() — geeft null terug als er geen resultaat is, geen 406
     supabase.from('page_banners')
       .select('*')
       .eq('pagina', pathname)
       .eq('actief', true)
-      .single()
+      .maybeSingle()
       .then(({ data }) => {
         if (data) { setBanner(data); return }
         // Geen pagina-specifieke banner → probeer globale (pagina = '*')
@@ -23,7 +23,7 @@ export default function AnnounceBanner() {
           .select('*')
           .eq('pagina', '*')
           .eq('actief', true)
-          .single()
+          .maybeSingle()
           .then(({ data: global }) => setBanner(global || null))
       })
   }, [pathname])
