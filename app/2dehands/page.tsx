@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase'
+import ContacteerVerkoper from '@/components/ContacteerVerkoper'
 
 const DEMO_LISTINGS = [
   { id: 'd1', demo: true, titel: 'Kong Hondenbench XL', beschrijving: 'Nauwelijks gebruikt, ideaal voor grote honden.', categorie: 'bench', staat: 'zo_goed_als_nieuw', nieuwprijs: 89.95, vraagprijs: 45, locatie: 'Bree', levering: 'ophalen_of_verzenden', foto_urls: ['https://images.unsplash.com/photo-1541599468348-e603c130e53d?w=500&q=80'], status: 'actief', seller_name: 'Kwispelclub lid', created_at: new Date().toISOString() },
@@ -71,7 +72,6 @@ export default function TweedeHandsPage() {
 
   useEffect(() => { loadListings() }, [cat, search])
 
-  // Foto verkleinen voor upload
   const resizeImage = (file: File, maxPx = 1000, quality = 0.82): Promise<Blob> =>
     new Promise((resolve) => {
       const img = new Image()
@@ -164,8 +164,7 @@ export default function TweedeHandsPage() {
     loadListings()
   }
 
-  const displayListings = listings
-  const filtered = displayListings.filter(l =>
+  const filtered = listings.filter(l =>
     (cat === 'all' || l.categorie === cat) &&
     (!search || l.titel?.toLowerCase().includes(search.toLowerCase()))
   )
@@ -181,16 +180,11 @@ export default function TweedeHandsPage() {
     .hero-btns{display:flex;gap:12px;flex-wrap:wrap}.btn{display:inline-flex;align-items:center;gap:8px;padding:15px 30px;border-radius:50px;font-family:'Fredoka',sans-serif;font-size:15px;font-weight:600;text-decoration:none;border:none;cursor:pointer;transition:all .3s}
     .btn-primary{background:var(--orange-main);color:white;box-shadow:0 4px 20px rgba(232,145,58,.4)}.btn-primary:hover{background:#D4812E;transform:translateY(-3px)}.btn-white{background:rgba(255,255,255,.15);color:white;border:1.5px solid rgba(255,255,255,.3)}.btn-white:hover{background:rgba(255,255,255,.25)}
     .section{max-width:1320px;margin:0 auto;padding:72px clamp(16px,4vw,48px)}.section-header{text-align:center;margin-bottom:48px}.section-header h2{font-size:clamp(28px,3.5vw,42px);color:var(--teal-dark);margin-bottom:12px}.section-header p{color:var(--text-mid);font-size:16px;max-width:560px;margin:0 auto;line-height:1.6}
-    .demo-notice{background:var(--orange-pale);border:2px dashed var(--orange-main);border-radius:12px;padding:14px 20px;text-align:center;font-size:13px;font-weight:600;color:var(--brown);margin-bottom:24px}.demo-notice span{color:var(--orange-main)}
-    .eigen-listings{background:var(--green-pale);border-radius:20px;padding:24px;margin-bottom:24px}
-    .eigen-listings h3{font-size:17px;color:var(--green-dark);margin-bottom:14px}
-    .eigen-btn{padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;border:none;cursor:pointer;font-family:'Nunito',sans-serif;transition:all .2s}
-    .eb-verkocht{background:var(--teal-pale);color:var(--teal)}.eb-verwijder{background:#FFF0F0;color:var(--red)}
     .filters-bar{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:28px;align-items:center}
     .filter-group{display:flex;gap:8px;flex-wrap:wrap}.filter-btn{padding:8px 20px;border-radius:50px;border:2px solid var(--cream-dark);background:transparent;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;color:var(--text-mid)}.filter-btn.active{background:var(--teal);color:white;border-color:var(--teal)}.filter-btn:hover:not(.active){border-color:var(--teal);color:var(--teal)}
     .search-wrap{flex:1;min-width:200px;position:relative}.search-wrap input{width:100%;padding:10px 16px 10px 40px;border:2px solid var(--cream-dark);border-radius:50px;font-family:'Nunito',sans-serif;font-size:14px;background:var(--white);outline:none;transition:all .25s}.search-wrap input:focus{border-color:var(--teal)}.search-icon{position:absolute;left:15px;top:50%;transform:translateY(-50%);font-size:14px;opacity:.35}
     .listings-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
-    .listing-card{background:var(--white);border-radius:20px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06);transition:all .3s;border:2px solid transparent}.listing-card:hover{transform:translateY(-6px);box-shadow:0 8px 40px rgba(0,0,0,.12);border-color:var(--teal-pale)}
+    .listing-card{background:var(--white);border-radius:20px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06);transition:all .3s;border:2px solid transparent}.listing-card:hover{transform:translateY(-4px);box-shadow:0 8px 40px rgba(0,0,0,.12);border-color:var(--teal-pale)}
     .listing-img{height:220px;position:relative;overflow:hidden;background:var(--cream-dark)}.listing-img img{width:100%;height:100%;object-fit:cover;transition:transform .4s}.listing-card:hover .listing-img img{transform:scale(1.05)}
     .badges{position:absolute;top:14px;left:14px;display:flex;gap:6px;z-index:2}.lbadge{padding:4px 12px;border-radius:50px;font-size:11px;font-weight:700;color:white}.bt{background:var(--teal)}.bd{background:rgba(0,0,0,.5)}.demo-badge{background:rgba(232,145,58,.9)}
     .wish-btn{position:absolute;top:14px;right:14px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.9);border:none;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;transition:all .2s;z-index:2}.wish-btn.liked{color:var(--red)}
@@ -216,6 +210,8 @@ export default function TweedeHandsPage() {
     .price-warn,.sell-err{background:rgba(232,78,78,.15);border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px;font-weight:600;color:#FF8A8A}
     .sell-success{text-align:center;padding:24px 0}.sell-success .si{font-size:56px;margin-bottom:12px}.sell-success h3{color:white;font-size:20px;margin-bottom:8px}.sell-success p{opacity:.8;font-size:14px}
     .login-prompt{background:rgba(255,255,255,.08);border-radius:12px;padding:24px;text-align:center;color:white}.login-prompt p{opacity:.8;margin-bottom:16px;font-size:15px}.login-prompt a{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border-radius:50px;background:var(--orange-main);color:white;font-family:'Fredoka',sans-serif;font-size:14px;font-weight:600;text-decoration:none}
+    .eigen-btn{padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;border:none;cursor:pointer;font-family:'Nunito',sans-serif;transition:all .2s}
+    .eb-verkocht{background:rgba(42,157,143,.4);color:white}
     footer{background:var(--green-dark);color:white}.footer-inner{max-width:1320px;margin:0 auto;padding:48px clamp(16px,4vw,48px) 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
     .footer-logo{display:flex;align-items:center;gap:10px;text-decoration:none}.footer-logo .lp{background:rgba(255,255,255,.15);width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}.footer-logo .b{font-family:'Fredoka',sans-serif;font-size:20px;font-weight:700;color:white}
     .footer-links{display:flex;gap:24px}.footer-links a{color:white;opacity:.6;text-decoration:none;font-size:14px}.footer-links a:hover{opacity:1}
@@ -227,7 +223,6 @@ export default function TweedeHandsPage() {
   return (
     <>
       <style>{CSS}</style>
-      <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
       <div className="breadcrumb"><a href="/">Home</a> › 2de Hands Marktplaats</div>
 
@@ -252,8 +247,6 @@ export default function TweedeHandsPage() {
           <h2>Huidige Advertenties ♻️</h2>
           <p>{listings.length > 0 ? `${listings.length} advertentie${listings.length !== 1 ? 's' : ''} beschikbaar` : 'Tweedehands huisdierproducten van onze community'}</p>
         </div>
-
-        
 
         <div className="filters-bar">
           <div className="filter-group">
@@ -314,6 +307,16 @@ export default function TweedeHandsPage() {
                       <span className="seller-badge">{l.demo ? '✓ Voorbeeld' : '✓ Lid'}</span>
                     </div>
                   </div>
+                  {/* ✅ Contacteer verkoper knop — alleen voor echte listings */}
+                  {!l.demo && (
+                    <div style={{ marginTop: 12 }}>
+                      <ContacteerVerkoper
+                        receiverId={l.seller_id}
+                        listingId={l.id}
+                        productNaam={l.titel}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -353,7 +356,6 @@ export default function TweedeHandsPage() {
               <>
                 <h3>Nieuwe Advertentie</h3>
                 <div className="form-sub">Vul alle velden in om je product aan te bieden.</div>
-
                 <div className="slots-info">
                   <span>Jouw slots:</span>
                   <div style={{ display: 'flex', gap: 6 }}>
@@ -362,7 +364,6 @@ export default function TweedeHandsPage() {
                   </div>
                   <span style={{ opacity: .7, marginLeft: 'auto' }}>{2 - activeEigen} van 2 beschikbaar</span>
                 </div>
-
                 {eigenListings.length > 0 && (
                   <div style={{ background: 'rgba(255,255,255,.08)', borderRadius: 12, padding: 16, marginBottom: 16 }}>
                     <h3 style={{ color: 'white', fontSize: 14, marginBottom: 10 }}>Jouw advertenties:</h3>
@@ -372,13 +373,12 @@ export default function TweedeHandsPage() {
                         <span style={{ opacity: .7 }}>€{parseFloat(l.vraagprijs).toFixed(2)}</span>
                         <span style={{ padding: '2px 8px', borderRadius: 50, background: l.status === 'actief' ? 'rgba(74,124,63,.4)' : 'rgba(255,255,255,.1)', fontSize: 11 }}>{l.status}</span>
                         {l.status === 'actief' && (
-                          <button className="eigen-btn eb-verkocht" onClick={() => handleStatusUpdate(l.id, 'verkocht')} style={{ background: 'rgba(42,157,143,.4)', color: 'white' }}>Verkocht</button>
+                          <button className="eigen-btn eb-verkocht" onClick={() => handleStatusUpdate(l.id, 'verkocht')}>Verkocht</button>
                         )}
                       </div>
                     ))}
                   </div>
                 )}
-
                 <div className="fg"><label>Productnaam *</label><input placeholder="Bijv. Kong Hondenbench XL" value={sellTitel} onChange={e => setSellTitel(e.target.value)} /></div>
                 <div className="form-row">
                   <div className="fg"><label>Categorie</label>
@@ -415,7 +415,6 @@ export default function TweedeHandsPage() {
                     </select>
                   </div>
                 </div>
-
                 <div className="fg">
                   <label>Foto's (max. 4) — automatisch verkleind</label>
                   {sellFotos.length > 0 && (
@@ -428,7 +427,6 @@ export default function TweedeHandsPage() {
                   </div>
                   <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleFotoUpload} />
                 </div>
-
                 {sellErr && <div className="sell-err">⚠️ {sellErr}</div>}
                 <button
                   className="btn btn-primary"
