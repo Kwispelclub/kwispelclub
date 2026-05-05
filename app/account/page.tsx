@@ -1,11 +1,24 @@
 'use client'
 
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import type { User } from '@supabase/supabase-js'
 
 type Panel = 'overview' | 'pets' | 'orders' | 'favorites' | 'listings' | 'bookings' | 'academy' | 'berichten' | 'settings'
+
+// Wrapper voor Suspense boundary (vereist door useSearchParams)
+export default function AccountPageWrapper() {
+  return (
+    <Suspense fallback={
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FFF9F0' }}>
+        <div style={{ fontFamily: 'Fredoka, sans-serif', fontSize: 22, color: '#4A7C3F' }}>🐾 Even laden...</div>
+      </div>
+    }>
+      <AccountPage />
+    </Suspense>
+  )
+}
 
 function EmptyState({ icon, title, desc, cta, ctaHref, onCtaClick }: {
   icon: string; title: string; desc: string; cta?: string; ctaHref?: string; onCtaClick?: () => void
@@ -24,7 +37,7 @@ function EmptyState({ icon, title, desc, cta, ctaHref, onCtaClick }: {
   )
 }
 
-export default function AccountPage() {
+function AccountPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = useMemo(() => createClient(), [])
