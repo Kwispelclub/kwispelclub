@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, useMemo, useRef } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import type { User } from '@supabase/supabase-js'
 
-type Panel = 'overview' | 'pets' | 'orders' | 'favorites' | 'listings' | 'bookings' | 'academy' | 'settings'
+type Panel = 'overview' | 'pets' | 'orders' | 'favorites' | 'listings' | 'bookings' | 'academy' | 'berichten' | 'settings'
 
 function EmptyState({ icon, title, desc, cta, ctaHref, onCtaClick }: {
   icon: string; title: string; desc: string; cta?: string; ctaHref?: string; onCtaClick?: () => void
@@ -26,12 +26,22 @@ function EmptyState({ icon, title, desc, cta, ctaHref, onCtaClick }: {
 
 export default function AccountPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = useMemo(() => createClient(), [])
   const [user, setUser] = useState<User | null>(null)
   const [activePanel, setActivePanel] = useState<Panel>('overview')
-  const [scrolled, setScrolled] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saveMsg, setSaveMsg] = useState('Opslaan')
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  // Berichten state
+  const [inbox, setInbox] = useState<any[]>([])
+  const [activeConv, setActiveConv] = useState<string | null>(null)
+  const [messages, setMessages] = useState<any[]>([])
+  const [newMessage, setNewMessage] = useState('')
+  const [sendingMsg, setSendingMsg] = useState(false)
+  const [inboxLoading, setInboxLoading] = useState(false)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const [settingsFirstName, setSettingsFirstName] = useState('')
   const [settingsLastName, setSettingsLastName] = useState('')
@@ -56,15 +66,73 @@ export default function AccountPage() {
       setSettingsTel(m?.telefoon || '')
       setSettingsLocatie(m?.locatie || '')
       setLoading(false)
+      loadInbox(user.id)
     })
-    const onScroll = () => setScrolled(window.scrollY > 10)
-    window.addEventListener('scroll', onScroll)
-    return () => window.removeEventListener('scroll', onScroll)
+
+    // Check URL params voor directe berichten navigatie
+    const panel = searchParams.get('panel')
+    const conv = searchParams.get('conv')
+    if (panel === 'berichten') {
+      setActivePanel('berichten')
+      if (conv) setActiveConv(conv)
+    }
   }, [])
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    router.push('/')
+  useEffect(() => {
+    if (activeConv && user) loadMessages(activeConv, user.id)
+  }, [activeConv])
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
+
+  const loadInbox = async (userId: string) => {
+    setInboxLoading(true)
+    try {
+      const res = await fetch(`/api/messages?user_id=${userId}`)
+      const data = await res.json()
+      setInbox(data.inbox || [])
+      // Tel ongelezen berichten
+      const unread = (data.inbox || []).filter((m: any) => !m.gelezen && m.receiver_id === userId).length
+      setUnreadCount(unread)
+    } catch (e) { console.error(e) }
+    setInboxLoading(false)
+  }
+
+  const loadMessages = async (convId: string, userId: string) => {
+    try {
+      const res = await fetch(`/api/messages?conversation_id=${convId}&user_id=${userId}`)
+      const data = await res.json()
+      setMessages(data.messages || [])
+      // Refresh inbox om gelezen status te updaten
+      loadInbox(userId)
+    } catch (e) { console.error(e) }
+  }
+
+  const sendMessage = async () => {
+    if (!newMessage.trim() || !user || !activeConv) return
+    setSendingMsg(true)
+    try {
+      // Vind de andere persoon in de conversatie
+      const conv = inbox.find(m => m.conversation_id === activeConv)
+      const receiverId = conv?.sender_id === user.id ? conv?.receiver_id : conv?.sender_id
+
+      if (!receiverId) return
+
+      await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sender_id: user.id,
+          receiver_id: receiverId,
+          conversation_id: activeConv,
+          message: newMessage.trim(),
+        })
+      })
+      setNewMessage('')
+      loadMessages(activeConv, user.id)
+    } catch (e) { console.error(e) }
+    setSendingMsg(false)
   }
 
   const handleSaveSettings = async () => {
@@ -98,7 +166,7 @@ export default function AccountPage() {
     ? new Date(user.created_at).toLocaleDateString('nl-BE', { month: 'long', year: 'numeric' })
     : ''
 
-  const navItems: { id: Panel; icon: string; label: string }[] = [
+  const navItems: { id: Panel; icon: string; label: string; badge?: number }[] = [
     { id: 'overview',  icon: '📊', label: 'Overzicht' },
     { id: 'pets',      icon: '🐾', label: 'Mijn Huisdieren' },
     { id: 'orders',    icon: '📦', label: 'Bestellingen' },
@@ -106,8 +174,11 @@ export default function AccountPage() {
     { id: 'listings',  icon: '♻️', label: 'Mijn 2de Hands' },
     { id: 'bookings',  icon: '✂️', label: 'Afspraken' },
     { id: 'academy',   icon: '🎓', label: 'Academy' },
+    { id: 'berichten', icon: '💬', label: 'Berichten', badge: unreadCount || undefined },
     { id: 'settings',  icon: '⚙️', label: 'Instellingen' },
   ]
+
+  const activeConvData = inbox.find(m => m.conversation_id === activeConv)
 
   return (
     <>
@@ -116,21 +187,6 @@ export default function AccountPage() {
         *{margin:0;padding:0;box-sizing:border-box}
         body{font-family:'Nunito',sans-serif;background:var(--cream);color:var(--text-dark);-webkit-font-smoothing:antialiased}
         h1,h2,h3,h4{font-family:'Fredoka',sans-serif}
-        .navbar{position:sticky;top:0;z-index:100;background:rgba(255,249,240,.92);backdrop-filter:blur(20px);border-bottom:1px solid rgba(0,0,0,.04);padding:0 clamp(16px,4vw,48px);transition:box-shadow .3s}
-        .navbar.scrolled{box-shadow:0 4px 20px rgba(0,0,0,.08)}
-        .nav-inner{max-width:1320px;margin:0 auto;display:flex;align-items:center;height:72px;gap:8px}
-        .nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;margin-right:28px}
-        .logo-paw{width:42px;height:42px;border-radius:12px;background:var(--green-dark);display:flex;align-items:center;justify-content:center;font-size:22px}
-        .brand{font-family:'Fredoka',sans-serif;font-size:22px;font-weight:700;color:var(--green-dark)}
-        .nav-links{display:flex;gap:2px;list-style:none}
-        .nav-links a{text-decoration:none;color:var(--text-dark);font-weight:600;font-size:14px;padding:8px 16px;border-radius:10px;transition:all .2s}
-        .nav-links a:hover{background:var(--green-pale);color:var(--green-dark)}
-        .nav-right{margin-left:auto;display:flex;align-items:center;gap:10px}
-        .user-pill{display:flex;align-items:center;gap:8px;padding:6px 16px 6px 8px;border-radius:50px;background:var(--white);border:2px solid var(--cream-dark)}
-        .ua{width:32px;height:32px;border-radius:50%;background:var(--green-main);color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800}
-        .user-pill span{font-size:13px;font-weight:700}
-        .btn-signout{padding:8px 18px;border-radius:50px;border:2px solid var(--cream-dark);background:transparent;font-family:'Fredoka',sans-serif;font-size:13px;font-weight:600;cursor:pointer;color:var(--text-mid);transition:all .2s}
-        .btn-signout:hover{border-color:var(--red);color:var(--red)}
         .account-layout{max-width:1320px;margin:0 auto;padding:32px clamp(16px,4vw,48px);display:grid;grid-template-columns:260px 1fr;gap:28px;min-height:calc(100vh - 120px)}
         .account-sidebar{display:flex;flex-direction:column;gap:8px}
         .profile-card{background:var(--white);border-radius:20px;padding:28px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:8px}
@@ -138,10 +194,11 @@ export default function AccountPage() {
         .profile-name{font-size:18px;font-weight:700;margin-bottom:6px}
         .profile-role{font-size:12px;padding:3px 12px;border-radius:50px;display:inline-block;font-weight:700;color:var(--green-dark);background:var(--green-pale)}
         .profile-since{font-size:12px;color:var(--text-light);margin-top:8px}
-        .sidebar-nav a{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:12px;text-decoration:none;color:var(--text-mid);font-weight:600;font-size:14px;transition:all .15s;cursor:pointer}
+        .sidebar-nav a{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:12px;text-decoration:none;color:var(--text-mid);font-weight:600;font-size:14px;transition:all .15s;cursor:pointer;position:relative}
         .sidebar-nav a:hover{background:var(--cream);color:var(--text-dark)}
         .sidebar-nav a.active{background:var(--green-pale);color:var(--green-dark)}
         .nav-icon{width:24px;text-align:center;font-size:16px}
+        .nav-badge{margin-left:auto;background:var(--red);color:white;font-size:10px;font-weight:800;padding:2px 7px;border-radius:50px}
         .account-main{min-width:0}
         .panel{display:none}
         .panel.active{display:block;animation:fadeIn .25s ease}
@@ -171,8 +228,6 @@ export default function AccountPage() {
         .notice{display:flex;align-items:center;gap:12px;padding:16px 20px;border-radius:14px;font-size:13px;font-weight:600;margin-bottom:16px}
         .notice-green{background:var(--green-pale);color:var(--green-dark)}
         .notice-orange{background:var(--orange-pale);color:#5C3D2E}
-        .add-card{border:2px dashed var(--cream-dark);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:140px;cursor:pointer;background:var(--white);border-radius:20px;transition:all .2s;width:100%}
-        .add-card:hover{border-color:var(--green-main);background:var(--green-pale)}
         .settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
         .settings-section h3{font-size:17px;color:var(--green-dark);margin-bottom:16px;padding-bottom:10px;border-bottom:2px solid var(--cream-dark)}
         .setting-field{margin-bottom:16px}
@@ -188,6 +243,40 @@ export default function AccountPage() {
         .t-off{background:var(--cream-dark)}
         .t-on{background:var(--green-main)}
         .knob{width:20px;height:20px;border-radius:50%;background:white;position:absolute;top:2px;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+
+        /* BERICHTEN STYLES */
+        .chat-layout{display:grid;grid-template-columns:280px 1fr;gap:0;background:var(--white);border-radius:20px;box-shadow:0 2px 8px rgba(0,0,0,.06);overflow:hidden;min-height:500px}
+        .chat-inbox{border-right:2px solid var(--cream-dark);overflow-y:auto}
+        .chat-inbox-header{padding:16px 20px;border-bottom:2px solid var(--cream-dark);font-family:'Fredoka',sans-serif;font-size:16px;font-weight:700;color:var(--green-dark)}
+        .conv-item{display:flex;align-items:center;gap:12px;padding:14px 20px;cursor:pointer;border-bottom:1px solid var(--cream-dark);transition:background .15s}
+        .conv-item:hover{background:var(--cream)}
+        .conv-item.active{background:var(--green-pale)}
+        .conv-avatar{width:40px;height:40px;border-radius:50%;background:var(--green-main);color:white;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;flex-shrink:0}
+        .conv-info{flex:1;min-width:0}
+        .conv-name{font-size:13px;font-weight:700;color:var(--text-dark);margin-bottom:2px}
+        .conv-preview{font-size:12px;color:var(--text-light);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .conv-unread{width:8px;height:8px;border-radius:50%;background:var(--green-main);flex-shrink:0}
+        .chat-window{display:flex;flex-direction:column}
+        .chat-header{padding:16px 20px;border-bottom:2px solid var(--cream-dark);display:flex;align-items:center;gap:12px}
+        .chat-header-name{font-family:'Fredoka',sans-serif;font-size:17px;font-weight:700;color:var(--text-dark)}
+        .chat-header-sub{font-size:12px;color:var(--text-light)}
+        .chat-messages{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:12px;min-height:350px}
+        .msg{display:flex;gap:8px;max-width:75%}
+        .msg.mine{align-self:flex-end;flex-direction:row-reverse}
+        .msg-avatar{width:32px;height:32px;border-radius:50%;background:var(--green-pale);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0;color:var(--green-dark)}
+        .msg-bubble{padding:10px 14px;border-radius:16px;font-size:14px;line-height:1.5}
+        .msg.mine .msg-bubble{background:var(--green-main);color:white;border-bottom-right-radius:4px}
+        .msg.theirs .msg-bubble{background:var(--cream-dark);color:var(--text-dark);border-bottom-left-radius:4px}
+        .msg-time{font-size:11px;opacity:.6;margin-top:4px;text-align:right}
+        .chat-input{padding:16px 20px;border-top:2px solid var(--cream-dark);display:flex;gap:10px}
+        .chat-input input{flex:1;padding:11px 16px;border:2px solid var(--cream-dark);border-radius:50px;font-family:'Nunito',sans-serif;font-size:14px;outline:none;transition:all .2s}
+        .chat-input input:focus{border-color:var(--green-main)}
+        .chat-send{padding:11px 20px;border-radius:50px;background:var(--green-main);color:white;border:none;font-family:'Fredoka',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s}
+        .chat-send:hover{background:var(--green-dark)}
+        .chat-send:disabled{opacity:.5;cursor:not-allowed}
+        .chat-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;padding:40px;text-align:center;color:var(--text-light)}
+        .chat-empty .ei{font-size:40px;margin-bottom:12px;opacity:.4}
+
         footer{background:var(--green-dark);color:white;margin-top:48px}
         .footer-inner{max-width:1320px;margin:0 auto;padding:28px clamp(16px,4vw,48px);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:13px;opacity:.5}
         .footer-inner a{color:white;text-decoration:none;margin:0 12px}
@@ -199,10 +288,10 @@ export default function AccountPage() {
           .sidebar-nav a{white-space:nowrap;padding:10px 14px;font-size:13px}
           .settings-grid{grid-template-columns:1fr}
           .stats-grid{grid-template-columns:repeat(2,1fr)}
+          .chat-layout{grid-template-columns:1fr}
+          .chat-inbox{border-right:none;border-bottom:2px solid var(--cream-dark)}
         }
       `}</style>
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      
 
       <div className="account-layout">
         {/* SIDEBAR */}
@@ -218,6 +307,7 @@ export default function AccountPage() {
               <a key={item.id} className={activePanel === item.id ? 'active' : ''} onClick={() => setActivePanel(item.id)}>
                 <span className="nav-icon">{item.icon}</span>
                 {item.label}
+                {item.badge ? <span className="nav-badge">{item.badge}</span> : null}
               </a>
             ))}
             <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--cream-dark)' }}>
@@ -248,7 +338,7 @@ export default function AccountPage() {
                 ['🐾', '0', 'Huisdieren', 'pets'],
                 ['📦', '0', 'Bestellingen', 'orders'],
                 ['❤️', '0', 'Favorieten', 'favorites'],
-                ['✂️', '0', 'Afspraken', 'bookings'],
+                ['💬', String(unreadCount || 0), 'Berichten', 'berichten'],
               ] as [string, string, string, Panel][]).map(([icon, val, label, panel]) => (
                 <div key={label} className="stat-card" onClick={() => setActivePanel(panel)}>
                   <div className="stat-icon">{icon}</div>
@@ -266,45 +356,20 @@ export default function AccountPage() {
           {/* PETS */}
           <div className={`panel ${activePanel === 'pets' ? 'active' : ''}`}>
             <div className="panel-header"><h2>Mijn Huisdieren 🐾</h2></div>
-            <EmptyState
-              icon="🐾"
-              title="Nog geen huisdieren"
-              desc="Voeg je hond, kat of ander huisdier toe om vaccinaties bij te houden, afspraken te boeken en persoonlijke producttips te ontvangen."
-              cta="+ Huisdier Toevoegen"
-            />
-            <div className="add-card">
-              <span style={{ fontSize: 30, opacity: 0.25 }}>+</span>
-              <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-mid)' }}>Huisdier Toevoegen</span>
-              <span style={{ fontSize: 12, color: 'var(--text-light)' }}>Hond, kat of ander dier</span>
-            </div>
+            <EmptyState icon="🐾" title="Nog geen huisdieren" desc="Voeg je hond, kat of ander huisdier toe om vaccinaties bij te houden, afspraken te boeken en persoonlijke producttips te ontvangen." cta="+ Huisdier Toevoegen" />
           </div>
 
           {/* ORDERS */}
           <div className={`panel ${activePanel === 'orders' ? 'active' : ''}`}>
             <div className="panel-header"><h2>Bestellingen 📦</h2></div>
-            <div className="notice notice-green">
-              <span style={{ fontSize: 18 }}>🚧</span>
-              De Kwispelclub webshop opent binnenkort. Je bestellingen verschijnen hier automatisch.
-            </div>
-            <EmptyState
-              icon="📦"
-              title="Nog geen bestellingen"
-              desc="Zodra de shop open is kun je products bestellen voor jouw huisdier. Alles staat hier overzichtelijk bijeen."
-              cta="Bekijk de Shop"
-              ctaHref="/#shop"
-            />
+            <div className="notice notice-green"><span style={{ fontSize: 18 }}>🚧</span>De Kwispelclub webshop opent binnenkort. Je bestellingen verschijnen hier automatisch.</div>
+            <EmptyState icon="📦" title="Nog geen bestellingen" desc="Zodra de shop open is kun je producten bestellen voor jouw huisdier." cta="Bekijk de Shop" ctaHref="/#shop" />
           </div>
 
           {/* FAVORITES */}
           <div className={`panel ${activePanel === 'favorites' ? 'active' : ''}`}>
             <div className="panel-header"><h2>Favorieten ❤️</h2></div>
-            <EmptyState
-              icon="❤️"
-              title="Nog geen favorieten"
-              desc="Bewaar products, kapsalons of cursussen als favoriet. Je vindt ze dan snel terug via dit overzicht."
-              cta="Ontdek de Shop"
-              ctaHref="/#shop"
-            />
+            <EmptyState icon="❤️" title="Nog geen favorieten" desc="Bewaar producten, kapsalons of cursussen als favoriet." cta="Ontdek de Shop" ctaHref="/#shop" />
           </div>
 
           {/* 2DE HANDS */}
@@ -317,13 +382,7 @@ export default function AccountPage() {
               <span style={{ fontSize: 18 }}>ℹ️</span>
               Je mag <strong>2 gratis advertenties</strong> plaatsen als je recent iets hebt gekocht bij Kwispelclub.
             </div>
-            <EmptyState
-              icon="♻️"
-              title="Nog geen advertenties"
-              desc="Verkoop tweedehands huisdierartikelen aan andere leden. Hondenmanden, speelgoed, benches — alles mag."
-              cta="Eerste Advertentie Plaatsen"
-              ctaHref="/2dehands"
-            />
+            <EmptyState icon="♻️" title="Nog geen advertenties" desc="Verkoop tweedehands huisdierartikelen aan andere leden." cta="Eerste Advertentie Plaatsen" ctaHref="/2dehands" />
           </div>
 
           {/* BOOKINGS */}
@@ -332,33 +391,125 @@ export default function AccountPage() {
               <h2>Afspraken ✂️</h2>
               <a href="/kapsalons" className="btn btn-green">+ Afspraak Boeken</a>
             </div>
-            <EmptyState
-              icon="✂️"
-              title="Nog geen afspraken"
-              desc="Boek een knip- of groomingafspraak bij een kapsalon in jouw buurt in Limburg."
-              cta="Kapsalons Bekijken"
-              ctaHref="/kapsalons"
-            />
+            <EmptyState icon="✂️" title="Nog geen afspraken" desc="Boek een knip- of groomingafspraak bij een kapsalon in jouw buurt." cta="Kapsalons Bekijken" ctaHref="/kapsalons" />
           </div>
 
           {/* ACADEMY */}
           <div className={`panel ${activePanel === 'academy' ? 'active' : ''}`}>
             <div className="panel-header"><h2>Academy 🎓</h2></div>
-            <div className="card" style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 16 }}>
-              <div style={{ width: 52, height: 52, borderRadius: 14, background: 'var(--green-pale)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, flexShrink: 0 }}>🐶</div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontFamily: 'Fredoka, sans-serif', fontWeight: 700, fontSize: 16 }}>Puppy Training Basics</div>
-                <div style={{ fontSize: 13, color: 'var(--text-light)' }}>8 modules · 24 lessen · Trainer Lisa</div>
+            <EmptyState icon="🎓" title="Cursussen komen eraan" desc="Kwispelclub Academy brengt trainingen voor puppyopvoeding, gedrag en meer." cta="Meer Info" ctaHref="/#academy" />
+          </div>
+
+          {/* BERICHTEN */}
+          <div className={`panel ${activePanel === 'berichten' ? 'active' : ''}`}>
+            <div className="panel-header"><h2>Berichten 💬</h2></div>
+            <div className="chat-layout">
+              {/* Inbox */}
+              <div className="chat-inbox">
+                <div className="chat-inbox-header">Conversaties</div>
+                {inboxLoading ? (
+                  <div style={{ padding: 20, color: 'var(--text-light)', fontSize: 13 }}>⏳ Laden...</div>
+                ) : inbox.length === 0 ? (
+                  <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-light)', fontSize: 13 }}>
+                    <div style={{ fontSize: 32, marginBottom: 8, opacity: .3 }}>💬</div>
+                    Nog geen berichten
+                  </div>
+                ) : (
+                  inbox.map(conv => {
+                    const isMe = conv.sender_id === user?.id
+                    const otherName = isMe
+                      ? `${conv.receiver?.first_name || ''} ${conv.receiver?.last_name?.[0] || ''}.`
+                      : `${conv.sender?.first_name || ''} ${conv.sender?.last_name?.[0] || ''}.`
+                    const initials2 = otherName.trim()[0]?.toUpperCase() || '?'
+                    const unread = !conv.gelezen && conv.receiver_id === user?.id
+
+                    return (
+                      <div
+                        key={conv.conversation_id}
+                        className={`conv-item ${activeConv === conv.conversation_id ? 'active' : ''}`}
+                        onClick={() => setActiveConv(conv.conversation_id)}
+                      >
+                        <div className="conv-avatar">{initials2}</div>
+                        <div className="conv-info">
+                          <div className="conv-name">{otherName}</div>
+                          <div className="conv-preview">
+                            {conv.product?.name && <span style={{ color: 'var(--green-main)', fontWeight: 700 }}>{conv.product.name} · </span>}
+                            {conv.body}
+                          </div>
+                        </div>
+                        {unread && <div className="conv-unread" />}
+                      </div>
+                    )
+                  })
+                )}
               </div>
-              <span style={{ padding: '5px 14px', borderRadius: 50, background: 'var(--cream)', fontSize: 11, fontWeight: 700, color: 'var(--text-light)', whiteSpace: 'nowrap' }}>BINNENKORT</span>
+
+              {/* Chat venster */}
+              <div className="chat-window">
+                {!activeConv ? (
+                  <div className="chat-empty">
+                    <div className="ei">💬</div>
+                    <p>Selecteer een conversatie om te chatten</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="chat-header">
+                      <div className="conv-avatar" style={{ width: 36, height: 36, fontSize: 14 }}>
+                        {(() => {
+                          const isMe = activeConvData?.sender_id === user?.id
+                          const name = isMe
+                            ? activeConvData?.receiver?.first_name
+                            : activeConvData?.sender?.first_name
+                          return name?.[0]?.toUpperCase() || '?'
+                        })()}
+                      </div>
+                      <div>
+                        <div className="chat-header-name">
+                          {(() => {
+                            const isMe = activeConvData?.sender_id === user?.id
+                            return isMe
+                              ? `${activeConvData?.receiver?.first_name || ''} ${activeConvData?.receiver?.last_name?.[0] || ''}.`
+                              : `${activeConvData?.sender?.first_name || ''} ${activeConvData?.sender?.last_name?.[0] || ''}.`
+                          })()}
+                        </div>
+                        {activeConvData?.product?.name && (
+                          <div className="chat-header-sub">Over: {activeConvData.product.name}</div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="chat-messages">
+                      {messages.map(msg => (
+                        <div key={msg.id} className={`msg ${msg.sender_id === user?.id ? 'mine' : 'theirs'}`}>
+                          <div className="msg-avatar">
+                            {msg.sender?.first_name?.[0]?.toUpperCase() || '?'}
+                          </div>
+                          <div>
+                            <div className="msg-bubble">{msg.body}</div>
+                            <div className="msg-time">
+                              {new Date(msg.created_at).toLocaleTimeString('nl-BE', { hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      <div ref={messagesEndRef} />
+                    </div>
+
+                    <div className="chat-input">
+                      <input
+                        placeholder="Typ een bericht..."
+                        value={newMessage}
+                        onChange={e => setNewMessage(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
+                      />
+                      <button className="chat-send" onClick={sendMessage} disabled={sendingMsg || !newMessage.trim()}>
+                        {sendingMsg ? '...' : 'Verstuur →'}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
-            <EmptyState
-              icon="🎓"
-              title="Cursussen komen eraan"
-              desc="Kwispelclub Academy brengt trainingen voor puppyopvoeding, gedrag en meer. Je voortgang verschijnt hier zodra cursussen live gaan."
-              cta="Meer Info"
-              ctaHref="/#academy"
-            />
           </div>
 
           {/* SETTINGS */}
