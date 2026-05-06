@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import Anthropic from '@anthropic-ai/sdk'
-
+ 
 const anthropic = new Anthropic()
-
+ 
 function getSupabase() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 }
-
+ 
 const KEYWORD_MAP: Record<string, string[]> = {
   'jeuk': ['jeuk', 'allergie', 'huidverzorging', 'shampoo', 'omega'],
   'vlooien': ['vlooien', 'teken', 'antiparasitair', 'bescherming'],
@@ -30,7 +30,7 @@ const KEYWORD_MAP: Record<string, string[]> = {
   '2dehands': ['2dehands', 'tweedehands', 'gebruikt', 'verkopen'],
   'cursus': ['cursus', 'training', 'leren', 'academy'],
 }
-
+ 
 function extractKeywords(message: string): string[] {
   const lower = message.toLowerCase()
   const keywords: string[] = []
@@ -49,11 +49,11 @@ function extractKeywords(message: string): string[] {
   keywords.forEach(k => { if (!unique.includes(k)) unique.push(k) })
   return unique
 }
-
+ 
 async function searchDatabase(keywords: string[], pagina?: string) {
   if (keywords.length === 0) return { producten: [], kapsalons: [], listings: [], cursussen: [] }
   const supabase = getSupabase()
-
+ 
   const [producten, kapsalons, listings, cursussen] = await Promise.all([
     // ✅ was 'producten' → nu 'products' met juiste veldnamen
     supabase
@@ -62,14 +62,14 @@ async function searchDatabase(keywords: string[], pagina?: string) {
       .eq('status', 'actief')
       .or(keywords.map(k => `name.ilike.%${k}%,description.ilike.%${k}%`).join(','))
       .limit(4),
-
-    // ✅ was 'kapsalons' → nu 'salons' 
+ 
+    // ✅ kapsalons tabel met juiste veldnamen
     supabase
-      .from('salons')
-      .select('id, name, location, phone, rating, tags')
-      .eq('status', 'actief')
+      .from('kapsalons')
+      .select('id, naam, stad, locatie, prijs_vanaf, rating, type_salon')
+      .eq('actief', true)
       .limit(3),
-
+ 
     // listings blijft hetzelfde
     supabase
       .from('listings')
@@ -77,7 +77,7 @@ async function searchDatabase(keywords: string[], pagina?: string) {
       .eq('status', 'actief')
       .or(keywords.map(k => `titel.ilike.%${k}%,beschrijving.ilike.%${k}%,categorie.ilike.%${k}%`).join(','))
       .limit(3),
-
+ 
     // ✅ was 'cursussen' → nu 'courses'
     supabase
       .from('courses')
@@ -85,7 +85,7 @@ async function searchDatabase(keywords: string[], pagina?: string) {
       .eq('status', 'actief')
       .limit(3),
   ])
-
+ 
   return {
     producten: producten.data || [],
     kapsalons: kapsalons.data || [],
@@ -93,13 +93,13 @@ async function searchDatabase(keywords: string[], pagina?: string) {
     cursussen: cursussen.data || [],
   }
 }
-
+ 
 export async function POST(request: NextRequest) {
   try {
     const { message, history, pagina } = await request.json()
     const keywords = extractKeywords(message)
     const dbResults = keywords.length > 0 ? await searchDatabase(keywords, pagina) : null
-
+ 
     // Pagina-specifieke context
     const paginaContext: Record<string, string> = {
       '/': 'De gebruiker is op de homepage.',
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
       '/kapsalons': 'De gebruiker zoekt een kapsalon. Focus op trimsalons en afspraken.',
       '/blog': 'De gebruiker leest het blog. Focus op tips en advies.',
     }
-
+ 
     let dataContext = ''
     if (dbResults) {
       if (dbResults.producten.length > 0) {
@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
       }
       if (dbResults.kapsalons.length > 0) {
         dataContext += '\n\nGEVONDEN KAPSALONS:\n' + dbResults.kapsalons.map((k: any) =>
-          `- ${k.name} — ${k.location}`
+          `- ${k.naam} — ${k.stad || k.locatie}`
         ).join('\n')
       }
       if (dbResults.listings.length > 0) {
@@ -133,17 +133,17 @@ export async function POST(request: NextRequest) {
         ).join('\n')
       }
     }
-
+ 
     const systemPrompt = `Je bent Kwispel, de slimme en vrolijke AI-assistent van Kwispelclub — het Belgische platform voor huisdiereigenaren.
-
+ 
 Je persoonlijkheid:
 - Enthousiast, warm en speels 🐾
 - Gebruik af en toe emoji's maar niet overdreven
 - Antwoord altijd in het Nederlands
 - Houd antwoorden beknopt (max 3-4 zinnen), tenzij uitgebreide info nodig is
-
+ 
 ${pagina ? `Huidige pagina: ${paginaContext[pagina] || ''}` : ''}
-
+ 
 Platform info:
 - SHOP: producten kopen (/winkel/[shop-slug])
 - KAPSALONS: trimsalons boeken (/kapsalons)
@@ -151,30 +151,30 @@ Platform info:
 - ACADEMY: cursussen volgen (/puppy-training)
 - ACCOUNT: beheer huisdieren, afspraken, bestellingen (/account)
 - BERICHTEN: chat met verkopers via /account?panel=berichten
-
+ 
 Slimme zoekfunctie:
 - Als gebruiker een probleem noemt (jeuk, vlooien, overgewicht...) zoek je relevante producten
 - Als iemand #hashtag gebruikt, zoek je daar specifiek op
 - Verwijs altijd naar de juiste pagina
-
+ 
 ${dataContext ? `\nACTUELE DATA UIT DE DATABASE:${dataContext}\n\nGebruik deze data in je antwoord als het relevant is.` : ''}
-
+ 
 Kwispelclub is momenteel in beta — sommige features komen binnenkort.`
-
+ 
     const messages = [
       ...(history || []),
       { role: 'user' as const, content: message }
     ]
-
+ 
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 800,
       system: systemPrompt,
       messages,
     })
-
+ 
     const reply = response.content[0].type === 'text' ? response.content[0].text : ''
-
+ 
     return NextResponse.json({
       reply,
       data: dbResults ? {
@@ -188,16 +188,16 @@ Kwispelclub is momenteel in beta — sommige features komen binnenkort.`
         })),
         kapsalons: dbResults.kapsalons.map((k: any) => ({
           id: k.id,
-          naam: k.name,
-          stad: k.location,
-          prijs_vanaf: null,
+          naam: k.naam,
+          stad: k.stad || k.locatie,
+          prijs_vanaf: k.prijs_vanaf,
         })),
         listings: dbResults.listings,
         cursussen: dbResults.cursussen,
       } : null,
       keywords,
     })
-
+ 
   } catch (err: any) {
     console.error('Kwispel search error:', err)
     return NextResponse.json({ error: err.message }, { status: 500 })
