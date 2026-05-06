@@ -20,19 +20,22 @@ export default function PuppyTrainingPage() {
   useEffect(() => {
     Promise.all([
       supabase.from('academy_verkopers').select('*').eq('status', 'actief').order('volgorde'),
-      supabase.from('cursussen')
-        .select('*, cursus_modules(*, cursus_lessen(*))')
-        .eq('gepubliceerd', true)
-        .order('volgorde'),
+      // ✅ was 'cursussen' → nu 'courses' met juiste veldnamen
+      supabase.from('courses')
+        .select('*, course_modules(*, course_lessons(*))')
+        .eq('status', 'actief')
+        .order('sort_order'),
     ]).then(([{ data: t }, { data: c }]) => {
       setTrainers(t || [])
       setCursussen((c || []).map((cursus: any) => ({
         ...cursus,
-        cursus_modules: (cursus.cursus_modules || [])
-          .sort((a: any, b: any) => a.volgorde - b.volgorde)
+        // ✅ was cursus_modules → course_modules
+        course_modules: (cursus.course_modules || [])
+          .sort((a: any, b: any) => a.sort_order - b.sort_order)
           .map((m: any) => ({
             ...m,
-            cursus_lessen: (m.cursus_lessen || []).sort((a: any, b: any) => a.volgorde - b.volgorde)
+            // ✅ was cursus_lessen → course_lessons
+            course_lessons: (m.course_lessons || []).sort((a: any, b: any) => a.sort_order - b.sort_order)
           }))
       })))
       setLoading(false)
@@ -40,12 +43,6 @@ export default function PuppyTrainingPage() {
   }, [])
 
   const toggleFaq = (i: number) => setOpenFaqs(prev => { const n = new Set(prev); n.has(i)?n.delete(i):n.add(i); return n })
-
-  const lessonIcon = (type: string) => type==='video'
-    ? {bg:'var(--orange-pale)',color:'var(--orange-main)',icon:'▶'}
-    : type==='quiz'
-    ? {bg:'#EDE8F5',color:'#6B4FA0',icon:'❓'}
-    : {bg:'var(--green-pale)',color:'var(--green-dark)',icon:'📄'}
 
   const CSS = `
     :root{--green-dark:#2D5A27;--green-main:#4A7C3F;--green-light:#6B9E5E;--green-pale:#E8F0E4;--orange-main:#E8913A;--orange-pale:#FFF3E0;--cream:#FFF9F0;--cream-dark:#F5EDE0;--text-dark:#2C2C2C;--text-mid:#5A5A5A;--text-light:#8A8A8A;--white:#FFFFFF;--teal:#2A9D8F;--teal-pale:#E0F5F1}
@@ -106,17 +103,13 @@ export default function PuppyTrainingPage() {
             <p>Van puppy training tot kattenverzorging — onze gecertificeerde trainers begeleiden jou en je huisdier stap voor stap.</p>
             <div style={{display:'flex',gap:12,flexWrap:'wrap'}}>
               <a href="#cursussen" className="btn btn-primary">Bekijk cursussen →</a>
-              <a href="#trainers" className="btn btn-white">Onze trainers</a>
+              <a href="/academy-verkoper" className="btn btn-white">Word Trainer</a>
             </div>
-          </div>
-          <div className="hero-img">
-            <img src="https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=700&q=80" alt="Puppy training" />
           </div>
         </div>
       </section>
 
-      {/* TRAINERS */}
-      <section className="section" id="trainers" style={{ paddingBottom: 0 }}>
+      <section className="section">
         <div className="trainers-section">
           <div style={{ textAlign: 'center' }}>
             <h2 style={{ fontSize: 'clamp(24px,3vw,36px)', color: 'var(--teal)', marginBottom: 8 }}>Onze Trainers 🎓</h2>
@@ -159,27 +152,28 @@ export default function PuppyTrainingPage() {
         ) : (
           <div className="cursussen-grid">
             {cursussen.map(c => {
-              const totalLessen = c.cursus_modules.reduce((sum: number, m: any) => sum + (m.cursus_lessen?.length || 0), 0)
+              // ✅ was cursus_modules → course_modules
+              const totalLessen = (c.course_modules || []).reduce((sum: number, m: any) => sum + (m.course_lessons?.length || 0), 0)
               return (
                 <a key={c.id} href={`/cursus/${c.id}`} className="cursus-card">
                   <div className="cursus-thumb">
-                    {c.thumbnail_url ? <img src={c.thumbnail_url} alt={c.titel} /> : '🎓'}
+                    {c.image_url ? <img src={c.image_url} alt={c.title} /> : '🎓'}
                   </div>
                   <div className="cursus-body">
                     <div className="cursus-tags">
-                      <span className={`cursus-tag ${c.is_gratis ? 'tag-gratis' : 'tag-betaald'}`}>
-                        {c.is_gratis ? 'Gratis' : 'Betaald'}
-                      </span>
+                      {/* ✅ was is_gratis → geen price veld = gratis */}
+                      <span className="cursus-tag tag-gratis">Gratis</span>
                     </div>
-                    <div className="cursus-titel">{c.titel}</div>
-                    {c.beschrijving && <div className="cursus-desc">{c.beschrijving}</div>}
+                    {/* ✅ was titel → title */}
+                    <div className="cursus-titel">{c.title}</div>
+                    {/* ✅ was beschrijving → description */}
+                    {c.description && <div className="cursus-desc">{c.description}</div>}
                     <div className="cursus-meta">
-                      <span>📚 {c.cursus_modules.length} modules</span>
-                      <span>▶ {totalLessen} lessen</span>
+                      <span>📚 {c.total_modules} modules</span>
+                      <span>▶ {c.total_lessons} lessen</span>
+                      {c.duration_text && <span>⏱ {c.duration_text}</span>}
                     </div>
-                    <div className={`cursus-prijs ${c.is_gratis ? 'gratis' : ''}`}>
-                      {c.is_gratis ? 'Gratis' : `€${parseFloat(c.prijs).toFixed(2)}`}
-                    </div>
+                    <div className="cursus-prijs gratis">Gratis</div>
                   </div>
                 </a>
               )

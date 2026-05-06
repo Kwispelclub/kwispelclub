@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import type { User } from '@supabase/supabase-js'
 
@@ -11,10 +12,22 @@ interface Message {
     producten?: any[]
     kapsalons?: any[]
     listings?: any[]
+    cursussen?: any[]
   }
 }
 
+// Pagina-specifieke quick buttons
+const QUICK_BY_PAGE: Record<string, string[]> = {
+  '/': ['#jeuk', '#puppy', '#vlooien', 'Kapsalon boeken', '2de Hands', 'Cursussen'],
+  '/winkel': ['#jeuk', '#puppy', '#voeding', '#speelgoed', '#tuigje', '#bench'],
+  '/2dehands': ['Bench zoeken', 'Speelgoed', 'Tuigje', 'Voeding', 'Wat mag ik vragen?'],
+  '/puppy-training': ['Puppy training', 'Cursussen bekijken', 'Word trainer', '#training'],
+  '/kapsalons': ['Kapsalon vinden', 'Trimmen', 'Grooming', 'Afspraak boeken'],
+  '/blog': ['Tips honden', 'Voeding advies', '#puppy', '#senior'],
+}
+
 export default function KwispelChat() {
+  const pathname = usePathname()
   const [user, setUser] = useState<User | null>(null)
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
@@ -25,6 +38,15 @@ export default function KwispelChat() {
   const inputRef = useRef<HTMLInputElement>(null)
   const supabase = createClient()
 
+  // Pagina-specifieke welkomstberichten
+  const getWelkomBericht = (naam: string, pagina: string) => {
+    if (pagina.startsWith('/winkel')) return `Hoi ${naam}! 🐾 Ik ben Kwispel. Zoek een product met #jeuk, #puppy of #voeding, dan vind ik de beste opties!`
+    if (pagina === '/2dehands') return `Hoi ${naam}! ♻️ Zoek tweedehands spullen of vraag mij advies. Typ bijv. "bench" of "tuigje".`
+    if (pagina === '/puppy-training') return `Hoi ${naam}! 🎓 Ik help je met cursussen en trainingsvragen. Wat wil je leren?`
+    if (pagina === '/kapsalons') return `Hoi ${naam}! ✂️ Ik help je een kapsalon vinden. Typ je stad of vraag naar groomingdiensten!`
+    return `Hallo ${naam}! 🐾 Ik ben Kwispel. Stel me een vraag of zoek op #jeuk, #vlooien of #puppy!`
+  }
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => setUser(session?.user ?? null))
     supabase.auth.onAuthStateChange((_e, session) => setUser(session?.user ?? null))
@@ -32,14 +54,19 @@ export default function KwispelChat() {
 
   useEffect(() => {
     if (open && messages.length === 0 && user) {
-      const name = user.user_metadata?.first_name || 'baasje'
-      setMessages([{
-        role: 'assistant',
-        content: `Hallo ${name}! 🐾 Ik ben Kwispel. Stel me een vraag over je huisdier of zoek op een probleem zoals #jeuk, #vlooien of #puppy — dan zoek ik de beste producten en tips voor je!`
-      }])
+      const naam = user.user_metadata?.first_name || 'baasje'
+      setMessages([{ role: 'assistant', content: getWelkomBericht(naam, pathname) }])
     }
     if (open) setTimeout(() => inputRef.current?.focus(), 100)
   }, [open, user])
+
+  // Reset berichten bij paginawissel
+  useEffect(() => {
+    if (open && user) {
+      const naam = user.user_metadata?.first_name || 'baasje'
+      setMessages([{ role: 'assistant', content: getWelkomBericht(naam, pathname) }])
+    }
+  }, [pathname])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -54,32 +81,24 @@ export default function KwispelChat() {
     const msg = text || input.trim()
     if (!msg || loading) return
     setInput('')
-
     const newMsg: Message = { role: 'user', content: msg }
     setMessages(prev => [...prev, newMsg])
     setLoading(true)
-
     try {
       const history = messages.map(m => ({ role: m.role, content: m.content }))
-
       const res = await fetch('/api/kwispel-search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: msg, history }),
+        body: JSON.stringify({ message: msg, history, pagina: pathname }),
       })
-
       const data = await res.json()
-
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: data.reply || 'Sorry, ik kon even geen antwoord vinden. Probeer het nog eens! 🐾',
         data: data.data,
       }])
     } catch {
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: 'Oeps, er ging iets mis! Probeer het even opnieuw 🐾'
-      }])
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Oeps, er ging iets mis! Probeer het even opnieuw 🐾' }])
     }
     setLoading(false)
   }
@@ -96,12 +115,12 @@ export default function KwispelChat() {
     } catch {}
   }
 
-  const QUICK = ['#jeuk', '#puppy', '#vlooien', '#senior', 'Kapsalon boeken', '2de Hands']
+  // Pagina-specifieke quick buttons
+  const quickButtons = QUICK_BY_PAGE[pathname] || QUICK_BY_PAGE['/']
 
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;500;600;700&display=swap');
         .kw-root{position:fixed;bottom:24px;right:24px;z-index:9999;font-family:'Nunito',sans-serif}
         .kw-fab{width:60px;height:60px;border-radius:50%;border:none;cursor:pointer;background:linear-gradient(135deg,#2D5A27,#4A7C3F);box-shadow:0 4px 20px rgba(45,90,39,.45);display:flex;align-items:center;justify-content:center;font-size:26px;transition:all .3s cubic-bezier(.4,0,.2,1);position:relative}
         .kw-fab:hover{transform:scale(1.1) rotate(-5deg);box-shadow:0 8px 32px rgba(45,90,39,.55)}
@@ -134,14 +153,16 @@ export default function KwispelChat() {
         @keyframes typeBounce{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-6px);opacity:1}}
         .result-cards{display:flex;flex-direction:column;gap:6px;margin-top:8px;max-width:100%}
         .result-card{background:white;border-radius:12px;padding:10px 12px;box-shadow:0 1px 4px rgba(0,0,0,.08);border:1.5px solid #F5EDE0;font-size:13px}
-        .result-card.product{border-color:#E8F0E4}.result-card.kapsalon{border-color:#FFF3E0}.result-card.listing{border-color:#E0F5F1}
+        .result-card.product{border-color:#E8F0E4}.result-card.kapsalon{border-color:#FFF3E0}.result-card.listing{border-color:#E0F5F1}.result-card.cursus{border-color:#EDE8F5}
         .rc-header{display:flex;align-items:center;gap:8px;margin-bottom:6px}
         .rc-emoji{font-size:20px;flex-shrink:0}.rc-naam{font-weight:700;color:#2C2C2C;flex:1;line-height:1.2}
         .rc-prijs{font-family:'Fredoka',sans-serif;font-weight:700;color:#2D5A27;font-size:15px}
         .rc-meta{font-size:11px;color:#8A8A8A;margin-bottom:6px}
+        .rc-btns{display:flex;gap:6px;flex-wrap:wrap}
         .rc-btn{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:50px;font-size:12px;font-weight:700;border:none;cursor:pointer;transition:all .2s;font-family:'Nunito',sans-serif}
         .rc-btn.cart{background:#E8F0E4;color:#2D5A27}.rc-btn.cart:hover{background:#4A7C3F;color:white}
         .rc-btn.link{background:#F5EDE0;color:#5A5A5A;text-decoration:none}.rc-btn.link:hover{background:#E8913A;color:white}
+        .rc-btn.teal{background:#E0F5F1;color:#2A9D8F;text-decoration:none}.rc-btn.teal:hover{background:#2A9D8F;color:white}
         .section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#8A8A8A;margin-bottom:4px;margin-top:8px}
         .kw-quick{padding:0 16px 8px;display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0}
         .quick-btn{padding:6px 12px;border-radius:50px;border:1.5px solid #E8F0E4;background:white;font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;color:#4A7C3F;cursor:pointer;transition:all .2s;white-space:nowrap}
@@ -173,9 +194,9 @@ export default function KwispelChat() {
                 <div key={i} className={`msg ${m.role}`}>
                   <div className="msg-bubble">{m.content}</div>
 
-                  {/* Resultaat kaarten */}
                   {m.role === 'assistant' && m.data && (
                     <div className="result-cards">
+                      {/* Producten */}
                       {m.data.producten && m.data.producten.length > 0 && (
                         <>
                           <div className="section-label">🛍️ Producten</div>
@@ -184,14 +205,16 @@ export default function KwispelChat() {
                               <div className="rc-header">
                                 <span className="rc-emoji">{p.emoji || '🐾'}</span>
                                 <span className="rc-naam">{p.naam}</span>
-                                <span className="rc-prijs">€{p.prijs}</span>
+                                <span className="rc-prijs">€{parseFloat(p.prijs).toFixed(2)}</span>
                               </div>
-                              <div className="rc-meta">{p.categorie}</div>
-                              <button className="rc-btn cart" onClick={() => addToCart(p)}>🛒 Toevoegen</button>
+                              <div className="rc-btns">
+                                <button className="rc-btn cart" onClick={() => addToCart(p)}>🛒 In winkelwagen</button>
+                              </div>
                             </div>
                           ))}
                         </>
                       )}
+                      {/* Kapsalons */}
                       {m.data.kapsalons && m.data.kapsalons.length > 0 && (
                         <>
                           <div className="section-label">✂️ Kapsalons</div>
@@ -200,14 +223,16 @@ export default function KwispelChat() {
                               <div className="rc-header">
                                 <span className="rc-emoji">✂️</span>
                                 <span className="rc-naam">{k.naam}</span>
-                                {k.prijs_vanaf && <span className="rc-prijs">v/a €{k.prijs_vanaf}</span>}
                               </div>
                               <div className="rc-meta">📍 {k.stad || k.locatie}</div>
-                              <a href="/kapsalons" className="rc-btn link">Bekijk & Boek →</a>
+                              <div className="rc-btns">
+                                <a href="/kapsalons" className="rc-btn link">Bekijk & Boek →</a>
+                              </div>
                             </div>
                           ))}
                         </>
                       )}
+                      {/* 2de Hands */}
                       {m.data.listings && m.data.listings.length > 0 && (
                         <>
                           <div className="section-label">♻️ 2de Hands</div>
@@ -218,8 +243,28 @@ export default function KwispelChat() {
                                 <span className="rc-naam">{l.titel}</span>
                                 <span className="rc-prijs">€{l.vraagprijs}</span>
                               </div>
-                              <div className="rc-meta">📍 {l.locatie} · {l.staat}</div>
-                              <a href="/2dehands" className="rc-btn link">Bekijk →</a>
+                              <div className="rc-meta">📍 {l.locatie}</div>
+                              <div className="rc-btns">
+                                <a href="/2dehands" className="rc-btn link">Bekijk →</a>
+                              </div>
+                            </div>
+                          ))}
+                        </>
+                      )}
+                      {/* Cursussen */}
+                      {m.data.cursussen && m.data.cursussen.length > 0 && (
+                        <>
+                          <div className="section-label">🎓 Cursussen</div>
+                          {m.data.cursussen.map((c: any) => (
+                            <div key={c.id} className="result-card cursus">
+                              <div className="rc-header">
+                                <span className="rc-emoji">🎓</span>
+                                <span className="rc-naam">{c.title}</span>
+                              </div>
+                              <div className="rc-meta">{c.total_modules} modules · {c.total_lessons} lessen</div>
+                              <div className="rc-btns">
+                                <a href={`/cursus/${c.id}`} className="rc-btn teal">Start cursus →</a>
+                              </div>
                             </div>
                           ))}
                         </>
@@ -240,7 +285,7 @@ export default function KwispelChat() {
 
             {messages.length <= 1 && (
               <div className="kw-quick">
-                {QUICK.map(q => (
+                {quickButtons.map(q => (
                   <button key={q} className="quick-btn" onClick={() => sendMessage(q)}>{q}</button>
                 ))}
               </div>
