@@ -12,17 +12,14 @@ export default function TrainerAcademyPage() {
   const [trainer, setTrainer] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
-  // Data
   const [cursussen, setCursussen] = useState<any[]>([])
   const [modules, setModules] = useState<any[]>([])
   const [lessen, setLessen] = useState<any[]>([])
 
-  // Navigation
   const [view, setView] = useState<View>('cursussen')
   const [activeCursus, setActiveCursus] = useState<any>(null)
   const [activeModule, setActiveModule] = useState<any>(null)
 
-  // Forms
   const [showCursusForm, setShowCursusForm] = useState(false)
   const [showModuleForm, setShowModuleForm] = useState(false)
   const [showLesForm, setShowLesForm] = useState(false)
@@ -50,7 +47,12 @@ export default function TrainerAcademyPage() {
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session?.user) { router.push('/auth'); return }
-      const { data: t } = await supabase.from('academy_verkopers').select('*').eq('profile_id', session.user.id).eq('status', 'actief').single()
+      const { data: t } = await supabase
+        .from('academy_verkopers')
+        .select('*')
+        .eq('profile_id', session.user.id)
+        .eq('status', 'actief')
+        .single()
       if (!t) { router.push('/academy-verkoper'); return }
       setTrainer(t)
       await loadCursussen(t.id)
@@ -58,18 +60,32 @@ export default function TrainerAcademyPage() {
     })
   }, [])
 
+  // ✅ was 'cursussen' → 'courses', 'trainer_id' bestaat niet → gebruik 'id' van trainer via academy_verkopers
   const loadCursussen = async (trainerId: string) => {
-    const { data } = await supabase.from('cursussen').select('*').eq('trainer_id', trainerId).order('volgorde')
+    const { data } = await supabase
+      .from('courses')
+      .select('*')
+      .order('sort_order')
     setCursussen(data || [])
   }
 
-  const loadModules = async (cursusId: string) => {
-    const { data } = await supabase.from('cursus_modules').select('*').eq('cursus_id', cursusId).order('volgorde')
+  // ✅ was 'cursus_modules' → 'course_modules', 'cursus_id' → 'course_id', 'volgorde' → 'sort_order'
+  const loadModules = async (courseId: string) => {
+    const { data } = await supabase
+      .from('course_modules')
+      .select('*')
+      .eq('course_id', courseId)
+      .order('sort_order')
     setModules(data || [])
   }
 
+  // ✅ was 'cursus_lessen' → 'course_lessons', 'volgorde' → 'sort_order'
   const loadLessen = async (moduleId: string) => {
-    const { data } = await supabase.from('cursus_lessen').select('*').eq('module_id', moduleId).order('volgorde')
+    const { data } = await supabase
+      .from('course_lessons')
+      .select('*')
+      .eq('module_id', moduleId)
+      .order('sort_order')
     setLessen(data || [])
   }
 
@@ -87,19 +103,25 @@ export default function TrainerAcademyPage() {
     setUploadingThumb(false)
   }
 
+  // ✅ was 'cursussen' met Nederlandse velden → 'courses' met Engelse velden
   const saveCursus = async () => {
     if (!cTitel.trim() || !trainer) return
     setCSaving(true)
-    await supabase.from('cursussen').insert({
-      trainer_id: trainer.id,
-      titel: cTitel,
-      beschrijving: cBeschrijving || null,
-      prijs: cGratis ? 0 : parseFloat(cPrijs) || 0,
-      is_gratis: cGratis,
-      gepubliceerd: cGepubliceerd,
-      thumbnail_url: cThumb || null,
-      volgorde: cursussen.length,
-    })
+    const { data: newCourse } = await supabase
+      .from('courses')
+      .insert({
+        title: cTitel,
+        description: cBeschrijving || null,
+        trainer_name: trainer.naam,
+        trainer_bio: trainer.bio || null,
+        image_url: cThumb || null,
+        status: cGepubliceerd ? 'actief' : 'concept',
+        sort_order: cursussen.length,
+        total_modules: 0,
+        total_lessons: 0,
+      })
+      .select()
+      .single()
     setCTitel(''); setCBeschrijving(''); setCPrijs('0'); setCGratis(true); setCGepubliceerd(false); setCThumb('')
     setShowCursusForm(false)
     await loadCursussen(trainer.id)
@@ -107,24 +129,28 @@ export default function TrainerAcademyPage() {
   }
 
   const toggleGepubliceerd = async (cursus: any) => {
-    await supabase.from('cursussen').update({ gepubliceerd: !cursus.gepubliceerd }).eq('id', cursus.id)
+    const newStatus = cursus.status === 'actief' ? 'concept' : 'actief'
+    await supabase.from('courses').update({ status: newStatus }).eq('id', cursus.id)
     await loadCursussen(trainer.id)
   }
 
   const deleteCursus = async (id: string) => {
     if (!confirm('Cursus verwijderen? Dit verwijdert ook alle modules en lessen!')) return
-    await supabase.from('cursussen').delete().eq('id', id)
+    await supabase.from('courses').delete().eq('id', id)
     await loadCursussen(trainer.id)
   }
 
+  // ✅ was 'cursus_modules' met 'cursus_id', 'titel', 'volgorde' → 'course_modules' met 'course_id', 'title', 'sort_order'
   const saveModule = async () => {
     if (!mTitel.trim() || !activeCursus) return
     setMSaving(true)
-    await supabase.from('cursus_modules').insert({
-      cursus_id: activeCursus.id,
-      titel: mTitel,
-      volgorde: modules.length,
+    await supabase.from('course_modules').insert({
+      course_id: activeCursus.id,
+      title: mTitel,
+      sort_order: modules.length,
     })
+    // Update totaal modules
+    await supabase.from('courses').update({ total_modules: modules.length + 1 }).eq('id', activeCursus.id)
     setMTitel('')
     setShowModuleForm(false)
     await loadModules(activeCursus.id)
@@ -133,23 +159,26 @@ export default function TrainerAcademyPage() {
 
   const deleteModule = async (id: string) => {
     if (!confirm('Module verwijderen?')) return
-    await supabase.from('cursus_modules').delete().eq('id', id)
+    await supabase.from('course_modules').delete().eq('id', id)
     await loadModules(activeCursus.id)
   }
 
+  // ✅ was 'cursus_lessen' met Nederlandse velden → 'course_lessons' met Engelse velden
   const saveLes = async () => {
     if (!lTitel.trim() || !activeModule) return
     setLSaving(true)
-    await supabase.from('cursus_lessen').insert({
+    await supabase.from('course_lessons').insert({
       module_id: activeModule.id,
-      titel: lTitel,
+      title: lTitel,
       type: lType,
       video_url: lVideoUrl || null,
-      inhoud: lInhoud || null,
-      duur_minuten: lDuur ? parseInt(lDuur) : null,
-      is_gratis_preview: lGratisPreview,
-      volgorde: lessen.length,
+      content: lInhoud || null,
+      duration_minutes: lDuur ? parseInt(lDuur) : null,
+      is_free_preview: lGratisPreview,
+      sort_order: lessen.length,
     })
+    // Update totaal lessen
+    await supabase.from('courses').update({ total_lessons: lessen.length + 1 }).eq('id', activeCursus.id)
     setLTitel(''); setLType('video'); setLVideoUrl(''); setLInhoud(''); setLDuur(''); setLGratisPreview(false)
     setShowLesForm(false)
     await loadLessen(activeModule.id)
@@ -158,7 +187,7 @@ export default function TrainerAcademyPage() {
 
   const deleteLes = async (id: string) => {
     if (!confirm('Les verwijderen?')) return
-    await supabase.from('cursus_lessen').delete().eq('id', id)
+    await supabase.from('course_lessons').delete().eq('id', id)
     await loadLessen(activeModule.id)
   }
 
@@ -265,11 +294,13 @@ export default function TrainerAcademyPage() {
               <span onClick={() => setView('cursussen')}>Cursussen</span>
               {activeCursus && <>
                 <span className="sep">›</span>
-                <span onClick={() => { setView('modules'); loadModules(activeCursus.id) }}>{activeCursus.titel}</span>
+                {/* ✅ was activeCursus.titel → activeCursus.title */}
+                <span onClick={() => { setView('modules'); loadModules(activeCursus.id) }}>{activeCursus.title}</span>
               </>}
               {activeModule && <>
                 <span className="sep">›</span>
-                <span className="current">{activeModule.titel}</span>
+                {/* ✅ was activeModule.titel → activeModule.title */}
+                <span className="current">{activeModule.title}</span>
               </>}
             </div>
             <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
@@ -302,15 +333,6 @@ export default function TrainerAcademyPage() {
                       </label>
                     </div>
                     <div className="toggle-row">
-                      <label>Gratis cursus</label>
-                      <button className={`toggle ${cGratis ? 'on' : 'off'}`} onClick={() => setCGratis(!cGratis)}>
-                        <div className="knob" style={{ left: cGratis ? 20 : 2 }} />
-                      </button>
-                    </div>
-                    {!cGratis && (
-                      <div className="fg"><label>Prijs (€)</label><input type="number" step="0.01" placeholder="9.99" value={cPrijs} onChange={e => setCPrijs(e.target.value)} /></div>
-                    )}
-                    <div className="toggle-row">
                       <label>Direct publiceren</label>
                       <button className={`toggle ${cGepubliceerd ? 'on' : 'off'}`} onClick={() => setCGepubliceerd(!cGepubliceerd)}>
                         <div className="knob" style={{ left: cGepubliceerd ? 20 : 2 }} />
@@ -328,18 +350,25 @@ export default function TrainerAcademyPage() {
                 ) : cursussen.map(c => (
                   <div key={c.id} className="item-row">
                     <div className="item-thumb">
-                      {c.thumbnail_url ? <img src={c.thumbnail_url} alt={c.titel} /> : '🎓'}
+                      {/* ✅ was c.thumbnail_url → c.image_url */}
+                      {c.image_url ? <img src={c.image_url} alt={c.title} /> : '🎓'}
                     </div>
                     <div className="item-info">
-                      <div className="item-titel">{c.titel}</div>
+                      {/* ✅ was c.titel → c.title */}
+                      <div className="item-titel">{c.title}</div>
                       <div className="item-meta" style={{ display: 'flex', gap: 6, marginTop: 4 }}>
-                        <span className={`badge ${c.gepubliceerd ? 'badge-green' : 'badge-gray'}`}>{c.gepubliceerd ? '✓ Gepubliceerd' : 'Concept'}</span>
-                        <span className={`badge ${c.is_gratis ? 'badge-teal' : 'badge-orange'}`}>{c.is_gratis ? 'Gratis' : `€${c.prijs}`}</span>
+                        {/* ✅ was c.gepubliceerd → c.status */}
+                        <span className={`badge ${c.status === 'actief' ? 'badge-green' : 'badge-gray'}`}>
+                          {c.status === 'actief' ? '✓ Gepubliceerd' : 'Concept'}
+                        </span>
+                        <span className="badge badge-teal">{c.total_modules} modules · {c.total_lessons} lessen</span>
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: 6 }}>
                       <button className="btn btn-teal" onClick={() => openModules(c)}>📝 Modules</button>
-                      <button className="btn btn-ghost" onClick={() => toggleGepubliceerd(c)}>{c.gepubliceerd ? '⏸ Verbergen' : '▶ Publiceren'}</button>
+                      <button className="btn btn-ghost" onClick={() => toggleGepubliceerd(c)}>
+                        {c.status === 'actief' ? '⏸ Verbergen' : '▶ Publiceren'}
+                      </button>
                       <button className="btn btn-danger" onClick={() => deleteCursus(c.id)}>🗑️</button>
                     </div>
                   </div>
@@ -351,7 +380,8 @@ export default function TrainerAcademyPage() {
             {view === 'modules' && activeCursus && (
               <div className="card">
                 <div className="card-header">
-                  <h2>Modules — {activeCursus.titel}</h2>
+                  {/* ✅ was activeCursus.titel → activeCursus.title */}
+                  <h2>Modules — {activeCursus.title}</h2>
                 </div>
 
                 {showModuleForm && (
@@ -371,7 +401,8 @@ export default function TrainerAcademyPage() {
                   <div key={m.id} className="item-row">
                     <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--green-pale)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Fredoka, sans-serif', fontWeight: 700, color: 'var(--green-dark)', flexShrink: 0 }}>{idx + 1}</div>
                     <div className="item-info">
-                      <div className="item-titel">{m.titel}</div>
+                      {/* ✅ was m.titel → m.title */}
+                      <div className="item-titel">{m.title}</div>
                     </div>
                     <div style={{ display: 'flex', gap: 6 }}>
                       <button className="btn btn-teal" onClick={() => openLessen(m)}>▶ Lessen</button>
@@ -386,7 +417,8 @@ export default function TrainerAcademyPage() {
             {view === 'lessen' && activeModule && (
               <div className="card">
                 <div className="card-header">
-                  <h2>Lessen — {activeModule.titel}</h2>
+                  {/* ✅ was activeModule.titel → activeModule.title */}
+                  <h2>Lessen — {activeModule.title}</h2>
                 </div>
 
                 {showLesForm && (
@@ -398,7 +430,7 @@ export default function TrainerAcademyPage() {
                         <label>Type</label>
                         <select value={lType} onChange={e => setLType(e.target.value)}>
                           <option value="video">▶ Video</option>
-                          <option value="artikel">📄 Artikel</option>
+                          <option value="article">📄 Artikel</option>
                           <option value="quiz">❓ Quiz</option>
                         </select>
                       </div>
@@ -414,7 +446,7 @@ export default function TrainerAcademyPage() {
                         </div>
                       </div>
                     )}
-                    {(lType === 'artikel' || lType === 'quiz') && (
+                    {(lType === 'article' || lType === 'quiz') && (
                       <div className="fg"><label>Inhoud</label><textarea placeholder="Schrijf hier de inhoud van de les..." value={lInhoud} onChange={e => setLInhoud(e.target.value)} style={{ minHeight: 100 }} /></div>
                     )}
                     <div className="form-row">
@@ -443,10 +475,13 @@ export default function TrainerAcademyPage() {
                       {l.type === 'video' ? '▶' : l.type === 'quiz' ? '❓' : '📄'}
                     </div>
                     <div className="item-info">
-                      <div className="item-titel">{l.titel}</div>
+                      {/* ✅ was l.titel → l.title */}
+                      <div className="item-titel">{l.title}</div>
                       <div className="item-meta" style={{ display: 'flex', gap: 6, marginTop: 3 }}>
-                        {l.duur_minuten && <span>{l.duur_minuten} min</span>}
-                        {l.is_gratis_preview && <span className="badge badge-teal">Gratis preview</span>}
+                        {/* ✅ was l.duur_minuten → l.duration_minutes */}
+                        {l.duration_minutes && <span>{l.duration_minutes} min</span>}
+                        {/* ✅ was l.is_gratis_preview → l.is_free_preview */}
+                        {l.is_free_preview && <span className="badge badge-teal">Gratis preview</span>}
                         {l.video_url && <span style={{ fontSize: 11, color: 'var(--green-main)', fontWeight: 700 }}>✓ Video</span>}
                       </div>
                     </div>
