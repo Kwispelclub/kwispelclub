@@ -120,8 +120,8 @@ export default function KwispelChat() {
 
   return (
     <>
-      <style>{`
-        .kw-root{position:fixed;bottom:24px;right:24px;z-index:9999;font-family:'Nunito',sans-serif}
+      <style dangerouslySetInnerHTML={{__html: `
+        .kw-root{position:fixed;bottom:24px;right:24px;z-index:9999;font-family:Nunito,sans-serif}
         .kw-fab{width:60px;height:60px;border-radius:50%;border:none;cursor:pointer;background:linear-gradient(135deg,#2D5A27,#4A7C3F);box-shadow:0 4px 20px rgba(45,90,39,.45);display:flex;align-items:center;justify-content:center;font-size:26px;transition:all .3s cubic-bezier(.4,0,.2,1);position:relative}
         .kw-fab:hover{transform:scale(1.1) rotate(-5deg);box-shadow:0 8px 32px rgba(45,90,39,.55)}
         .kw-fab.open{background:linear-gradient(135deg,#E8913A,#D4812E)}
@@ -134,7 +134,7 @@ export default function KwispelChat() {
         @keyframes winIn{from{opacity:0;transform:translateY(16px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
         .kw-header{background:linear-gradient(135deg,#2D5A27,#4A7C3F);padding:16px 20px;display:flex;align-items:center;gap:12px;flex-shrink:0}
         .kw-av{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:22px;border:2px solid rgba(255,255,255,.25);flex-shrink:0}
-        .kw-hinfo{flex:1}.kw-name{font-family:'Fredoka',sans-serif;font-size:17px;font-weight:700;color:white;line-height:1}
+        .kw-hinfo{flex:1}.kw-name{font-family:Fredoka,sans-serif;font-size:17px;font-weight:700;color:white;line-height:1}
         .kw-status{font-size:12px;color:rgba(255,255,255,.75);display:flex;align-items:center;gap:5px;margin-top:3px}
         .kw-dot{width:7px;height:7px;border-radius:50%;background:#6EE272;flex-shrink:0;animation:blink 2s ease-in-out infinite}
         @keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
@@ -156,24 +156,24 @@ export default function KwispelChat() {
         .result-card.product{border-color:#E8F0E4}.result-card.kapsalon{border-color:#FFF3E0}.result-card.listing{border-color:#E0F5F1}.result-card.cursus{border-color:#EDE8F5}
         .rc-header{display:flex;align-items:center;gap:8px;margin-bottom:6px}
         .rc-emoji{font-size:20px;flex-shrink:0}.rc-naam{font-weight:700;color:#2C2C2C;flex:1;line-height:1.2}
-        .rc-prijs{font-family:'Fredoka',sans-serif;font-weight:700;color:#2D5A27;font-size:15px}
+        .rc-prijs{font-family:Fredoka,sans-serif;font-weight:700;color:#2D5A27;font-size:15px}
         .rc-meta{font-size:11px;color:#8A8A8A;margin-bottom:6px}
         .rc-btns{display:flex;gap:6px;flex-wrap:wrap}
-        .rc-btn{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:50px;font-size:12px;font-weight:700;border:none;cursor:pointer;transition:all .2s;font-family:'Nunito',sans-serif}
+        .rc-btn{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:50px;font-size:12px;font-weight:700;border:none;cursor:pointer;transition:all .2s;font-family:Nunito,sans-serif}
         .rc-btn.cart{background:#E8F0E4;color:#2D5A27}.rc-btn.cart:hover{background:#4A7C3F;color:white}
         .rc-btn.link{background:#F5EDE0;color:#5A5A5A;text-decoration:none}.rc-btn.link:hover{background:#E8913A;color:white}
         .rc-btn.teal{background:#E0F5F1;color:#2A9D8F;text-decoration:none}.rc-btn.teal:hover{background:#2A9D8F;color:white}
         .section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#8A8A8A;margin-bottom:4px;margin-top:8px}
         .kw-quick{padding:0 16px 8px;display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0}
-        .quick-btn{padding:6px 12px;border-radius:50px;border:1.5px solid #E8F0E4;background:white;font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;color:#4A7C3F;cursor:pointer;transition:all .2s;white-space:nowrap}
+        .quick-btn{padding:6px 12px;border-radius:50px;border:1.5px solid #E8F0E4;background:white;font-family:Nunito,sans-serif;font-size:12px;font-weight:700;color:#4A7C3F;cursor:pointer;transition:all .2s;white-space:nowrap}
         .quick-btn:hover{background:#E8F0E4;border-color:#4A7C3F}
         .kw-input-row{padding:12px 16px;display:flex;gap:8px;align-items:center;border-top:1px solid #F5EDE0;background:white;flex-shrink:0}
-        .kw-input{flex:1;padding:10px 14px;border:2px solid #F5EDE0;border-radius:50px;font-family:'Nunito',sans-serif;font-size:14px;outline:none;transition:border .2s;background:#FFF9F0;color:#2C2C2C}
+        .kw-input{flex:1;padding:10px 14px;border:2px solid #F5EDE0;border-radius:50px;font-family:Nunito,sans-serif;font-size:14px;outline:none;transition:border .2s;background:#FFF9F0;color:#2C2C2C}
         .kw-input:focus{border-color:#6B9E5E;background:white}.kw-input::placeholder{color:#8A8A8A}
         .kw-send{width:40px;height:40px;border-radius:50%;border:none;background:linear-gradient(135deg,#2D5A27,#4A7C3F);color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all .2s;flex-shrink:0}
         .kw-send:hover:not(:disabled){transform:scale(1.08);box-shadow:0 4px 12px rgba(45,90,39,.35)}.kw-send:disabled{opacity:.4;cursor:not-allowed}
         @media(max-width:480px){.kw-window{width:calc(100vw - 32px);right:-8px;height:500px}}
-      `}</style>
+      `}} />
 
       <div className="kw-root">
         {showLoginHint && <div className="kw-hint login">🔒 Log in om met Kwispel te chatten</div>}

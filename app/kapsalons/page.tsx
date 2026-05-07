@@ -175,7 +175,7 @@ export default function KapsalonsPage() {
 
   return (
     <>
-      <style>{CSS}</style>
+      <style dangerouslySetInnerHTML={{__html: CSS}} />
       <div className="breadcrumb"><a href="/">Home</a> › Hondenkapsalons</div>
 
       <section className="page-hero">
