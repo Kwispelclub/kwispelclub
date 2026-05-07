@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { createClient } from '@/lib/supabase'
+
 
 const REGIONS = [['all','Alle'],['limburg','Limburg'],['antwerpen','Antwerpen'],['brabant','Brabant'],['oost-vl','Oost-Vlaanderen'],['nl','Nederland']]
 const MONTHS = ['Januari','Februari','Maart','April','Mei','Juni','Juli','Augustus','September','Oktober','November','December']
@@ -14,12 +15,12 @@ const SERVICES = [
 ]
 
 export default function KapsalonsPage() {
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
   const [region, setRegion] = useState('all')
   const [search, setSearch] = useState('')
   const [liked, setLiked] = useState<Set<string>>(() => new Set())
   const [salons, setSalons] = useState<any[]>([])
-  const [loadingSalons, setLoadingSalons] = useState(true)
+  const [loadingSalons, setLoadingSalons] = useState(false)
   const [modal, setModal] = useState<any>(null)
   const [step, setStep] = useState(1)
   const [selSvc, setSelSvc] = useState<typeof SERVICES[0]|null>(null)
@@ -46,7 +47,6 @@ export default function KapsalonsPage() {
   const obsRef = useRef<IntersectionObserver|null>(null)
 
   useEffect(() => {
-    // ✅ FIX: datum initialisatie in useEffect, niet in useState
     const t = new Date()
     t.setHours(0,0,0,0)
     setToday(t)
@@ -58,7 +58,6 @@ export default function KapsalonsPage() {
       .order('created_at', { ascending: false })
       .then(({ data }) => {
         setSalons(data || [])
-        setLoadingSalons(false)
       })
 
     supabase.auth.getSession().then(({ data: { session } }) => {
