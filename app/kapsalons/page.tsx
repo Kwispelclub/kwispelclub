@@ -115,8 +115,7 @@ export default function KapsalonsPage() {
 const [today, setToday] = useState<Date>(new Date(2026, 4, 1))
 
   const canNext = step===1?!!selSvc:step===2?!!(selDate&&selTime):step===3?!!(petName&&petBreed&&ownerName&&ownerPhone&&ownerEmail):true
-  const today = new Date(); today.setHours(0,0,0,0)
-  const firstDay = new Date(calDate.getFullYear(), calDate.getMonth(), 1)
+   const firstDay = new Date(calDate.getFullYear(), calDate.getMonth(), 1)
   let startDay = firstDay.getDay()-1; if(startDay<0) startDay=6
   const daysInMonth = new Date(calDate.getFullYear(), calDate.getMonth()+1, 0).getDate()
   const isTaken = (d:Date, slot:string) => { const seed=d.getDate()*7+d.getMonth()*31; const idx=parseInt(slot.replace(':',''))%17; return (seed*idx*13)%7===0 }
