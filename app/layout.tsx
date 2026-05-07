@@ -33,12 +33,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body suppressHydrationWarning></body>
       <body>
-        <AnnounceBanner />
-        <Navbar />
-        {children}
-        <KwispelChat />
-        <CookieBanner />
-      </body>
+  {/* <AnnounceBanner /> */}  ← tijdelijk uitcommentariëren
+  <Navbar />
+  {children}
+  <KwispelChat />
+  <CookieBanner />
+</body>
     </html>
   )
 }
