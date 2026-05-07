@@ -39,23 +39,24 @@ export default function Navbar() {
 
   return (
     <>
+      {/* ✅ FIX: enkelvoudige quotes verwijderd uit font-family — veroorzaakten hydration mismatch */}
       <style>{`
-        .kw-nav{position:sticky;top:0;z-index:100;background:rgba(255,249,240,.88);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(0,0,0,.04);padding:0 16px;transition:all .3s;font-family:'Nunito',sans-serif}
+        .kw-nav{position:sticky;top:0;z-index:100;background:rgba(255,249,240,.88);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(0,0,0,.04);padding:0 16px;transition:all .3s;font-family:Nunito,sans-serif}
         .kw-nav.scrolled{box-shadow:0 4px 20px rgba(0,0,0,.08);background:rgba(255,249,240,.96)}
         .kw-inner{max-width:1320px;margin:0 auto;display:flex;align-items:center;height:64px;gap:6px}
         .kw-logo{display:flex;align-items:center;gap:8px;text-decoration:none;flex-shrink:0}
         .kw-paw{width:38px;height:38px;border-radius:10px;background:#2D5A27;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
-        .kw-brand{font-family:'Fredoka',sans-serif;font-size:20px;font-weight:700;color:#2D5A27;letter-spacing:.5px;white-space:nowrap}
+        .kw-brand{font-family:Fredoka,sans-serif;font-size:20px;font-weight:700;color:#2D5A27;letter-spacing:.5px;white-space:nowrap}
         .kw-links{display:flex;gap:2px;list-style:none;margin:0;padding:0}
         .kw-links a{text-decoration:none;color:#2C2C2C;font-weight:600;font-size:14px;padding:8px 14px;border-radius:10px;transition:all .2s;white-space:nowrap}
         .kw-links a:hover,.kw-links a.active{background:#E8F0E4;color:#2D5A27}
         .kw-right{margin-left:auto;display:flex;align-items:center;gap:8px;flex-shrink:0}
-        .kw-verkoper-btn{padding:8px 14px;border-radius:50px;background:#FFF3E0;color:#E8913A;font-family:'Fredoka',sans-serif;font-size:13px;font-weight:700;text-decoration:none;transition:all .2s;border:1.5px solid #F5A855;white-space:nowrap}
+        .kw-verkoper-btn{padding:8px 14px;border-radius:50px;background:#FFF3E0;color:#E8913A;font-family:Fredoka,sans-serif;font-size:13px;font-weight:700;text-decoration:none;transition:all .2s;border:1.5px solid #F5A855;white-space:nowrap}
         .kw-verkoper-btn:hover{background:#E8913A;color:white}
         .kw-user{display:flex;align-items:center;gap:6px;padding:5px 12px 5px 5px;border-radius:50px;background:white;border:2px solid #F5EDE0;cursor:pointer;text-decoration:none;flex-shrink:0}
         .kw-ua{width:30px;height:30px;border-radius:50%;background:#4A7C3F;color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0}
         .kw-user-name{font-size:13px;font-weight:700;color:#2C2C2C;white-space:nowrap}
-        .kw-login{padding:8px 16px;border-radius:50px;background:#4A7C3F;color:white;font-family:'Fredoka',sans-serif;font-size:14px;font-weight:600;text-decoration:none;transition:all .2s;box-shadow:0 2px 8px rgba(74,124,63,.25);white-space:nowrap}
+        .kw-login{padding:8px 16px;border-radius:50px;background:#4A7C3F;color:white;font-family:Fredoka,sans-serif;font-size:14px;font-weight:600;text-decoration:none;transition:all .2s;box-shadow:0 2px 8px rgba(74,124,63,.25);white-space:nowrap}
         .kw-login:hover{background:#2D5A27}
         .kw-ham{display:none;background:none;border:none;font-size:24px;cursor:pointer;padding:6px;flex-shrink:0}
         .kw-mob{display:none;position:fixed;top:64px;left:0;right:0;bottom:0;z-index:99;background:rgba(0,0,0,.3)}
@@ -68,13 +69,11 @@ export default function Navbar() {
         .kw-mob-divider{padding:8px 24px;font-size:11px;font-weight:800;color:#8A8A8A;letter-spacing:1px;text-transform:uppercase;background:#F5EDE0}
         .kw-mob-extra .kw-mob-links a{background:#FFFBF5;font-size:15px}
         .kw-mob-account{padding:16px 24px;background:#F5EDE0;display:flex;gap:12px}
-        .kw-mob-acc-btn{flex:1;padding:13px;border-radius:50px;background:#2D5A27;color:white;font-family:'Fredoka',sans-serif;font-size:15px;font-weight:600;text-decoration:none;text-align:center;border:none;cursor:pointer}
-        .kw-mob-out-btn{padding:13px 20px;border-radius:50px;background:white;color:#2C2C2C;font-family:'Fredoka',sans-serif;font-size:15px;font-weight:600;text-decoration:none;text-align:center;border:2px solid #F5EDE0;cursor:pointer}
+        .kw-mob-acc-btn{flex:1;padding:13px;border-radius:50px;background:#2D5A27;color:white;font-family:Fredoka,sans-serif;font-size:15px;font-weight:600;text-decoration:none;text-align:center;border:none;cursor:pointer}
+        .kw-mob-out-btn{padding:13px 20px;border-radius:50px;background:white;color:#2C2C2C;font-family:Fredoka,sans-serif;font-size:15px;font-weight:600;text-decoration:none;text-align:center;border:2px solid #F5EDE0;cursor:pointer}
         @media(max-width:1024px){.kw-links{display:none}.kw-ham{display:block}.kw-verkoper-btn{display:none}}
         @media(max-width:480px){.kw-user-name{display:none}.kw-user{padding:4px}.kw-brand{font-size:18px}}
       `}</style>
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
       <nav className={`kw-nav ${scrolled ? 'scrolled' : ''}`}>
         <div className="kw-inner">
