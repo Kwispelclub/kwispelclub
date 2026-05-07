@@ -17,7 +17,7 @@ export default function KapsalonsPage() {
   const supabase = createClient()
   const [region, setRegion] = useState('all')
   const [search, setSearch] = useState('')
-  const [liked, setLiked] = useState<Set<string>>(new Set())
+  const [liked, setLiked] = useState<Set<string>>(() => new Set())
   const [salons, setSalons] = useState<any[]>([])
   const [loadingSalons, setLoadingSalons] = useState(true)
   const [modal, setModal] = useState<any>(null)
