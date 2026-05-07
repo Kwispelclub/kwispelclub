@@ -112,7 +112,8 @@ export default function KapsalonsPage() {
     setPetName(''); setPetBreed(''); setOwnerName(''); setOwnerPhone(''); setOwnerEmail(''); setNotes('')
     document.body.style.overflow = 'hidden'
   }
-const [today, setToday] = useState<Date>(new Date(2026, 4, 1))
+  const closeModal = () => { setModal(null); document.body.style.overflow = '' }
+  const [today, setToday] = useState<Date>(new Date(2026, 4, 1))
 
   const canNext = step===1?!!selSvc:step===2?!!(selDate&&selTime):step===3?!!(petName&&petBreed&&ownerName&&ownerPhone&&ownerEmail):true
    const firstDay = new Date(calDate.getFullYear(), calDate.getMonth(), 1)
