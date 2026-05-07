@@ -31,6 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="apple-mobile-web-app-title" content="Kwispelclub" />
         <link rel="apple-touch-icon" href="/icons/icon-152x152.png" />
       </head>
+      <body suppressHydrationWarning></body>
       <body>
         <AnnounceBanner />
         <Navbar />
