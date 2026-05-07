@@ -14,6 +14,7 @@ const SERVICES = [
   { name:'Puppy Eerste Beurt', desc:'Zachte kennismaking met trimmen', price:35, dur:'45 min', icon:'🐶' },
 ]
 
+// NA:
 export default function KapsalonsPage() {
   const supabase = useMemo(() => createClient(), [])
   const [region, setRegion] = useState('all')
@@ -75,7 +76,7 @@ export default function KapsalonsPage() {
     document.querySelectorAll('.fade-up').forEach(el => obsRef.current?.observe(el))
   }, [])
 
-  const handleRegister = async () => {
+    const handleRegister = async () => {
     if (!regNaam || !regLoc || !regEmail) { setRegError('Vul alle verplichte velden in'); return }
     setRegLoading(true); setRegError('')
     const { data: { session } } = await supabase.auth.getSession()
