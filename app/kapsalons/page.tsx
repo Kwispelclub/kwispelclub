@@ -105,8 +105,11 @@ export default function KapsalonsPage() {
   }
 
   const filtered = salons.filter(s => {
-    const matchRegion = region === 'all' || (s.regio || '').toLowerCase().includes(region.toLowerCase()) || (s.stad || '').toLowerCase().includes(region.toLowerCase())
-    const matchSearch = !search || (s.naam || '').toLowerCase().includes(search.toLowerCase()) || (s.stad || '').toLowerCase().includes(search.toLowerCase())
+    const matchRegion = region === 'all' || 
+  (s.regio || '').toLowerCase().includes(region.toLowerCase()) || 
+  (s.stad || '').toLowerCase().includes(region.toLowerCase()) ||
+  (s.locatie || '').toLowerCase().includes(region.toLowerCase())
+   const matchSearch = !search || (s.naam || '').toLowerCase().includes(search.toLowerCase()) || (s.stad || '').toLowerCase().includes(search.toLowerCase())
     return matchRegion && matchSearch
   })
 
