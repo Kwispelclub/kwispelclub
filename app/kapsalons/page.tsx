@@ -25,7 +25,7 @@ export default function KapsalonsPage() {
   const [modal, setModal] = useState<any>(null)
   const [step, setStep] = useState(1)
   const [selSvc, setSelSvc] = useState<typeof SERVICES[0]|null>(null)
-  const [calDate, setCalDate] = useState(new Date())
+  const [calDate, setCalDate] = useState<Date>(new Date(2026, 4, 1))
   const [selDate, setSelDate] = useState<Date|null>(null)
   const [selTime, setSelTime] = useState('')
   const [petName, setPetName] = useState('')
@@ -47,17 +47,11 @@ export default function KapsalonsPage() {
 
   const obsRef = useRef<IntersectionObserver|null>(null)
 
-  useEffect(() => {
-    // Laad echte salons uit Supabase
-    supabase.from('kapsalons')
-      .select('*')
-      .eq('actief', true)
-      .order('created_at', { ascending: false })
-      .then(({ data }) => {
-        setSalons(data || [])
-        setLoadingSalons(false)
-      })
-
+ useEffect(() => {
+  const t = new Date()
+  t.setHours(0,0,0,0)
+  setToday(t)
+  setCalDate(t)
     // Prefill registratieformulier
     supabase.auth.getSession().then(({ data: { session } }) => {
       const user = session?.user
@@ -118,7 +112,7 @@ export default function KapsalonsPage() {
     setPetName(''); setPetBreed(''); setOwnerName(''); setOwnerPhone(''); setOwnerEmail(''); setNotes('')
     document.body.style.overflow = 'hidden'
   }
-  const closeModal = () => { setModal(null); document.body.style.overflow = '' }
+const [today, setToday] = useState<Date>(new Date(2026, 4, 1))
 
   const canNext = step===1?!!selSvc:step===2?!!(selDate&&selTime):step===3?!!(petName&&petBreed&&ownerName&&ownerPhone&&ownerEmail):true
   const today = new Date(); today.setHours(0,0,0,0)
