@@ -4,10 +4,8 @@ import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase'
 
 const REGIONS = [['all','Alle'],['limburg','Limburg'],['antwerpen','Antwerpen'],['brabant','Brabant'],['oost-vl','Oost-Vlaanderen'],['nl','Nederland']]
-
 const MONTHS = ['Januari','Februari','Maart','April','Mei','Juni','Juli','Augustus','September','Oktober','November','December']
 const DAYS = ['Zondag','Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Zaterdag']
-
 const SERVICES = [
   { name:'Volledig Trimmen', desc:'Wassen, knippen, drogen & stylen', price:45, dur:'60 min', icon:'✂️' },
   { name:'Wassen & Drogen', desc:'Professioneel bad & föhnen', price:25, dur:'30 min', icon:'🛁' },
@@ -25,7 +23,9 @@ export default function KapsalonsPage() {
   const [modal, setModal] = useState<any>(null)
   const [step, setStep] = useState(1)
   const [selSvc, setSelSvc] = useState<typeof SERVICES[0]|null>(null)
-  const [calDate, setCalDate] = useState<Date>(new Date(2026, 4, 1))
+  // ✅ FIX: null ipv new Date() om hydration error te vermijden
+  const [calDate, setCalDate] = useState<Date|null>(null)
+  const [today, setToday] = useState<Date|null>(null)
   const [selDate, setSelDate] = useState<Date|null>(null)
   const [selTime, setSelTime] = useState('')
   const [petName, setPetName] = useState('')
@@ -34,7 +34,6 @@ export default function KapsalonsPage() {
   const [ownerPhone, setOwnerPhone] = useState('')
   const [ownerEmail, setOwnerEmail] = useState('')
   const [notes, setNotes] = useState('')
-
   const [regNaam, setRegNaam] = useState('')
   const [regLoc, setRegLoc] = useState('')
   const [regStad, setRegStad] = useState('')
@@ -44,15 +43,24 @@ export default function KapsalonsPage() {
   const [regLoading, setRegLoading] = useState(false)
   const [regDone, setRegDone] = useState(false)
   const [regError, setRegError] = useState('')
-
   const obsRef = useRef<IntersectionObserver|null>(null)
 
- useEffect(() => {
-  const t = new Date()
-  t.setHours(0,0,0,0)
-  setToday(t)
-  setCalDate(t)
-    // Prefill registratieformulier
+  useEffect(() => {
+    // ✅ FIX: datum initialisatie in useEffect, niet in useState
+    const t = new Date()
+    t.setHours(0,0,0,0)
+    setToday(t)
+    setCalDate(new Date(t))
+
+    supabase.from('kapsalons')
+      .select('*')
+      .eq('actief', true)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => {
+        setSalons(data || [])
+        setLoadingSalons(false)
+      })
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       const user = session?.user
       if (user) {
@@ -71,39 +79,28 @@ export default function KapsalonsPage() {
   const handleRegister = async () => {
     if (!regNaam || !regLoc || !regEmail) { setRegError('Vul alle verplichte velden in'); return }
     setRegLoading(true); setRegError('')
-
     const { data: { session } } = await supabase.auth.getSession()
     const user = session?.user
-
     const { error } = await supabase.from('kapsalons').insert({
-      naam: regNaam,
-      locatie: regLoc,
-      stad: regStad,
-      email: regEmail,
-      telefoon: regTel,
-      type_salon: regType,
-      owner_id: user?.id || null,
-      actief: false,
-      geverifieerd: false,
+      naam: regNaam, locatie: regLoc, stad: regStad, email: regEmail,
+      telefoon: regTel, type_salon: regType, owner_id: user?.id || null,
+      actief: false, geverifieerd: false,
     })
-
     if (error) {
       setRegError('Er ging iets mis. Stuur een e-mail naar info@kwispelclub.be')
     } else {
       setRegDone(true)
-      if (user) {
-        await supabase.auth.updateUser({ data: { role: 'kapsalon', salonnaam: regNaam, stad: regStad } })
-      }
+      if (user) await supabase.auth.updateUser({ data: { role: 'kapsalon', salonnaam: regNaam, stad: regStad } })
     }
     setRegLoading(false)
   }
 
   const filtered = salons.filter(s => {
-    const matchRegion = region === 'all' || 
-  (s.regio || '').toLowerCase().includes(region.toLowerCase()) || 
-  (s.stad || '').toLowerCase().includes(region.toLowerCase()) ||
-  (s.locatie || '').toLowerCase().includes(region.toLowerCase())
-   const matchSearch = !search || (s.naam || '').toLowerCase().includes(search.toLowerCase()) || (s.stad || '').toLowerCase().includes(search.toLowerCase())
+    const matchRegion = region === 'all' ||
+      (s.regio || '').toLowerCase().includes(region.toLowerCase()) ||
+      (s.stad || '').toLowerCase().includes(region.toLowerCase()) ||
+      (s.locatie || '').toLowerCase().includes(region.toLowerCase())
+    const matchSearch = !search || (s.naam || '').toLowerCase().includes(search.toLowerCase()) || (s.stad || '').toLowerCase().includes(search.toLowerCase())
     return matchRegion && matchSearch
   })
 
@@ -113,12 +110,13 @@ export default function KapsalonsPage() {
     document.body.style.overflow = 'hidden'
   }
   const closeModal = () => { setModal(null); document.body.style.overflow = '' }
-  const [today, setToday] = useState<Date>(new Date(2026, 4, 1))
 
   const canNext = step===1?!!selSvc:step===2?!!(selDate&&selTime):step===3?!!(petName&&petBreed&&ownerName&&ownerPhone&&ownerEmail):true
-   const firstDay = new Date(calDate.getFullYear(), calDate.getMonth(), 1)
-  let startDay = firstDay.getDay()-1; if(startDay<0) startDay=6
-  const daysInMonth = new Date(calDate.getFullYear(), calDate.getMonth()+1, 0).getDate()
+
+  // ✅ Kalender berekeningen — alleen als calDate en today beschikbaar zijn
+  const firstDay = calDate ? new Date(calDate.getFullYear(), calDate.getMonth(), 1) : null
+  let startDay = firstDay ? firstDay.getDay()-1 : 0; if(startDay<0) startDay=6
+  const daysInMonth = calDate ? new Date(calDate.getFullYear(), calDate.getMonth()+1, 0).getDate() : 0
   const isTaken = (d:Date, slot:string) => { const seed=d.getDate()*7+d.getMonth()*31; const idx=parseInt(slot.replace(':',''))%17; return (seed*idx*13)%7===0 }
   const morningSlots = ['09:00','09:30','10:00','10:30','11:00','11:30']
   const afternoonSlots = selDate?.getDay()===6?['12:00','12:30','13:00','13:30']:['12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30']
@@ -141,7 +139,7 @@ export default function KapsalonsPage() {
     .salon-card{background:var(--white);border-radius:20px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06);transition:all .3s;border:2px solid transparent}.salon-card:hover{transform:translateY(-6px);box-shadow:0 8px 40px rgba(0,0,0,.12);border-color:var(--green-pale)}
     .salon-cover{height:200px;position:relative;overflow:hidden;background:var(--cream-dark)}.salon-cover img{width:100%;height:100%;object-fit:cover;transition:transform .4s}.salon-card:hover .salon-cover img{transform:scale(1.05)}
     .salon-cover-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:56px;background:linear-gradient(135deg,var(--cream),var(--cream-dark))}
-    .salon-bdg{position:absolute;top:14px;left:14px;display:flex;gap:6px}.salon-badge{padding:4px 12px;border-radius:50px;font-size:11px;font-weight:700;color:white}.btop{background:var(--orange-main)}.bnew{background:var(--green-main)}.bgeverifieerd{background:var(--teal,#2A9D8F)}
+    .salon-bdg{position:absolute;top:14px;left:14px;display:flex;gap:6px}.salon-badge{padding:4px 12px;border-radius:50px;font-size:11px;font-weight:700;color:white}.bgeverifieerd{background:#2A9D8F}
     .fav-btn{position:absolute;top:14px;right:14px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.9);border:none;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;transition:all .2s;z-index:2}.fav-btn.liked{color:var(--red)}
     .salon-info{padding:20px}.salon-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px}.salon-name{font-family:'Fredoka',sans-serif;font-size:18px;font-weight:700}.salon-rating{display:flex;align-items:center;gap:4px;font-size:14px;font-weight:700;color:var(--orange-main)}.salon-rating span{font-size:12px;color:var(--text-light);font-weight:400}
     .salon-loc{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-mid);margin-bottom:12px}.salon-tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}.tag{padding:4px 10px;border-radius:50px;font-size:11px;font-weight:600;background:var(--cream);color:var(--text-mid)}.tag.sp{background:var(--green-pale);color:var(--green-dark)}
@@ -178,8 +176,6 @@ export default function KapsalonsPage() {
   return (
     <>
       <style>{CSS}</style>
-
-      
       <div className="breadcrumb"><a href="/">Home</a> › Hondenkapsalons</div>
 
       <section className="page-hero">
@@ -208,7 +204,7 @@ export default function KapsalonsPage() {
               ['🛁','Wassen & Drogen','Professioneel bad met speciale shampoo en föhnen','Vanaf €20'],
               ['💅','Nagels Knippen','Veilig en stress-vrij nagelverzorging door experts','Vanaf €10'],
               ['👂','Oren & Tanden','Oorcontrole, reiniging en tandenpoetsen','Vanaf €15']].map(([icon,title,desc,price]) => (
-              <div key={title} className="svc-card"><div className="svc-icon">{icon}</div><h4>{title}</h4><p>{desc}</p><div className="svc-price">{price}</div></div>
+              <div key={String(title)} className="svc-card"><div className="svc-icon">{icon}</div><h4>{title}</h4><p>{desc}</p><div className="svc-price">{price}</div></div>
             ))}
           </div>
         </div>
@@ -216,13 +212,9 @@ export default function KapsalonsPage() {
 
       <section className="section" id="salons">
         <div className="section-header fade-up"><h2>Kapsalons bij jou in de buurt 📍</h2><p>Geverifieerde salons met echte klantbeoordelingen</p></div>
-
         {salons.length === 0 && !loadingSalons && (
-          <div className="demo-notice fade-up">
-            ✂️ Nog geen salons geregistreerd — Ben jij groomer? <a href="#register">Registreer je salon gratis →</a>
-          </div>
+          <div className="demo-notice fade-up">✂️ Nog geen salons geregistreerd — Ben jij groomer? <a href="#register">Registreer je salon gratis →</a></div>
         )}
-
         <div className="filters-bar fade-up">
           <div className="filter-group">
             {REGIONS.map(([id,label]) => <button key={id} className={`filter-btn ${region===id?'active':''}`} onClick={() => setRegion(id)}>{label}</button>)}
@@ -232,7 +224,6 @@ export default function KapsalonsPage() {
             <input placeholder="Zoek op naam of stad..." value={search} onChange={e => setSearch(e.target.value)} />
           </div>
         </div>
-
         {loadingSalons ? (
           <div className="empty-state"><div className="ei">⏳</div><p>Salons laden...</p></div>
         ) : filtered.length === 0 ? (
@@ -242,13 +233,8 @@ export default function KapsalonsPage() {
             {filtered.map(s => (
               <div key={s.id} className="salon-card">
                 <div className="salon-cover">
-                  {s.foto_url
-                    ? <img src={s.foto_url} alt={s.naam} />
-                    : <div className="salon-cover-placeholder">✂️</div>
-                  }
-                  <div className="salon-bdg">
-                    {s.geverifieerd && <span className="salon-badge bgeverifieerd">✓ Geverifieerd</span>}
-                  </div>
+                  {s.foto_url ? <img src={s.foto_url} alt={s.naam} /> : <div className="salon-cover-placeholder">✂️</div>}
+                  <div className="salon-bdg">{s.geverifieerd && <span className="salon-badge bgeverifieerd">✓ Geverifieerd</span>}</div>
                   <button className={`fav-btn ${liked.has(s.id)?'liked':''}`} onClick={() => { const n=new Set(liked); n.has(s.id)?n.delete(s.id):n.add(s.id); setLiked(n) }}>{liked.has(s.id)?'♥':'♡'}</button>
                 </div>
                 <div className="salon-info">
@@ -284,7 +270,7 @@ export default function KapsalonsPage() {
             <p>Word zichtbaar voor duizenden huisdiereigenaren in België en Nederland. Registreer je salon gratis op Kwispelclub.</p>
             <div className="benefits">
               {[['👥','Bereik 12.500+ actieve diereneigenaren'],['📅','Online boekingssysteem inbegrepen'],['⭐','Verzamel reviews en bouw reputatie'],['📊','Inzicht in je statistieken'],['🏷️','Eerste 3 maanden gratis']].map(([icon,text]) => (
-                <div key={text} className="benefit"><div className="bicon">{icon}</div>{text}</div>
+                <div key={String(text)} className="benefit"><div className="bicon">{icon}</div>{text}</div>
               ))}
             </div>
           </div>
@@ -331,7 +317,7 @@ export default function KapsalonsPage() {
         </div>
       </footer>
 
-      {modal && (
+      {modal && calDate && today && (
         <div className="modal-overlay" onClick={e => e.target===e.currentTarget&&closeModal()}>
           <div className="modal">
             <div className="modal-header">
@@ -349,7 +335,6 @@ export default function KapsalonsPage() {
                   ))}
                 </div>
               )}
-
               {step===1&&(
                 <div className="svc-opts">
                   {SERVICES.map(s=>(
@@ -362,7 +347,6 @@ export default function KapsalonsPage() {
                   ))}
                 </div>
               )}
-
               {step===2&&(
                 <>
                   <div className="cal-hdr">
@@ -396,7 +380,6 @@ export default function KapsalonsPage() {
                   ):<div className="no-slots">👆 Kies eerst een datum hierboven</div>}
                 </>
               )}
-
               {step===3&&(
                 <>
                   <div className="form-row">
@@ -415,7 +398,6 @@ export default function KapsalonsPage() {
                   <div className="bf"><label>Opmerkingen</label><textarea placeholder="Allergieën, bijzonderheden..." value={notes} onChange={e=>setNotes(e.target.value)}/></div>
                 </>
               )}
-
               {step===4&&selSvc&&selDate&&(
                 <div className="confirm-sum">
                   {[['Salon',modal.naam],['Dienst',`${selSvc.name} (${selSvc.dur})`],['Datum',formatDate(selDate)],['Tijdslot',selTime],['Huisdier',`${petName} (${petBreed})`],['Eigenaar',ownerName],['Contact',ownerPhone],['Totaal',`€${selSvc.price}`]].map(([lbl,val])=>(
@@ -423,7 +405,6 @@ export default function KapsalonsPage() {
                   ))}
                 </div>
               )}
-
               {step===5&&selSvc&&selDate&&(
                 <div className="success-state">
                   <div className="sicon">✅</div>
@@ -439,7 +420,6 @@ export default function KapsalonsPage() {
                   <button className="btn btn-primary" style={{margin:'0 auto'}} onClick={closeModal}>Sluiten</button>
                 </div>
               )}
-
               {step<=4&&(
                 <div className="modal-footer">
                   {step>1?<button className="btn-back" onClick={()=>setStep(s=>s-1)}>← Vorige</button>:<span/>}
