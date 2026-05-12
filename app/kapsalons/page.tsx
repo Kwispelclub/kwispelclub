@@ -45,6 +45,8 @@ export default function KapsalonsPage() {
   const [regLoading, setRegLoading] = useState(false)
   const [regDone, setRegDone] = useState(false)
   const [regError, setRegError] = useState('')
+  const [bookingLoading, setBookingLoading] = useState(false)
+  const [bezetteSlotsPerDag, setBezetteSlotsPerDag] = useState<Record<string, string[]>>({})
   const obsRef = useRef<IntersectionObserver|null>(null)
 
   useEffect(() => {
@@ -53,12 +55,14 @@ export default function KapsalonsPage() {
     setToday(t)
     setCalDate(new Date(t))
 
+    setLoadingSalons(true)
     supabase.from('kapsalons')
       .select('*')
       .eq('actief', true)
       .order('created_at', { ascending: false })
       .then(({ data }) => {
         setSalons(data || [])
+        setLoadingSalons(false)
       })
 
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -107,19 +111,14 @@ export default function KapsalonsPage() {
   const openModal = async (salon: any) => {
     setModal(salon); setStep(1); setSelSvc(null); setSelDate(null); setSelTime('')
     setPetName(''); setPetBreed(''); setOwnerName(''); setOwnerPhone(''); setOwnerEmail(''); setNotes('')
+    setBezetteSlotsPerDag({})
     document.body.style.overflow = 'hidden'
-    // Laad bestaande boekingen voor deze salon
     const { data } = await supabase
-      .from('boekingen')
-      .select('datum, tijdslot')
-      .eq('salon_id', salon.id)
-      .in('status', ['bevestigd'])
+      .from('boekingen').select('datum, tijdslot')
+      .eq('salon_id', salon.id).in('status', ['bevestigd'])
     if (data) {
       const slots: Record<string, string[]> = {}
-      data.forEach(b => {
-        if (!slots[b.datum]) slots[b.datum] = []
-        slots[b.datum].push(b.tijdslot)
-      })
+      data.forEach(b => { if (!slots[b.datum]) slots[b.datum] = []; slots[b.datum].push(b.tijdslot) })
       setBezetteSlotsPerDag(slots)
     }
   }
@@ -127,14 +126,57 @@ export default function KapsalonsPage() {
 
   const canNext = step===1?!!selSvc:step===2?!!(selDate&&selTime):step===3?!!(petName&&petBreed&&ownerName&&ownerPhone&&ownerEmail):true
 
+  const handleConfirmBooking = async () => {
+    if (!modal || !selSvc || !selDate) return
+    setBookingLoading(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const datumStr = `${selDate.getFullYear()}-${String(selDate.getMonth()+1).padStart(2,'0')}-${String(selDate.getDate()).padStart(2,'0')}`
+      const datumLeesbaar = formatDate(selDate)
+      await supabase.from('boekingen').insert({
+        salon_id: modal.id, owner_id: session?.user?.id || null,
+        dienst: selSvc.name, dienst_prijs: selSvc.price, dienst_duur: selSvc.dur,
+        datum: datumStr, tijdslot: selTime,
+        hond_naam: petName, hond_ras: petBreed,
+        eigenaar_naam: ownerName, eigenaar_telefoon: ownerPhone, eigenaar_email: ownerEmail,
+        opmerkingen: notes || null, status: 'bevestigd',
+      })
+      setBezetteSlotsPerDag(prev => {
+        const n = {...prev}
+        if (!n[datumStr]) n[datumStr] = []
+        n[datumStr] = [...n[datumStr], selTime]
+        return n
+      })
+      await fetch('/api/send-email', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'boeking_bevestiging', to: ownerEmail, data: {
+          ownerName, petName, petBreed, salonNaam: modal.naam,
+          salonLocatie: modal.locatie || modal.stad || '',
+          dienst: selSvc.name, datum: datumLeesbaar, tijdslot: selTime, prijs: selSvc.price,
+        }})
+      })
+      if (modal.email) {
+        await fetch('/api/send-email', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'boeking_salon_notificatie', to: modal.email, data: {
+            salonNaam: modal.naam, ownerName, petName, petBreed,
+            dienst: selSvc.name, datum: datumLeesbaar, tijdslot: selTime,
+          }})
+        })
+      }
+      setStep(5)
+    } catch (err) {
+      console.error('Boeking fout:', err)
+      setStep(5)
+    }
+    setBookingLoading(false)
+  }
+
   // ✅ Kalender berekeningen — alleen als calDate en today beschikbaar zijn
   const firstDay = calDate ? new Date(calDate.getFullYear(), calDate.getMonth(), 1) : null
   let startDay = firstDay ? firstDay.getDay()-1 : 0; if(startDay<0) startDay=6
   const daysInMonth = calDate ? new Date(calDate.getFullYear(), calDate.getMonth()+1, 0).getDate() : 0
-  const isTaken = (d:Date, slot:string) => {
-    const datumStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
-    return (bezetteSlotsPerDag[datumStr] || []).includes(slot)
-  }
+  const isTaken = (d:Date, slot:string) => { const ds=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; return (bezetteSlotsPerDag[ds]||[]).includes(slot) }
   const morningSlots = ['09:00','09:30','10:00','10:30','11:00','11:30']
   const afternoonSlots = selDate?.getDay()===6?['12:00','12:30','13:00','13:30']:['12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30']
   const formatDate = (d:Date) => `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`
@@ -246,7 +288,7 @@ export default function KapsalonsPage() {
         ) : filtered.length === 0 ? (
           <div className="empty-state"><div className="ei">✂️</div><p>Geen salons gevonden. Pas je filter aan of <a href="#register" style={{color:'var(--green-main)',fontWeight:700}}>registreer jouw salon</a>.</p></div>
         ) : (
-          <div className="salons-grid fade-up">
+          <div className="salons-grid">
             {filtered.map(s => (
               <div key={s.id} className="salon-card">
                 <div className="salon-cover">
@@ -440,8 +482,8 @@ export default function KapsalonsPage() {
               {step<=4&&(
                 <div className="modal-footer">
                   {step>1?<button className="btn-back" onClick={()=>setStep(s=>s-1)}>← Vorige</button>:<span/>}
-                  <button className={`btn-next ${step===4?'orange':''}`} disabled={!canNext} onClick={()=>{if(step===4)setStep(5);else setStep(s=>s+1)}}>
-                    {step===4?'✓ Bevestig Afspraak':'Volgende →'}
+                  <button className={`btn-next ${step===4?'orange':''}`} disabled={!canNext||bookingLoading} onClick={()=>{if(step===4)handleConfirmBooking();else setStep(s=>s+1)}}>
+                    {step===4?(bookingLoading?'Bezig...':'✓ Bevestig Afspraak'):'Volgende →'}
                   </button>
                 </div>
               )}
