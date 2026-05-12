@@ -1,4 +1,3 @@
-// v3 — booking + loading fix + fade-up fix
 'use client'
 
 import { useState, useEffect, useRef, useMemo } from 'react'
