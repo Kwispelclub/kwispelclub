@@ -53,12 +53,14 @@ export default function KapsalonsPage() {
     setToday(t)
     setCalDate(new Date(t))
 
+    setLoadingSalons(true)
     supabase.from('kapsalons')
       .select('*')
       .eq('actief', true)
       .order('created_at', { ascending: false })
-      .then(({ data }) => {
+      .then(({ data, error }) => {
         setSalons(data || [])
+        setLoadingSalons(false)
       })
 
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -229,7 +231,7 @@ export default function KapsalonsPage() {
         ) : filtered.length === 0 ? (
           <div className="empty-state"><div className="ei">✂️</div><p>Geen salons gevonden. Pas je filter aan of <a href="#register" style={{color:'var(--green-main)',fontWeight:700}}>registreer jouw salon</a>.</p></div>
         ) : (
-          <div className="salons-grid fade-up">
+          <div className="salons-grid">
             {filtered.map(s => (
               <div key={s.id} className="salon-card">
                 <div className="salon-cover">
