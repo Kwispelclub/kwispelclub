@@ -35,11 +35,17 @@ export default function KapsalonDashboard() {
   const [salon, setSalon] = useState<any>(null)
   const [boekingen, setBoekingen] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState<'overzicht'|'afspraken'|'profiel'|'beschikbaarheid'|'dagbeheer'>('overzicht')
+  const [tab, setTab] = useState<'overzicht'|'afspraken'|'diensten'|'profiel'|'beschikbaarheid'|'dagbeheer'>('overzicht')
   const [filterStatus, setFilterStatus] = useState('alle')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
+
+  // Diensten state
+  const [diensten, setDiensten] = useState<any[]>([])
+  const [dienstForm, setDienstForm] = useState({ naam:'', beschrijving:'', prijs:'', duur_min:'60', actief:true })
+  const [dienstEdit, setDienstEdit] = useState<string|null>(null)
+  const [dienstSaving, setDienstSaving] = useState(false)
 
   // Profiel state
   const [proNaam, setProNaam] = useState('')
@@ -93,6 +99,8 @@ export default function KapsalonDashboard() {
       }
       const { data: boekData } = await supabase.from('boekingen').select('*').eq('salon_id', salonData.id).order('datum', { ascending: false }).order('tijdslot', { ascending: false })
       setBoekingen(boekData || [])
+      const { data: dienstData } = await supabase.from('kapsalon_diensten').select('*').eq('salon_id', salonData.id).order('volgorde').order('created_at')
+      setDiensten(dienstData || [])
       setLoading(false)
     }
     init()
@@ -128,6 +136,39 @@ export default function KapsalonDashboard() {
   const dagSlots = useMemo(() => {
     return generateSlots(openVan, openTot, pauzeVan, pauzeTot, parseInt(slotDuur))
   }, [openVan, openTot, pauzeVan, pauzeTot, slotDuur])
+
+  const saveDienst = async () => {
+    if (!dienstForm.naam || !dienstForm.prijs) return
+    setDienstSaving(true)
+    const payload = {
+      salon_id: salon.id,
+      naam: dienstForm.naam,
+      beschrijving: dienstForm.beschrijving,
+      prijs: parseFloat(dienstForm.prijs),
+      duur_min: parseInt(dienstForm.duur_min),
+      actief: dienstForm.actief,
+    }
+    if (dienstEdit) {
+      await supabase.from('kapsalon_diensten').update(payload).eq('id', dienstEdit)
+      setDiensten(prev => prev.map(d => d.id === dienstEdit ? { ...d, ...payload } : d))
+      setDienstEdit(null)
+    } else {
+      const { data } = await supabase.from('kapsalon_diensten').insert({ ...payload, volgorde: diensten.length }).select().single()
+      if (data) setDiensten(prev => [...prev, data])
+    }
+    setDienstForm({ naam:'', beschrijving:'', prijs:'', duur_min:'60', actief:true })
+    setDienstSaving(false)
+  }
+
+  const deleteDienst = async (id: string) => {
+    await supabase.from('kapsalon_diensten').delete().eq('id', id)
+    setDiensten(prev => prev.filter(d => d.id !== id))
+  }
+
+  const editDienst = (d: any) => {
+    setDienstEdit(d.id)
+    setDienstForm({ naam: d.naam, beschrijving: d.beschrijving || '', prijs: d.prijs.toString(), duur_min: d.duur_min.toString(), actief: d.actief })
+  }
 
   const saveProfiel = async () => {
     setSaving(true); setError('')
@@ -214,6 +255,19 @@ export default function KapsalonDashboard() {
     .dag-legenda{display:flex;gap:16px;margin-bottom:16px;flex-wrap:wrap}
     .leg-item{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600}
     .leg-dot{width:12px;height:12px;border-radius:50%}
+    .dienst-row{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid #F0F0F0}.dienst-row:last-child{border-bottom:none}
+    .dienst-icon{width:44px;height:44px;border-radius:12px;background:#E8F0E4;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+    .dienst-info{flex:1}.dienst-naam{font-weight:700;font-size:15px;color:#2D5A27}.dienst-desc{font-size:13px;color:#8A8A8A;margin-top:2px}
+    .dienst-prijs{font-family:Fredoka,sans-serif;font-size:18px;font-weight:700;color:#2D5A27;text-align:right}.dienst-duur{font-size:12px;color:#8A8A8A;text-align:right}
+    .dienst-actions{display:flex;gap:6px}
+    .btn-edit{padding:6px 14px;border-radius:50px;border:2px solid #4A7C3F;background:transparent;color:#4A7C3F;font-family:Nunito,sans-serif;font-size:12px;font-weight:700;cursor:pointer}
+    .btn-del{padding:6px 14px;border-radius:50px;border:2px solid #E84E4E;background:transparent;color:#E84E4E;font-family:Nunito,sans-serif;font-size:12px;font-weight:700;cursor:pointer}
+    .dienst-form{background:#F8F8F8;border-radius:16px;padding:24px;margin-top:20px;border:2px solid #E8E8E8}
+    .dienst-form h4{font-size:16px;margin-bottom:16px;color:#2D5A27}
+    .toggle-wrap{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;color:#5A5A5A;cursor:pointer}
+    .toggle{width:40px;height:22px;border-radius:50px;background:#CCCCCC;position:relative;transition:all .2s;flex-shrink:0}
+    .toggle.on{background:#4A7C3F}.toggle::after{content:'';position:absolute;width:18px;height:18px;border-radius:50%;background:white;top:2px;left:2px;transition:all .2s}
+    .toggle.on::after{left:20px}
     @media(max-width:900px){.cards{grid-template-columns:repeat(2,1fr)}.boeking-row{grid-template-columns:70px 1fr 1fr;gap:8px}.boeking-prijs,.status-sel{display:none}.slots-grid{grid-template-columns:repeat(4,1fr)}}
     @media(max-width:600px){.cards{grid-template-columns:1fr 1fr}.form-grid{grid-template-columns:1fr}.tijd-grid{grid-template-columns:1fr 1fr}.slots-grid{grid-template-columns:repeat(3,1fr)}}
   `
@@ -241,9 +295,9 @@ export default function KapsalonDashboard() {
         </div>
 
         <div className="tabs">
-          {(['overzicht','afspraken','dagbeheer','profiel','beschikbaarheid'] as const).map(t => (
+          {(['overzicht','afspraken','diensten','dagbeheer','profiel','beschikbaarheid'] as const).map(t => (
             <button key={t} className={`tab ${tab===t?'active':''}`} onClick={() => setTab(t)}>
-              {t==='overzicht'?'📊 Overzicht':t==='afspraken'?'📅 Afspraken':t==='dagbeheer'?'🗓️ Dagbeheer':t==='profiel'?'✏️ Profiel':'🕐 Beschikbaarheid'}
+              {t==='overzicht'?'📊 Overzicht':t==='afspraken'?'📅 Afspraken':t==='diensten'?'✂️ Diensten':t==='dagbeheer'?'🗓️ Dagbeheer':t==='profiel'?'✏️ Profiel':'🕐 Beschikbaarheid'}
             </button>
           ))}
         </div>
@@ -343,6 +397,59 @@ export default function KapsalonDashboard() {
                 })}
               </div>
             )}
+          </div>
+        )}
+
+        {/* DIENSTEN */}
+        {tab==='diensten' && (
+          <div className="panel">
+            <h3>✂️ Diensten beheren</h3>
+            <p style={{fontSize:14,color:'#8A8A8A',marginBottom:20}}>Deze diensten zijn zichtbaar voor klanten bij het boeken. Voeg je eigen diensten toe met de juiste duur en prijs.</p>
+            {diensten.length === 0 ? (
+              <div className="empty">✂️ Nog geen diensten — voeg je eerste dienst toe hieronder</div>
+            ) : diensten.map(d => (
+              <div key={d.id} className="dienst-row">
+                <div className="dienst-icon">✂️</div>
+                <div className="dienst-info">
+                  <div className="dienst-naam">{d.naam} {!d.actief && <span style={{fontSize:11,color:'#8A8A8A',fontWeight:400}}>(inactief)</span>}</div>
+                  {d.beschrijving && <div className="dienst-desc">{d.beschrijving}</div>}
+                </div>
+                <div style={{textAlign:'right',minWidth:80}}>
+                  <div className="dienst-prijs">€{Number(d.prijs).toFixed(2)}</div>
+                  <div className="dienst-duur">{d.duur_min} min</div>
+                </div>
+                <div className="dienst-actions">
+                  <button className="btn-edit" onClick={() => editDienst(d)}>✏️</button>
+                  <button className="btn-del" onClick={() => deleteDienst(d.id)}>🗑️</button>
+                </div>
+              </div>
+            ))}
+
+            <div className="dienst-form">
+              <h4>{dienstEdit ? '✏️ Dienst bewerken' : '➕ Nieuwe dienst toevoegen'}</h4>
+              <div className="form-grid">
+                <div className="fg"><label>Naam *</label><input value={dienstForm.naam} onChange={e=>setDienstForm(p=>({...p,naam:e.target.value}))} placeholder="Bijv. Volledig Trimmen"/></div>
+                <div className="fg"><label>Duur (minuten) *</label>
+                  <select value={dienstForm.duur_min} onChange={e=>setDienstForm(p=>({...p,duur_min:e.target.value}))}>
+                    {[15,20,30,45,60,75,90,105,120,150,180].map(m=><option key={m} value={m}>{m} minuten</option>)}
+                  </select>
+                </div>
+                <div className="fg"><label>Prijs (€) *</label><input type="number" step="0.50" value={dienstForm.prijs} onChange={e=>setDienstForm(p=>({...p,prijs:e.target.value}))} placeholder="45.00"/></div>
+                <div className="fg" style={{display:'flex',alignItems:'center',paddingTop:24}}>
+                  <label className="toggle-wrap">
+                    <div className={`toggle ${dienstForm.actief?'on':''}`} onClick={()=>setDienstForm(p=>({...p,actief:!p.actief}))}/>
+                    {dienstForm.actief ? 'Zichtbaar voor klanten' : 'Verborgen voor klanten'}
+                  </label>
+                </div>
+                <div className="fg full"><label>Beschrijving</label><input value={dienstForm.beschrijving} onChange={e=>setDienstForm(p=>({...p,beschrijving:e.target.value}))} placeholder="Bijv. Wassen, knippen, drogen & stylen op maat van het ras"/></div>
+              </div>
+              <div style={{display:'flex',gap:10,marginTop:16}}>
+                <button className="save-btn" style={{marginTop:0}} onClick={saveDienst} disabled={dienstSaving||!dienstForm.naam||!dienstForm.prijs}>
+                  {dienstSaving?'Opslaan...':(dienstEdit?'💾 Wijzigingen opslaan':'➕ Dienst toevoegen')}
+                </button>
+                {dienstEdit && <button className="save-btn" style={{marginTop:0,background:'#8A8A8A'}} onClick={()=>{setDienstEdit(null);setDienstForm({naam:'',beschrijving:'',prijs:'',duur_min:'60',actief:true})}}>Annuleren</button>}
+              </div>
+            </div>
           </div>
         )}
 
