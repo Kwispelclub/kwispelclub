@@ -7,7 +7,7 @@ import { SettingsPanel } from '@/components/AdminSettingsPanel'
 
 type Tab = 'dashboard' | 'kapsalons' | 'verkopers' | 'academy' | 'gebruikers' | 'listings' | 'bestellingen' | 'team' | 'instellingen' | 'banners'
 
-const ADMIN_PASSWORD = 'Vrijdag@201024+'
+const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || ''
 // ===== BANNERS TAB (plak dit in de main content sectie) =====
 const BannersTab = ({ banners, editBanner, setEditBanner, bannerSaving, setBannerSaving, supabase, loadData }: any) => {
 
