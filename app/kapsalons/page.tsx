@@ -6,14 +6,13 @@ import { createClient } from '@/lib/supabase'
 const REGIONS = [['all','Alle'],['limburg','Limburg'],['antwerpen','Antwerpen'],['brabant','Brabant'],['oost-vl','Oost-Vlaanderen'],['nl','Nederland']]
 const MONTHS = ['Januari','Februari','Maart','April','Mei','Juni','Juli','Augustus','September','Oktober','November','December']
 const DAYS = ['Zondag','Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Zaterdag']
-const SERVICES = [
+const DEFAULT_SERVICES = [
   { name:'Volledig Trimmen', desc:'Wassen, knippen, drogen & stylen', price:45, dur:'60 min', durMin:60, icon:'✂️' },
   { name:'Wassen & Drogen', desc:'Professioneel bad & föhnen', price:25, dur:'30 min', durMin:30, icon:'🛁' },
   { name:'Nagels Knippen', desc:'Veilig nagelverzorging', price:12, dur:'15 min', durMin:15, icon:'💅' },
   { name:'Puppy Eerste Beurt', desc:'Zachte kennismaking met trimmen', price:35, dur:'45 min', durMin:45, icon:'🐶' },
 ]
 
-// Berekent alle bezette 10-min blokken voor een boeking
 function getOccupiedSlots(startSlot: string, durMin: number): string[] {
   const [h, m] = startSlot.split(':').map(Number)
   const start = h * 60 + m
@@ -34,7 +33,7 @@ export default function KapsalonsPage() {
   const [loadingSalons, setLoadingSalons] = useState(false)
   const [modal, setModal] = useState<any>(null)
   const [step, setStep] = useState(1)
-  const [selSvc, setSelSvc] = useState<typeof SERVICES[0]|null>(null)
+  const [selSvc, setSelSvc] = useState<typeof DEFAULT_SERVICES[0]|null>(null)
   const [calDate, setCalDate] = useState<Date|null>(null)
   const [today, setToday] = useState<Date|null>(null)
   const [selDate, setSelDate] = useState<Date|null>(null)
@@ -55,6 +54,7 @@ export default function KapsalonsPage() {
   const [regDone, setRegDone] = useState(false)
   const [regError, setRegError] = useState('')
   const [bookingLoading, setBookingLoading] = useState(false)
+  const [modalDiensten, setModalDiensten] = useState<any[]>([])
   const [bezetteSlotsPerDag, setBezetteSlotsPerDag] = useState<Record<string, string[]>>({})
   const obsRef = useRef<IntersectionObserver|null>(null)
 
@@ -119,10 +119,15 @@ export default function KapsalonsPage() {
     setPetName(''); setPetBreed(''); setOwnerName(''); setOwnerPhone(''); setOwnerEmail(''); setNotes('')
     setBezetteSlotsPerDag({})
     document.body.style.overflow = 'hidden'
-    const [{ data: boekData }, { data: blokkData }] = await Promise.all([
+    const [{ data: boekData }, { data: blokkData }, { data: dienstData }] = await Promise.all([
       supabase.from('boekingen').select('datum, tijdslot, dienst_duur').eq('salon_id', salon.id).in('status', ['bevestigd']),
-      supabase.from('geblokkeerde_slots').select('datum, tijdslot').eq('salon_id', salon.id)
+      supabase.from('geblokkeerde_slots').select('datum, tijdslot').eq('salon_id', salon.id),
+      supabase.from('kapsalon_diensten').select('*').eq('salon_id', salon.id).eq('actief', true).order('volgorde').order('created_at')
     ])
+    setModalDiensten((dienstData && dienstData.length > 0)
+      ? dienstData.map((d: any) => ({ name: d.naam, desc: d.beschrijving || '', price: Number(d.prijs), dur: d.duur_min + ' min', durMin: d.duur_min, icon: '✂️' }))
+      : DEFAULT_SERVICES
+    )
     const slots: Record<string, string[]> = {}
     ;(boekData || []).forEach((b: any) => {
       const durMin = parseInt((b.dienst_duur || '60 min').replace(' min','')) || 60
@@ -198,7 +203,6 @@ export default function KapsalonsPage() {
     return bezet.includes(slot)
   }
 
-  // Genereer slots op basis van salon beschikbaarheid of defaults
   const salonB = modal?.beschikbaarheid
   const sVan = salonB?.open_van || '09:00'
   const sTot = salonB?.open_tot || '17:00'
@@ -224,6 +228,7 @@ export default function KapsalonsPage() {
   const morningSlots = allSlots.filter(s => s < sPVan)
   const afternoonSlots = allSlots.filter(s => s >= sPTot)
   const formatDate = (d:Date) => `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`
+
   const CSS = `
     :root{--green-dark:#2D5A27;--green-main:#4A7C3F;--green-light:#6B9E5E;--green-pale:#E8F0E4;--orange-main:#E8913A;--orange-pale:#FFF3E0;--cream:#FFF9F0;--cream-dark:#F5EDE0;--brown:#5C3D2E;--text-dark:#2C2C2C;--text-mid:#5A5A5A;--text-light:#8A8A8A;--white:#FFFFFF;--red:#E84E4E}
     *{margin:0;padding:0;box-sizing:border-box}body{font-family:Nunito,sans-serif;background:var(--cream);color:var(--text-dark);overflow-x:hidden;-webkit-font-smoothing:antialiased}h1,h2,h3,h4{font-family:Fredoka,sans-serif}
@@ -278,7 +283,6 @@ export default function KapsalonsPage() {
     <>
       <style dangerouslySetInnerHTML={{__html: CSS}} />
       <div className="breadcrumb"><a href="/">Home</a> › Hondenkapsalons</div>
-
       <section className="page-hero">
         <div className="hero-card">
           <div className="blob b1"/><div className="blob b2"/>
@@ -296,7 +300,6 @@ export default function KapsalonsPage() {
           </div>
         </div>
       </section>
-
       <section className="section">
         <div className="services-box">
           <div className="section-header"><h2>Populaire Diensten ✂️</h2><p>Wat je kunt verwachten bij onze kapsalons</p></div>
@@ -310,7 +313,6 @@ export default function KapsalonsPage() {
           </div>
         </div>
       </section>
-
       <section className="section" id="salons">
         <div className="section-header fade-up"><h2>Kapsalons bij jou in de buurt 📍</h2><p>Geverifieerde salons met echte klantbeoordelingen</p></div>
         {salons.length === 0 && !loadingSalons && (
@@ -355,7 +357,6 @@ export default function KapsalonsPage() {
           </div>
         )}
       </section>
-
       <section className="section">
         <div className="map-section fade-up">
           <h2>Vind een Salon op de Kaart 🗺️</h2>
@@ -363,7 +364,6 @@ export default function KapsalonsPage() {
           <div className="map-ph">🗺️</div>
         </div>
       </section>
-
       <section className="section" id="register">
         <div className="register-section fade-up">
           <div>
@@ -409,7 +409,6 @@ export default function KapsalonsPage() {
           </div>
         </div>
       </section>
-
       <footer>
         <div className="footer-inner">
           <a href="/" className="footer-logo"><div className="lp">🐾</div><span className="b">Kwispelclub</span></a>
@@ -417,7 +416,6 @@ export default function KapsalonsPage() {
           <div className="footer-copy">© 2026 Kwispelclub. Alle rechten voorbehouden. 🇧🇪 België & 🇳🇱 Nederland</div>
         </div>
       </footer>
-
       {modal && calDate && today && (
         <div className="modal-overlay" onClick={e => e.target===e.currentTarget&&closeModal()}>
           <div className="modal">
@@ -438,7 +436,7 @@ export default function KapsalonsPage() {
               )}
               {step===1&&(
                 <div className="svc-opts">
-                  {SERVICES.map(s=>(
+                  {modalDiensten.map(s=>(
                     <div key={s.name} className={`svc-opt ${selSvc?.name===s.name?'selected':''}`} onClick={()=>setSelSvc(s)}>
                       <div className="svc-ic">{s.icon}</div>
                       <div className="svc-inf"><div className="svc-n">{s.name}</div><div className="svc-d">{s.desc}</div></div>
