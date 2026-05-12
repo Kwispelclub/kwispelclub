@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 
@@ -9,13 +9,33 @@ const MONTHS = ['Januari','Februari','Maart','April','Mei','Juni','Juli','August
 const STATUS_LABELS: Record<string,string> = { bevestigd:'Bevestigd', geannuleerd:'Geannuleerd', voltooid:'Voltooid', no_show:'No-show' }
 const STATUS_COLORS: Record<string,string> = { bevestigd:'#2A9D8F', geannuleerd:'#E84E4E', voltooid:'#4A7C3F', no_show:'#8A8A8A' }
 
+function generateSlots(vanStr: string, totStr: string, pauzeVan: string, pauzeTot: string, duurMin: number): string[] {
+  const slots: string[] = []
+  const [vh, vm] = vanStr.split(':').map(Number)
+  const [th, tm] = totStr.split(':').map(Number)
+  const [ph, pm] = pauzeVan.split(':').map(Number)
+  const [ph2, pm2] = pauzeTot.split(':').map(Number)
+  let cur = vh * 60 + vm
+  const eind = th * 60 + tm
+  const pStart = ph * 60 + pm
+  const pEind = ph2 * 60 + pm2
+  while (cur + duurMin <= eind) {
+    if (cur >= pStart && cur < pEind) { cur += 10; continue }
+    const h = String(Math.floor(cur/60)).padStart(2,'0')
+    const m = String(cur%60).padStart(2,'0')
+    slots.push(`${h}:${m}`)
+    cur += duurMin
+  }
+  return slots
+}
+
 export default function KapsalonDashboard() {
   const supabase = useMemo(() => createClient(), [])
   const router = useRouter()
   const [salon, setSalon] = useState<any>(null)
   const [boekingen, setBoekingen] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState<'overzicht'|'afspraken'|'profiel'|'beschikbaarheid'>( 'overzicht')
+  const [tab, setTab] = useState<'overzicht'|'afspraken'|'profiel'|'beschikbaarheid'|'dagbeheer'>('overzicht')
   const [filterStatus, setFilterStatus] = useState('alle')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -40,19 +60,18 @@ export default function KapsalonDashboard() {
   const [pauzeTot, setPauzeTot] = useState('13:00')
   const [slotDuur, setSlotDuur] = useState('60')
 
+  // Dagbeheer state
+  const [dagDatum, setDagDatum] = useState(() => new Date().toISOString().split('T')[0])
+  const [geblokkeerd, setGeblokkeerd] = useState<string[]>([])
+  const [boektDag, setBoektDag] = useState<string[]>([])
+  const [dagLoading, setDagLoading] = useState(false)
+
   useEffect(() => {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) { router.push('/auth/login'); return }
-
-      const { data: salonData } = await supabase
-        .from('kapsalons')
-        .select('*')
-        .eq('owner_id', session.user.id)
-        .single()
-
+      const { data: salonData } = await supabase.from('kapsalons').select('*').eq('owner_id', session.user.id).single()
       if (!salonData) { router.push('/kapsalons'); return }
-
       setSalon(salonData)
       setProNaam(salonData.naam || '')
       setProLocatie(salonData.locatie || '')
@@ -63,7 +82,6 @@ export default function KapsalonDashboard() {
       setProPrijsVanaf(salonData.prijs_vanaf?.toString() || '')
       setProType(salonData.type_salon || '')
       setProWebsite(salonData.website || '')
-
       if (salonData.beschikbaarheid) {
         const b = salonData.beschikbaarheid
         if (b.open_dagen) setOpenDagen(b.open_dagen)
@@ -73,28 +91,47 @@ export default function KapsalonDashboard() {
         if (b.pauze_tot) setPauzeTot(b.pauze_tot)
         if (b.slot_duur) setSlotDuur(b.slot_duur)
       }
-
-      const { data: boekData } = await supabase
-        .from('boekingen')
-        .select('*')
-        .eq('salon_id', salonData.id)
-        .order('datum', { ascending: false })
-        .order('tijdslot', { ascending: false })
-
+      const { data: boekData } = await supabase.from('boekingen').select('*').eq('salon_id', salonData.id).order('datum', { ascending: false }).order('tijdslot', { ascending: false })
       setBoekingen(boekData || [])
       setLoading(false)
     }
     init()
   }, [])
 
+  const laadDagData = useCallback(async (datum: string) => {
+    if (!salon) return
+    setDagLoading(true)
+    const [{ data: gData }, { data: bData }] = await Promise.all([
+      supabase.from('geblokkeerde_slots').select('tijdslot').eq('salon_id', salon.id).eq('datum', datum),
+      supabase.from('boekingen').select('tijdslot').eq('salon_id', salon.id).eq('datum', datum).in('status', ['bevestigd'])
+    ])
+    setGeblokkeerd((gData || []).map((r: any) => r.tijdslot))
+    setBoektDag((bData || []).map((r: any) => r.tijdslot))
+    setDagLoading(false)
+  }, [salon, supabase])
+
+  useEffect(() => {
+    if (tab === 'dagbeheer' && salon) laadDagData(dagDatum)
+  }, [tab, dagDatum, salon])
+
+  const toggleSlot = async (slot: string) => {
+    const isGeblokkeerd = geblokkeerd.includes(slot)
+    if (isGeblokkeerd) {
+      await supabase.from('geblokkeerde_slots').delete().eq('salon_id', salon.id).eq('datum', dagDatum).eq('tijdslot', slot)
+      setGeblokkeerd(prev => prev.filter(s => s !== slot))
+    } else {
+      await supabase.from('geblokkeerde_slots').insert({ salon_id: salon.id, datum: dagDatum, tijdslot: slot, reden: 'manueel geblokkeerd' })
+      setGeblokkeerd(prev => [...prev, slot])
+    }
+  }
+
+  const dagSlots = useMemo(() => {
+    return generateSlots(openVan, openTot, pauzeVan, pauzeTot, parseInt(slotDuur))
+  }, [openVan, openTot, pauzeVan, pauzeTot, slotDuur])
+
   const saveProfiel = async () => {
     setSaving(true); setError('')
-    const { error } = await supabase.from('kapsalons').update({
-      naam: proNaam, locatie: proLocatie, stad: proStad,
-      telefoon: proTel, email: proEmail, beschrijving: proBeschrijving,
-      prijs_vanaf: proPrijsVanaf ? parseFloat(proPrijsVanaf) : null,
-      type_salon: proType, website: proWebsite,
-    }).eq('id', salon.id)
+    const { error } = await supabase.from('kapsalons').update({ naam: proNaam, locatie: proLocatie, stad: proStad, telefoon: proTel, email: proEmail, beschrijving: proBeschrijving, prijs_vanaf: proPrijsVanaf ? parseFloat(proPrijsVanaf) : null, type_salon: proType, website: proWebsite }).eq('id', salon.id)
     if (error) setError('Opslaan mislukt: ' + error.message)
     else { setSaved(true); setTimeout(() => setSaved(false), 2500) }
     setSaving(false)
@@ -102,9 +139,7 @@ export default function KapsalonDashboard() {
 
   const saveBeschikbaarheid = async () => {
     setSaving(true); setError('')
-    const { error } = await supabase.from('kapsalons').update({
-      beschikbaarheid: { open_dagen: openDagen, open_van: openVan, open_tot: openTot, pauze_van: pauzeVan, pauze_tot: pauzeTot, slot_duur: slotDuur }
-    }).eq('id', salon.id)
+    const { error } = await supabase.from('kapsalons').update({ beschikbaarheid: { open_dagen: openDagen, open_van: openVan, open_tot: openTot, pauze_van: pauzeVan, pauze_tot: pauzeTot, slot_duur: slotDuur } }).eq('id', salon.id)
     if (error) setError('Opslaan mislukt: ' + error.message)
     else { setSaved(true); setTimeout(() => setSaved(false), 2500) }
     setSaving(false)
@@ -166,8 +201,21 @@ export default function KapsalonDashboard() {
     .slot-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
     .section-lbl{font-size:13px;font-weight:700;color:#5A5A5A;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px}
     .vandaag-banner{background:#FFF3E0;border:2px solid #E8913A;border-radius:12px;padding:14px 20px;margin-bottom:20px;font-size:14px;font-weight:600;color:#5C3D2E}
-    @media(max-width:900px){.cards{grid-template-columns:repeat(2,1fr)}.boeking-row{grid-template-columns:70px 1fr 1fr;gap:8px}.boeking-prijs,.status-sel{display:none}}
-    @media(max-width:600px){.cards{grid-template-columns:1fr 1fr}.form-grid{grid-template-columns:1fr}.tijd-grid{grid-template-columns:1fr 1fr}}
+    .dag-datum-pick{display:flex;align-items:center;gap:12px;margin-bottom:24px;flex-wrap:wrap}
+    .dag-datum-pick input[type=date]{padding:10px 16px;border:2px solid #E8E8E8;border-radius:12px;font-family:Nunito,sans-serif;font-size:14px;outline:none;background:#FAFAFA;cursor:pointer}
+    .dag-datum-pick input[type=date]:focus{border-color:#4A7C3F}
+    .slots-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+    .slot-btn{padding:10px 6px;border-radius:10px;border:2px solid #E0E0E0;background:white;font-family:Nunito,sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;text-align:center;position:relative}
+    .slot-btn.vrij{background:#E8F0E4;border-color:#4A7C3F;color:#2D5A27}
+    .slot-btn.vrij:hover{background:#d0e8cc}
+    .slot-btn.geblokkeerd{background:#FFF0F0;border-color:#E84E4E;color:#E84E4E}
+    .slot-btn.geboekt{background:#F0F0F0;border-color:#CCCCCC;color:#8A8A8A;cursor:not-allowed;text-decoration:line-through}
+    .slot-status{font-size:10px;display:block;margin-top:2px;opacity:.8}
+    .dag-legenda{display:flex;gap:16px;margin-bottom:16px;flex-wrap:wrap}
+    .leg-item{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600}
+    .leg-dot{width:12px;height:12px;border-radius:50%}
+    @media(max-width:900px){.cards{grid-template-columns:repeat(2,1fr)}.boeking-row{grid-template-columns:70px 1fr 1fr;gap:8px}.boeking-prijs,.status-sel{display:none}.slots-grid{grid-template-columns:repeat(4,1fr)}}
+    @media(max-width:600px){.cards{grid-template-columns:1fr 1fr}.form-grid{grid-template-columns:1fr}.tijd-grid{grid-template-columns:1fr 1fr}.slots-grid{grid-template-columns:repeat(3,1fr)}}
   `
 
   if (loading) return (
@@ -184,26 +232,18 @@ export default function KapsalonDashboard() {
     <>
       <style dangerouslySetInnerHTML={{__html: CSS}} />
       <div className="dash">
-
-        {/* Header */}
         <div className="dash-header">
-          <div>
-            <h1>✂️ {salon.naam}</h1>
-            <p>📍 {salon.locatie || salon.stad} · Salon dashboard</p>
-          </div>
+          <div><h1>✂️ {salon.naam}</h1><p>📍 {salon.locatie || salon.stad} · Salon dashboard</p></div>
           <div style={{display:'flex',gap:10,alignItems:'center',flexWrap:'wrap'}}>
-            <span className="status-badge" style={{background: salon.geverifieerd ? '#2A9D8F' : '#E8913A'}}>
-              {salon.geverifieerd ? '✓ Geverifieerd' : '⏳ In behandeling'}
-            </span>
+            <span className="status-badge" style={{background: salon.geverifieerd ? '#2A9D8F' : '#E8913A'}}>{salon.geverifieerd ? '✓ Geverifieerd' : '⏳ In behandeling'}</span>
             <a href="/kapsalons" style={{color:'white',fontSize:13,opacity:.8,textDecoration:'none'}}>← Terug naar overzicht</a>
           </div>
         </div>
 
-        {/* Tabs */}
         <div className="tabs">
-          {(['overzicht','afspraken','profiel','beschikbaarheid'] as const).map(t => (
+          {(['overzicht','afspraken','dagbeheer','profiel','beschikbaarheid'] as const).map(t => (
             <button key={t} className={`tab ${tab===t?'active':''}`} onClick={() => setTab(t)}>
-              {t==='overzicht'?'📊 Overzicht':t==='afspraken'?'📅 Afspraken':t==='profiel'?'✏️ Profiel':'🕐 Beschikbaarheid'}
+              {t==='overzicht'?'📊 Overzicht':t==='afspraken'?'📅 Afspraken':t==='dagbeheer'?'🗓️ Dagbeheer':t==='profiel'?'✏️ Profiel':'🕐 Beschikbaarheid'}
             </button>
           ))}
         </div>
@@ -217,18 +257,12 @@ export default function KapsalonDashboard() {
               <div className="card"><div className="card-icon">✅</div><div className="card-val">{boekingen.filter(b=>b.status==='voltooid').length}</div><div className="card-lbl">Voltooide afspraken</div></div>
               <div className="card"><div className="card-icon">💶</div><div className="card-val">€{boekingen.filter(b=>b.status==='voltooid').reduce((s,b)=>s+Number(b.dienst_prijs||0),0).toFixed(0)}</div><div className="card-lbl">Totale omzet</div></div>
             </div>
-
             {vandaagBoekingen.length > 0 && (
-              <div className="vandaag-banner">
-                🗓️ <strong>Vandaag:</strong> {vandaagBoekingen.map(b=>`${b.tijdslot} — ${b.hond_naam} (${b.eigenaar_naam})`).join(' · ')}
-              </div>
+              <div className="vandaag-banner">🗓️ <strong>Vandaag:</strong> {vandaagBoekingen.map(b=>`${b.tijdslot} — ${b.hond_naam} (${b.eigenaar_naam})`).join(' · ')}</div>
             )}
-
             <div className="panel">
               <h3>Eerstvolgende afspraken</h3>
-              {aankomend.length === 0 ? (
-                <div className="empty">📅 Geen aankomende afspraken</div>
-              ) : aankomend.slice(0,5).map(b => {
+              {aankomend.length === 0 ? <div className="empty">📅 Geen aankomende afspraken</div> : aankomend.slice(0,5).map(b => {
                 const d = new Date(b.datum + 'T12:00:00')
                 return (
                   <div key={b.id} className="boeking-row">
@@ -252,14 +286,10 @@ export default function KapsalonDashboard() {
             <h3>Alle Afspraken</h3>
             <div className="filter-bar">
               {['alle',...Object.keys(STATUS_LABELS)].map(s=>(
-                <button key={s} className={`filter-btn ${filterStatus===s?'active':''}`} onClick={()=>setFilterStatus(s)}>
-                  {s==='alle'?'Alle':STATUS_LABELS[s]}
-                </button>
+                <button key={s} className={`filter-btn ${filterStatus===s?'active':''}`} onClick={()=>setFilterStatus(s)}>{s==='alle'?'Alle':STATUS_LABELS[s]}</button>
               ))}
             </div>
-            {filteredBoekingen.length === 0 ? (
-              <div className="empty">📅 Geen afspraken gevonden</div>
-            ) : filteredBoekingen.map(b => {
+            {filteredBoekingen.length === 0 ? <div className="empty">📅 Geen afspraken gevonden</div> : filteredBoekingen.map(b => {
               const d = new Date(b.datum + 'T12:00:00')
               return (
                 <div key={b.id} className="boeking-row">
@@ -276,6 +306,46 @@ export default function KapsalonDashboard() {
           </div>
         )}
 
+        {/* DAGBEHEER */}
+        {tab==='dagbeheer' && (
+          <div className="panel">
+            <h3>🗓️ Dagbeheer — slots blokkeren</h3>
+            <p style={{fontSize:14,color:'#8A8A8A',marginBottom:20}}>Klik op een slot om het te blokkeren of vrijgeven. Gebruik dit voor offline boekingen of pauzes.</p>
+            <div className="dag-datum-pick">
+              <span style={{fontWeight:700,fontSize:14}}>Datum:</span>
+              <input type="date" value={dagDatum} min={new Date().toISOString().split('T')[0]}
+                onChange={e => setDagDatum(e.target.value)} />
+              {dagLoading && <span style={{fontSize:13,color:'#8A8A8A'}}>Laden...</span>}
+            </div>
+            <div className="dag-legenda">
+              <div className="leg-item"><div className="leg-dot" style={{background:'#4A7C3F'}}/> Vrij beschikbaar</div>
+              <div className="leg-item"><div className="leg-dot" style={{background:'#E84E4E'}}/> Geblokkeerd (klik om vrij te geven)</div>
+              <div className="leg-item"><div className="leg-dot" style={{background:'#CCCCCC'}}/> Online geboekt</div>
+            </div>
+            {dagSlots.length === 0 ? (
+              <div className="empty">⚙️ Stel eerst openingsuren in via de Beschikbaarheid tab</div>
+            ) : (
+              <div className="slots-grid">
+                {dagSlots.map(slot => {
+                  const isGeboekt = boektDag.includes(slot)
+                  const isGeblokkeerd = geblokkeerd.includes(slot)
+                  let cls = 'slot-btn '
+                  let label = '✓ Vrij'
+                  if (isGeboekt) { cls += 'geboekt'; label = '📅 Geboekt' }
+                  else if (isGeblokkeerd) { cls += 'geblokkeerd'; label = '✕ Geblokkeerd' }
+                  else { cls += 'vrij' }
+                  return (
+                    <button key={slot} className={cls} onClick={() => !isGeboekt && toggleSlot(slot)} title={isGeboekt ? 'Online boeking — kan niet gewijzigd worden' : ''}>
+                      {slot}
+                      <span className="slot-status">{label}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* PROFIEL */}
         {tab==='profiel' && (
           <div className="panel">
@@ -284,11 +354,8 @@ export default function KapsalonDashboard() {
               <div className="fg"><label>Salonnaam *</label><input value={proNaam} onChange={e=>setProNaam(e.target.value)} placeholder="Happy Paws Grooming"/></div>
               <div className="fg"><label>Type salon</label>
                 <select value={proType} onChange={e=>setProType(e.target.value)}>
-                  <option>Trimsalon (alle rassen)</option>
-                  <option>Gespecialiseerd (kleine rassen)</option>
-                  <option>Gespecialiseerd (grote rassen)</option>
-                  <option>Mobiele trimmer</option>
-                  <option>Premium / Spa salon</option>
+                  <option>Trimsalon (alle rassen)</option><option>Gespecialiseerd (kleine rassen)</option>
+                  <option>Gespecialiseerd (grote rassen)</option><option>Mobiele trimmer</option><option>Premium / Spa salon</option>
                 </select>
               </div>
               <div className="fg"><label>Locatie (stad + provincie)</label><input value={proLocatie} onChange={e=>setProLocatie(e.target.value)} placeholder="Bree, Limburg"/></div>
@@ -297,9 +364,9 @@ export default function KapsalonDashboard() {
               <div className="fg"><label>Telefoon</label><input type="tel" value={proTel} onChange={e=>setProTel(e.target.value)} placeholder="+32 ..."/></div>
               <div className="fg"><label>Website</label><input value={proWebsite} onChange={e=>setProWebsite(e.target.value)} placeholder="https://jouwsalon.be"/></div>
               <div className="fg"><label>Prijs vanaf (€)</label><input type="number" value={proPrijsVanaf} onChange={e=>setProPrijsVanaf(e.target.value)} placeholder="35"/></div>
-              <div className="fg full"><label>Beschrijving</label><textarea value={proBeschrijving} onChange={e=>setProBeschrijving(e.target.value)} placeholder="Vertel klanten over je salon, jouw ervaring, gespecialiseerde rassen..."/></div>
+              <div className="fg full"><label>Beschrijving</label><textarea value={proBeschrijving} onChange={e=>setProBeschrijving(e.target.value)} placeholder="Vertel klanten over je salon..."/></div>
             </div>
-            <button className="save-btn" onClick={saveProfiel} disabled={saving}>{saving?'Opslaan...':`💾 Profiel opslaan`}</button>
+            <button className="save-btn" onClick={saveProfiel} disabled={saving}>{saving?'Opslaan...':'💾 Profiel opslaan'}</button>
             {saved && <div className="saved-msg">✅ Opgeslagen!</div>}
             {error && <div className="error-msg">⚠️ {error}</div>}
           </div>
@@ -322,24 +389,25 @@ export default function KapsalonDashboard() {
               <div className="fg"><label>Pauze van</label><input type="time" value={pauzeVan} onChange={e=>setPauzeVan(e.target.value)}/></div>
               <div className="fg"><label>Pauze tot</label><input type="time" value={pauzeTot} onChange={e=>setPauzeTot(e.target.value)}/></div>
             </div>
-            <div className="section-lbl">Afspraakinstellingen</div>
+            <div className="section-lbl">Slotduur online boekingen</div>
             <div className="slot-grid">
               <div className="fg"><label>Duur per afspraak</label>
                 <select value={slotDuur} onChange={e=>setSlotDuur(e.target.value)}>
-                  <option value="30">30 minuten</option>
-                  <option value="45">45 minuten</option>
-                  <option value="60">60 minuten</option>
-                  <option value="90">90 minuten</option>
-                  <option value="120">2 uur</option>
+                  <option value="10">10 minuten</option><option value="15">15 minuten</option>
+                  <option value="20">20 minuten</option><option value="30">30 minuten</option>
+                  <option value="45">45 minuten</option><option value="60">60 minuten</option>
+                  <option value="90">90 minuten</option><option value="120">2 uur</option>
                 </select>
               </div>
             </div>
-            <button className="save-btn" onClick={saveBeschikbaarheid} disabled={saving}>{saving?'Opslaan...':`💾 Beschikbaarheid opslaan`}</button>
+            <div style={{background:'#E8F0E4',borderRadius:12,padding:'12px 16px',marginTop:16,fontSize:13,color:'#2D5A27',fontWeight:600}}>
+              💡 Preview: {dagSlots.length} slots beschikbaar per dag ({openVan}–{openTot}, pauze {pauzeVan}–{pauzeTot})
+            </div>
+            <button className="save-btn" onClick={saveBeschikbaarheid} disabled={saving}>{saving?'Opslaan...':'💾 Beschikbaarheid opslaan'}</button>
             {saved && <div className="saved-msg">✅ Opgeslagen!</div>}
             {error && <div className="error-msg">⚠️ {error}</div>}
           </div>
         )}
-
       </div>
     </>
   )
