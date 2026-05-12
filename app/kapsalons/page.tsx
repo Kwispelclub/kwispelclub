@@ -45,6 +45,7 @@ export default function KapsalonsPage() {
   const [regLoading, setRegLoading] = useState(false)
   const [regDone, setRegDone] = useState(false)
   const [regError, setRegError] = useState('')
+  const [bookingLoading, setBookingLoading] = useState(false)
   const obsRef = useRef<IntersectionObserver|null>(null)
 
   useEffect(() => {
@@ -114,6 +115,46 @@ export default function KapsalonsPage() {
   const closeModal = () => { setModal(null); document.body.style.overflow = '' }
 
   const canNext = step===1?!!selSvc:step===2?!!(selDate&&selTime):step===3?!!(petName&&petBreed&&ownerName&&ownerPhone&&ownerEmail):true
+
+  const handleConfirmBooking = async () => {
+    if (!modal || !selSvc || !selDate) return
+    setBookingLoading(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const datumStr = `${selDate.getFullYear()}-${String(selDate.getMonth()+1).padStart(2,'0')}-${String(selDate.getDate()).padStart(2,'0')}`
+      const datumLeesbaar = formatDate(selDate)
+      await supabase.from('boekingen').insert({
+        salon_id: modal.id, owner_id: session?.user?.id || null,
+        dienst: selSvc.name, dienst_prijs: selSvc.price, dienst_duur: selSvc.dur,
+        datum: datumStr, tijdslot: selTime,
+        hond_naam: petName, hond_ras: petBreed,
+        eigenaar_naam: ownerName, eigenaar_telefoon: ownerPhone, eigenaar_email: ownerEmail,
+        opmerkingen: notes || null, status: 'bevestigd',
+      })
+      await fetch('/api/send-email', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'boeking_bevestiging', to: ownerEmail, data: {
+          ownerName, petName, petBreed, salonNaam: modal.naam,
+          salonLocatie: modal.locatie || modal.stad || '',
+          dienst: selSvc.name, datum: datumLeesbaar, tijdslot: selTime, prijs: selSvc.price,
+        }})
+      })
+      if (modal.email) {
+        await fetch('/api/send-email', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'boeking_salon_notificatie', to: modal.email, data: {
+            salonNaam: modal.naam, ownerName, petName, petBreed,
+            dienst: selSvc.name, datum: datumLeesbaar, tijdslot: selTime,
+          }})
+        })
+      }
+      setStep(5)
+    } catch (err) {
+      console.error('Boeking fout:', err)
+      setStep(5)
+    }
+    setBookingLoading(false)
+  }
 
   // ✅ Kalender berekeningen — alleen als calDate en today beschikbaar zijn
   const firstDay = calDate ? new Date(calDate.getFullYear(), calDate.getMonth(), 1) : null
@@ -425,8 +466,8 @@ export default function KapsalonsPage() {
               {step<=4&&(
                 <div className="modal-footer">
                   {step>1?<button className="btn-back" onClick={()=>setStep(s=>s-1)}>← Vorige</button>:<span/>}
-                  <button className={`btn-next ${step===4?'orange':''}`} disabled={!canNext} onClick={()=>{if(step===4)setStep(5);else setStep(s=>s+1)}}>
-                    {step===4?'✓ Bevestig Afspraak':'Volgende →'}
+                  <button className={`btn-next ${step===4?'orange':''}`} disabled={!canNext||bookingLoading} onClick={()=>{if(step===4)handleConfirmBooking();else setStep(s=>s+1)}}>
+                    {step===4?(bookingLoading?'Bezig...':'✓ Bevestig Afspraak'):'Volgende →'}
                   </button>
                 </div>
               )}
