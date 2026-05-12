@@ -3,18 +3,28 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { createClient } from '@/lib/supabase'
 
-
 const REGIONS = [['all','Alle'],['limburg','Limburg'],['antwerpen','Antwerpen'],['brabant','Brabant'],['oost-vl','Oost-Vlaanderen'],['nl','Nederland']]
 const MONTHS = ['Januari','Februari','Maart','April','Mei','Juni','Juli','Augustus','September','Oktober','November','December']
 const DAYS = ['Zondag','Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Zaterdag']
 const SERVICES = [
-  { name:'Volledig Trimmen', desc:'Wassen, knippen, drogen & stylen', price:45, dur:'60 min', icon:'✂️' },
-  { name:'Wassen & Drogen', desc:'Professioneel bad & föhnen', price:25, dur:'30 min', icon:'🛁' },
-  { name:'Nagels Knippen', desc:'Veilig nagelverzorging', price:12, dur:'15 min', icon:'💅' },
-  { name:'Puppy Eerste Beurt', desc:'Zachte kennismaking met trimmen', price:35, dur:'45 min', icon:'🐶' },
+  { name:'Volledig Trimmen', desc:'Wassen, knippen, drogen & stylen', price:45, dur:'60 min', durMin:60, icon:'✂️' },
+  { name:'Wassen & Drogen', desc:'Professioneel bad & föhnen', price:25, dur:'30 min', durMin:30, icon:'🛁' },
+  { name:'Nagels Knippen', desc:'Veilig nagelverzorging', price:12, dur:'15 min', durMin:15, icon:'💅' },
+  { name:'Puppy Eerste Beurt', desc:'Zachte kennismaking met trimmen', price:35, dur:'45 min', durMin:45, icon:'🐶' },
 ]
 
-// NA:
+// Berekent alle bezette 10-min blokken voor een boeking
+function getOccupiedSlots(startSlot: string, durMin: number): string[] {
+  const [h, m] = startSlot.split(':').map(Number)
+  const start = h * 60 + m
+  const slots: string[] = []
+  for (let i = 0; i < durMin; i += 10) {
+    const t = start + i
+    slots.push(`${String(Math.floor(t/60)).padStart(2,'0')}:${String(t%60).padStart(2,'0')}`)
+  }
+  return slots
+}
+
 export default function KapsalonsPage() {
   const supabase = useMemo(() => createClient(), [])
   const [region, setRegion] = useState('all')
@@ -25,7 +35,6 @@ export default function KapsalonsPage() {
   const [modal, setModal] = useState<any>(null)
   const [step, setStep] = useState(1)
   const [selSvc, setSelSvc] = useState<typeof SERVICES[0]|null>(null)
-  // ✅ FIX: null ipv new Date() om hydration error te vermijden
   const [calDate, setCalDate] = useState<Date|null>(null)
   const [today, setToday] = useState<Date|null>(null)
   const [selDate, setSelDate] = useState<Date|null>(null)
@@ -45,6 +54,8 @@ export default function KapsalonsPage() {
   const [regLoading, setRegLoading] = useState(false)
   const [regDone, setRegDone] = useState(false)
   const [regError, setRegError] = useState('')
+  const [bookingLoading, setBookingLoading] = useState(false)
+  const [bezetteSlotsPerDag, setBezetteSlotsPerDag] = useState<Record<string, string[]>>({})
   const obsRef = useRef<IntersectionObserver|null>(null)
 
   useEffect(() => {
@@ -52,15 +63,15 @@ export default function KapsalonsPage() {
     t.setHours(0,0,0,0)
     setToday(t)
     setCalDate(new Date(t))
-
+    setLoadingSalons(true)
     supabase.from('kapsalons')
       .select('*')
       .eq('actief', true)
       .order('created_at', { ascending: false })
       .then(({ data }) => {
         setSalons(data || [])
+        setLoadingSalons(false)
       })
-
     supabase.auth.getSession().then(({ data: { session } }) => {
       const user = session?.user
       if (user) {
@@ -69,14 +80,13 @@ export default function KapsalonsPage() {
         if (user.user_metadata?.stad) setRegStad(user.user_metadata.stad)
       }
     })
-
     obsRef.current = new IntersectionObserver(entries => {
       entries.forEach((e,i) => { if(e.isIntersecting){ setTimeout(()=>e.target.classList.add('visible'),i*60); obsRef.current?.unobserve(e.target) } })
     }, {threshold:0.08})
     document.querySelectorAll('.fade-up').forEach(el => obsRef.current?.observe(el))
   }, [])
 
-    const handleRegister = async () => {
+  const handleRegister = async () => {
     if (!regNaam || !regLoc || !regEmail) { setRegError('Vul alle verplichte velden in'); return }
     setRegLoading(true); setRegError('')
     const { data: { session } } = await supabase.auth.getSession()
@@ -104,28 +114,119 @@ export default function KapsalonsPage() {
     return matchRegion && matchSearch
   })
 
-  const openModal = (salon: any) => {
+  const openModal = async (salon: any) => {
     setModal(salon); setStep(1); setSelSvc(null); setSelDate(null); setSelTime('')
     setPetName(''); setPetBreed(''); setOwnerName(''); setOwnerPhone(''); setOwnerEmail(''); setNotes('')
+    setBezetteSlotsPerDag({})
     document.body.style.overflow = 'hidden'
+    const [{ data: boekData }, { data: blokkData }] = await Promise.all([
+      supabase.from('boekingen').select('datum, tijdslot, dienst_duur').eq('salon_id', salon.id).in('status', ['bevestigd']),
+      supabase.from('geblokkeerde_slots').select('datum, tijdslot').eq('salon_id', salon.id)
+    ])
+    const slots: Record<string, string[]> = {}
+    ;(boekData || []).forEach((b: any) => {
+      const durMin = parseInt((b.dienst_duur || '60 min').replace(' min','')) || 60
+      getOccupiedSlots(b.tijdslot, durMin).forEach(s => {
+        if (!slots[b.datum]) slots[b.datum] = []
+        if (!slots[b.datum].includes(s)) slots[b.datum].push(s)
+      })
+    })
+    ;(blokkData || []).forEach((b: any) => {
+      if (!slots[b.datum]) slots[b.datum] = []
+      if (!slots[b.datum].includes(b.tijdslot)) slots[b.datum].push(b.tijdslot)
+    })
+    setBezetteSlotsPerDag(slots)
   }
   const closeModal = () => { setModal(null); document.body.style.overflow = '' }
 
   const canNext = step===1?!!selSvc:step===2?!!(selDate&&selTime):step===3?!!(petName&&petBreed&&ownerName&&ownerPhone&&ownerEmail):true
 
-  // ✅ Kalender berekeningen — alleen als calDate en today beschikbaar zijn
+  const handleConfirmBooking = async () => {
+    if (!modal || !selSvc || !selDate) return
+    setBookingLoading(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const datumStr = `${selDate.getFullYear()}-${String(selDate.getMonth()+1).padStart(2,'0')}-${String(selDate.getDate()).padStart(2,'0')}`
+      const datumLeesbaar = formatDate(selDate)
+      await supabase.from('boekingen').insert({
+        salon_id: modal.id, owner_id: session?.user?.id || null,
+        dienst: selSvc.name, dienst_prijs: selSvc.price, dienst_duur: selSvc.dur,
+        datum: datumStr, tijdslot: selTime,
+        hond_naam: petName, hond_ras: petBreed,
+        eigenaar_naam: ownerName, eigenaar_telefoon: ownerPhone, eigenaar_email: ownerEmail,
+        opmerkingen: notes || null, status: 'bevestigd',
+      })
+      const bezet = getOccupiedSlots(selTime, selSvc.durMin)
+      setBezetteSlotsPerDag(prev => {
+        const n = {...prev}
+        if (!n[datumStr]) n[datumStr] = []
+        bezet.forEach(s => { if (!n[datumStr].includes(s)) n[datumStr].push(s) })
+        return n
+      })
+      await fetch('/api/send-email', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'boeking_bevestiging', to: ownerEmail, data: {
+          ownerName, petName, petBreed, salonNaam: modal.naam,
+          salonLocatie: modal.locatie || modal.stad || '',
+          dienst: selSvc.name, datum: datumLeesbaar, tijdslot: selTime, prijs: selSvc.price,
+        }})
+      })
+      if (modal.email) {
+        await fetch('/api/send-email', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'boeking_salon_notificatie', to: modal.email, data: {
+            salonNaam: modal.naam, ownerName, petName, petBreed,
+            dienst: selSvc.name, datum: datumLeesbaar, tijdslot: selTime,
+          }})
+        })
+      }
+      setStep(5)
+    } catch (err) {
+      console.error('Boeking fout:', err)
+      setStep(5)
+    }
+    setBookingLoading(false)
+  }
+
   const firstDay = calDate ? new Date(calDate.getFullYear(), calDate.getMonth(), 1) : null
   let startDay = firstDay ? firstDay.getDay()-1 : 0; if(startDay<0) startDay=6
   const daysInMonth = calDate ? new Date(calDate.getFullYear(), calDate.getMonth()+1, 0).getDate() : 0
-  const isTaken = (d:Date, slot:string) => { const seed=d.getDate()*7+d.getMonth()*31; const idx=parseInt(slot.replace(':',''))%17; return (seed*idx*13)%7===0 }
-  const morningSlots = ['09:00','09:30','10:00','10:30','11:00','11:30']
-  const afternoonSlots = selDate?.getDay()===6?['12:00','12:30','13:00','13:30']:['12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30']
-  const formatDate = (d:Date) => `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`
 
+  const isTaken = (d:Date, slot:string) => {
+    const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+    const bezet = bezetteSlotsPerDag[ds] || []
+    return bezet.includes(slot)
+  }
+
+  // Genereer slots op basis van salon beschikbaarheid of defaults
+  const salonB = modal?.beschikbaarheid
+  const sVan = salonB?.open_van || '09:00'
+  const sTot = salonB?.open_tot || '17:00'
+  const sPVan = salonB?.pauze_van || '12:00'
+  const sPTot = salonB?.pauze_tot || '13:00'
+  const sDuur = selSvc?.durMin || parseInt(salonB?.slot_duur || '30')
+  const allSlots = (() => {
+    const slots: string[] = []
+    const [vh,vm] = sVan.split(':').map(Number)
+    const [th,tm] = sTot.split(':').map(Number)
+    const [ph,pm] = sPVan.split(':').map(Number)
+    const [ph2,pm2] = sPTot.split(':').map(Number)
+    let cur = vh*60+vm
+    const eind = th*60+tm
+    const pS = ph*60+pm, pE = ph2*60+pm2
+    while (cur + sDuur <= eind) {
+      if (cur >= pS && cur < pE) { cur += sDuur; continue }
+      slots.push(`${String(Math.floor(cur/60)).padStart(2,'0')}:${String(cur%60).padStart(2,'0')}`)
+      cur += sDuur
+    }
+    return slots
+  })()
+  const morningSlots = allSlots.filter(s => s < sPVan)
+  const afternoonSlots = allSlots.filter(s => s >= sPTot)
+  const formatDate = (d:Date) => `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`
   const CSS = `
     :root{--green-dark:#2D5A27;--green-main:#4A7C3F;--green-light:#6B9E5E;--green-pale:#E8F0E4;--orange-main:#E8913A;--orange-pale:#FFF3E0;--cream:#FFF9F0;--cream-dark:#F5EDE0;--brown:#5C3D2E;--text-dark:#2C2C2C;--text-mid:#5A5A5A;--text-light:#8A8A8A;--white:#FFFFFF;--red:#E84E4E}
     *{margin:0;padding:0;box-sizing:border-box}body{font-family:Nunito,sans-serif;background:var(--cream);color:var(--text-dark);overflow-x:hidden;-webkit-font-smoothing:antialiased}h1,h2,h3,h4{font-family:Fredoka,sans-serif}
-    .beta-bar{background:linear-gradient(90deg,var(--orange-main),#D4812E,var(--orange-main));background-size:200%;color:white;text-align:center;padding:10px 16px;font-size:13px;font-weight:600;animation:shimmer 3s ease infinite}@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
     .breadcrumb{max-width:1320px;margin:0 auto;padding:20px clamp(16px,4vw,48px) 0;font-size:14px;color:var(--text-light)}.breadcrumb a{color:var(--green-main);text-decoration:none;font-weight:600}
     .page-hero{max-width:1320px;margin:0 auto;padding:24px clamp(16px,4vw,48px)}.hero-card{background:linear-gradient(135deg,var(--brown),#8B6F5E,var(--orange-main));border-radius:36px;overflow:hidden;position:relative;display:grid;grid-template-columns:1fr 1fr;min-height:400px}
     .hero-content{padding:56px;display:flex;flex-direction:column;justify-content:center;position:relative;z-index:2}.hero-tag{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.15);padding:6px 16px;border-radius:50px;color:rgba(255,255,255,.9);font-size:12px;font-weight:700;margin-bottom:20px;width:fit-content}.hero-content h1{font-size:clamp(32px,4vw,48px);color:white;line-height:1.1;margin-bottom:16px}.accent{color:#F5A855}.hero-content p{color:rgba(255,255,255,.82);font-size:16px;line-height:1.65;margin-bottom:28px;max-width:420px}.hero-img{position:relative;overflow:hidden}.hero-img img{width:100%;height:100%;object-fit:cover;mask-image:linear-gradient(to left,rgba(0,0,0,1) 50%,transparent 100%);-webkit-mask-image:linear-gradient(to left,rgba(0,0,0,1) 50%,transparent 100%)}
@@ -229,7 +330,7 @@ export default function KapsalonsPage() {
         ) : filtered.length === 0 ? (
           <div className="empty-state"><div className="ei">✂️</div><p>Geen salons gevonden. Pas je filter aan of <a href="#register" style={{color:'var(--green-main)',fontWeight:700}}>registreer jouw salon</a>.</p></div>
         ) : (
-          <div className="salons-grid fade-up">
+          <div className="salons-grid">
             {filtered.map(s => (
               <div key={s.id} className="salon-card">
                 <div className="salon-cover">
@@ -372,10 +473,9 @@ export default function KapsalonsPage() {
                   </div>
                   {selDate?(
                     <>
-                      <div className="slots-lbl">🌅 Ochtend</div>
-                      <div className="time-slots">{morningSlots.map(s=>{const taken=isTaken(selDate,s);return <div key={s} className={`time-slot ${taken?'taken':selTime===s?'selected':''}`} onClick={()=>!taken&&setSelTime(s)}>{s}</div>})}</div>
-                      <div className="slots-lbl">☀️ Middag</div>
-                      <div className="time-slots">{afternoonSlots.map(s=>{const taken=isTaken(selDate,s);return <div key={s} className={`time-slot ${taken?'taken':selTime===s?'selected':''}`} onClick={()=>!taken&&setSelTime(s)}>{s}</div>})}</div>
+                      {morningSlots.length>0&&<><div className="slots-lbl">🌅 Ochtend</div><div className="time-slots">{morningSlots.map(s=>{const taken=isTaken(selDate,s);return <div key={s} className={`time-slot ${taken?'taken':selTime===s?'selected':''}`} onClick={()=>!taken&&setSelTime(s)}>{s}</div>})}</div></>}
+                      {afternoonSlots.length>0&&<><div className="slots-lbl">☀️ Middag</div><div className="time-slots">{afternoonSlots.map(s=>{const taken=isTaken(selDate,s);return <div key={s} className={`time-slot ${taken?'taken':selTime===s?'selected':''}`} onClick={()=>!taken&&setSelTime(s)}>{s}</div>})}</div></>}
+                      {morningSlots.length===0&&afternoonSlots.length===0&&<div className="no-slots">Geen beschikbare slots voor dit salon</div>}
                     </>
                   ):<div className="no-slots">👆 Kies eerst een datum hierboven</div>}
                 </>
@@ -423,8 +523,8 @@ export default function KapsalonsPage() {
               {step<=4&&(
                 <div className="modal-footer">
                   {step>1?<button className="btn-back" onClick={()=>setStep(s=>s-1)}>← Vorige</button>:<span/>}
-                  <button className={`btn-next ${step===4?'orange':''}`} disabled={!canNext} onClick={()=>{if(step===4)setStep(5);else setStep(s=>s+1)}}>
-                    {step===4?'✓ Bevestig Afspraak':'Volgende →'}
+                  <button className={`btn-next ${step===4?'orange':''}`} disabled={!canNext||bookingLoading} onClick={()=>{if(step===4)handleConfirmBooking();else setStep(s=>s+1)}}>
+                    {step===4?(bookingLoading?'Bezig...':'✓ Bevestig Afspraak'):'Volgende →'}
                   </button>
                 </div>
               )}
