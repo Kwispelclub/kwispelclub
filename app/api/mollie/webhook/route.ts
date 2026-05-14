@@ -122,3 +122,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
+
+// Mollie stuurt soms een GET request om de webhook te valideren
+export async function GET() {
+  return NextResponse.json({ ok: true, service: 'kwispelclub-webhook' })
+}
