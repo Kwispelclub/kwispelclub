@@ -49,6 +49,20 @@ function bestellingBevestigingEmail(data: { firstName: string; orderNummer: stri
   return { subject: `📦 Bestelling #${data.orderNummer} ontvangen — Kwispelclub`, html: baseTemplate(content) }
 }
 
+function nieuweBestellingVerkoperEmail(data: { shopNaam: string; koperNaam: string; items: any[]; leveradres: any; orderId: string }) {
+  const itemRows: [string, string][] = (data.items || []).map((i: any) => {
+    const naam = i.naam || i.product_name || '—'
+    const aantal = i.aantal || i.quantity || 1
+    const prijs = i.prijs || i.unit_price || 0
+    return [`${aantal}x ${naam}`, `€${(aantal * prijs).toFixed(2)}`]
+  })
+  const adres = data.leveradres
+    ? [data.leveradres.street, data.leveradres.postcode, data.leveradres.city, data.leveradres.country].filter(Boolean).join(', ')
+    : '—'
+  const content = `<div style="text-align:center;margin-bottom:28px;"><div style="font-size:56px;margin-bottom:8px;">🛍️</div>${h1(`Nieuwe bestelling bij ${data.shopNaam}!`)}${p(`<strong>${data.koperNaam}</strong> heeft een bestelling geplaatst in jouw shop.`)}</div>${infoBox([['Klant', data.koperNaam], ['Leveradres', adres], ['Order ID', '#' + data.orderId.slice(0, 8)]])}<p style="font-size:14px;font-weight:700;color:#2D5A27;margin:20px 0 8px;">Bestelde producten:</p>${infoBox(itemRows)}<div style="background:#E8F0E4;border-radius:12px;padding:16px 20px;margin:20px 0;font-size:13px;color:#2D5A27;font-weight:600;">📦 Verwerk en verzend de bestelling zo snel mogelijk!</div><div style="text-align:center;">${btn('Bekijk bestellingen →', `${APP_URL}/verkoper/dashboard`)}</div>`
+  return { subject: `🛍️ Nieuwe bestelling bij ${data.shopNaam}!`, html: baseTemplate(content) }
+}
+
 function wachtwoordResetEmail(firstName: string, resetUrl: string) {
   const content = `<div style="text-align:center;margin-bottom:28px;"><div style="font-size:56px;margin-bottom:8px;">🔑</div>${h1('Wachtwoord resetten')}${p(`Hoi ${firstName}, we hebben een verzoek ontvangen om je wachtwoord te resetten.`)}</div>${p('Klik op de knop hieronder om een nieuw wachtwoord in te stellen. Deze link is 1 uur geldig.')}<div style="text-align:center;">${btn('Nieuw wachtwoord instellen →', resetUrl)}</div><div style="background:#FFF0F0;border-radius:12px;padding:16px 20px;margin:20px 0;font-size:13px;color:#E84E4E;font-weight:600;">⚠️ Heb je dit niet aangevraagd? Dan kun je deze e-mail negeren. Je wachtwoord blijft ongewijzigd.</div>`
   return { subject: '🔑 Wachtwoord resetten — Kwispelclub', html: baseTemplate(content) }
@@ -103,6 +117,9 @@ export async function POST(request: NextRequest) {
         break
       case 'bestelling_bevestiging':
         emailContent = bestellingBevestigingEmail(data)
+        break
+      case 'nieuwe_bestelling_verkoper':
+        emailContent = nieuweBestellingVerkoperEmail(data)
         break
       case 'wachtwoord_reset':
         emailContent = wachtwoordResetEmail(data.firstName, data.resetUrl)
