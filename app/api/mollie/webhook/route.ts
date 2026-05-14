@@ -1,99 +1,90 @@
 import { NextRequest, NextResponse } from 'next/server'
-import createMollieClient from '@mollie/api-client'
 import { createClient } from '@supabase/supabase-js'
+import createMollieClient from '@mollie/api-client'
 
-function getMollieClient() {
-  const mode = process.env.MOLLIE_MODE || 'test'
-  const apiKey = mode === 'live'
-    ? process.env.MOLLIE_LIVE_API_KEY!
-    : process.env.MOLLIE_TEST_API_KEY!
-  return createMollieClient({ apiKey })
-}
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
-function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-}
-
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const body = await request.formData()
+    const body = await req.formData()
     const paymentId = body.get('id') as string
+    if (!paymentId) return NextResponse.json({ error: 'No payment ID' }, { status: 400 })
 
-    if (!paymentId) {
-      return NextResponse.json({ error: 'Geen payment ID' }, { status: 400 })
-    }
-
-    const mollie = getMollieClient()
+    const mollieKey = process.env.MOLLIE_LIVE_API_KEY || process.env.MOLLIE_TEST_API_KEY || ''
+    const mollie = createMollieClient({ apiKey: mollieKey })
     const payment = await mollie.payments.get(paymentId)
-    const supabase = getSupabase()
 
-    const { orderId, orderNummer, customerEmail, customerName, items } = payment.metadata as any
-
-    console.log(`Mollie webhook: ${paymentId} → ${payment.status}`)
-
-    switch (payment.status) {
-      case 'paid': {
-        // 1. Update order status in Supabase
-        // ✅ was 'bestellingen' → nu 'orders' (schema tabelnaam)
-        await supabase
-          .from('orders')
-          .update({ status: 'betaald', updated_at: new Date().toISOString() })
-          .eq('id', orderId)
-
-        // 2. Stuur bevestigingsmail
-        const parsedItems = JSON.parse(items || '[]')
-        const totaal = parseFloat(payment.amount.value)
-
-        // ✅ APP_URL via NEXT_PUBLIC_SITE_URL (consistent met rest van project)
-        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://kwispelclub.be'
-
-        await fetch(`${siteUrl}/api/send-email`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'bestelling_bevestiging',
-            to: customerEmail,
-            data: {
-              firstName: customerName?.split(' ')[0] || 'Baasje',
-              orderNummer: orderNummer || orderId?.slice(0, 8),
-              items: parsedItems,
-              totaal,
-            }
-          })
-        }).catch(err => console.error('Email fout na betaling:', err))
-        break
-      }
-
-      case 'failed':
-      case 'expired':
-      case 'canceled': {
-        // ✅ was 'bestellingen' → nu 'orders'
-        // ✅ status 'geannuleerd' matcht het schema CHECK constraint
-        await supabase
-          .from('orders')
-          .update({ status: 'geannuleerd', updated_at: new Date().toISOString() })
-          .eq('id', orderId)
-        break
-      }
-
-      case 'pending':
-      case 'authorized': {
-        // ✅ 'pending' matcht het schema (geen 'in_behandeling')
-        await supabase
-          .from('orders')
-          .update({ status: 'pending', updated_at: new Date().toISOString() })
-          .eq('id', orderId)
-        break
-      }
+    if (payment.status !== 'paid') {
+      return NextResponse.json({ ok: true })
     }
 
-    return NextResponse.json({ received: true })
+    const orderId = payment.metadata?.orderId
+    if (!orderId) return NextResponse.json({ ok: true })
+
+    // Update order status
+    const { data: order } = await supabase
+      .from('orders')
+      .update({ status: 'paid', mollie_payment_id: paymentId })
+      .eq('id', orderId)
+      .select('*, order_items(*)')
+      .single()
+
+    if (!order) return NextResponse.json({ ok: true })
+
+    // Stuur bevestigingsmail naar koper
+    const leveradres = order.leveradres || order.shipping_address || {}
+    await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/send-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'bestelling_bevestiging',
+        to: payment.metadata?.customerEmail,
+        data: {
+          ownerName: payment.metadata?.customerName,
+          orderId: order.id,
+          items: order.order_items,
+          totaal: order.totaal || order.total,
+          leveradres,
+        }
+      })
+    })
+
+    // Stuur mail naar elke unieke verkoper
+    const sellerIds = [...new Set((order.order_items || []).map((i: any) => i.verkoper_id).filter(Boolean))]
+    for (const sellerId of sellerIds) {
+      const { data: verkoper } = await supabase
+        .from('verkopers')
+        .select('shop_naam, profiles(email)')
+        .eq('profile_id', sellerId)
+        .single()
+
+      const sellerItems = order.order_items.filter((i: any) => i.verkoper_id === sellerId)
+      const sellerEmail = (verkoper as any)?.profiles?.email
+      if (!sellerEmail) continue
+
+      await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/send-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'nieuwe_bestelling_verkoper',
+          to: sellerEmail,
+          data: {
+            shopNaam: (verkoper as any)?.shop_naam,
+            items: sellerItems,
+            koperNaam: payment.metadata?.customerName,
+            leveradres,
+            orderId: order.id,
+          }
+        })
+      })
+    }
+
+    return NextResponse.json({ ok: true })
   } catch (err: any) {
-    console.error('Mollie webhook error:', err)
-    // Altijd 200 teruggeven aan Mollie, anders blijft hij retries doen
-    return NextResponse.json({ received: true })
+    console.error('Webhook fout:', err)
+    return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
