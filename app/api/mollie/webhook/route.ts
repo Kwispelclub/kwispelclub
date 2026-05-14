@@ -9,9 +9,28 @@ const supabase = createClient(
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.formData()
-    const paymentId = body.get('id') as string
-    if (!paymentId) return NextResponse.json({ error: 'No payment ID' }, { status: 400 })
+    // Mollie stuurt soms formData, soms JSON — handel beide af
+    let paymentId: string | null = null
+    const contentType = req.headers.get('content-type') || ''
+
+    if (contentType.includes('application/x-www-form-urlencoded') || contentType.includes('multipart/form-data')) {
+      const body = await req.formData()
+      paymentId = body.get('id') as string
+    } else {
+      try {
+        const body = await req.json()
+        paymentId = body.id || body.paymentId || null
+      } catch {
+        const text = await req.text()
+        const match = text.match(/id=([^&]+)/)
+        if (match) paymentId = decodeURIComponent(match[1])
+      }
+    }
+
+    if (!paymentId) {
+      console.log('Webhook: geen payment ID ontvangen')
+      return NextResponse.json({ ok: true })
+    }
 
     // Haal Mollie mode op uit admin_settings
     const { data: modeSetting } = await supabase
@@ -23,16 +42,21 @@ export async function POST(req: NextRequest) {
     const mollieKey = mollieMode === 'live'
       ? (process.env.MOLLIE_LIVE_API_KEY || '')
       : (process.env.MOLLIE_TEST_API_KEY || '')
+
     const mollie = createMollieClient({ apiKey: mollieKey })
     const payment = await mollie.payments.get(paymentId)
 
     if (payment.status !== 'paid') {
+      console.log(`Webhook: betaling ${paymentId} status = ${payment.status}`)
       return NextResponse.json({ ok: true })
     }
 
     const meta = payment.metadata as any
     const orderId = meta?.orderId
-    if (!orderId) return NextResponse.json({ ok: true })
+    if (!orderId) {
+      console.log('Webhook: geen orderId in metadata')
+      return NextResponse.json({ ok: true })
+    }
 
     const { data: order } = await supabase
       .from('orders')
@@ -45,21 +69,23 @@ export async function POST(req: NextRequest) {
 
     const leveradres = order.leveradres || order.shipping_address || {}
 
-    await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/send-email`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type: 'bestelling_bevestiging',
-        to: meta?.customerEmail,
-        data: {
-          ownerName: meta?.customerName,
-          orderId: order.id,
-          items: order.order_items,
-          totaal: order.totaal || order.total,
-          leveradres,
-        }
+    if (meta?.customerEmail) {
+      await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/send-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'bestelling_bevestiging',
+          to: meta.customerEmail,
+          data: {
+            ownerName: meta.customerName,
+            orderId: order.id,
+            items: order.order_items,
+            totaal: order.totaal || order.total,
+            leveradres,
+          }
+        })
       })
-    })
+    }
 
     const sellerIds = Array.from(new Set((order.order_items || []).map((i: any) => i.verkoper_id).filter(Boolean)))
     for (const sellerId of sellerIds) {
