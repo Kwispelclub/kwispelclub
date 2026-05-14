@@ -26,19 +26,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
         <meta name="theme-color" content="#2D5A27" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Kwispelclub" />
         <link rel="apple-touch-icon" href="/icons/icon-152x152.png" />
       </head>
-      <body suppressHydrationWarning></body>
-      <body>
-  {/* <AnnounceBanner /> */}  ← tijdelijk uitcommentariëren
-  <Navbar />
-  {children}
-  <KwispelChat />
-  <CookieBanner />
-</body>
+      <body suppressHydrationWarning>
+        <AnnounceBanner />
+        <Navbar />
+        {children}
+        <KwispelChat />
+        <CookieBanner />
+      </body>
     </html>
   )
 }
