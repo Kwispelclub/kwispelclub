@@ -38,7 +38,7 @@ export default function WinkelPage() {
       .order('created_at', { ascending: false })
     const products = data || []
     // Laad verkopers info apart via profile_id = seller_id
-    const sellerIds = [...new Set(products.map((p: any) => p.seller_id).filter(Boolean))]
+    const sellerIds = Array.from(new Set(products.map((p: any) => p.seller_id).filter(Boolean)))
     let verkopersMap: Record<string, any> = {}
     if (sellerIds.length > 0) {
       const { data: vData } = await supabase
