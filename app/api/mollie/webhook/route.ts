@@ -13,7 +13,16 @@ export async function POST(req: NextRequest) {
     const paymentId = body.get('id') as string
     if (!paymentId) return NextResponse.json({ error: 'No payment ID' }, { status: 400 })
 
-    const mollieKey = process.env.MOLLIE_LIVE_API_KEY || process.env.MOLLIE_TEST_API_KEY || ''
+    // Haal Mollie mode op uit admin_settings
+    const { data: modeSetting } = await supabase
+      .from('admin_settings')
+      .select('value')
+      .eq('key', 'mollie_mode')
+      .single()
+    const mollieMode = (modeSetting?.value || 'test').replace(/"/g, '')
+    const mollieKey = mollieMode === 'live'
+      ? (process.env.MOLLIE_LIVE_API_KEY || '')
+      : (process.env.MOLLIE_TEST_API_KEY || '')
     const mollie = createMollieClient({ apiKey: mollieKey })
     const payment = await mollie.payments.get(paymentId)
 
