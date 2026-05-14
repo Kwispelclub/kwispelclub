@@ -20,6 +20,10 @@ export async function POST(req: NextRequest) {
       } else {
         try {
           const body = await req.json()
+          // hook.ping stuurt type: "hook.ping" — geen betaling
+          if (body.type && body.type !== 'payment') {
+            return NextResponse.json({ ok: true })
+          }
           paymentId = body.id || body.paymentId || null
         } catch {
           const text = await req.text()
@@ -31,8 +35,8 @@ export async function POST(req: NextRequest) {
       // Body parsing mislukt (bijv. hook.ping) — gewoon doorgaan met null
     }
 
-    if (!paymentId) {
-      // hook.ping of lege request — gewoon 200 teruggeven
+    // Mollie ping of event zonder payment ID — gewoon 200 teruggeven
+    if (!paymentId || paymentId.startsWith('event_') || paymentId.startsWith('hook_')) {
       return NextResponse.json({ ok: true })
     }
 
