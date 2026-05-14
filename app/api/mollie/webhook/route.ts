@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
 
     const { data: order } = await supabase
       .from('orders')
-      .update({ status: 'paid', mollie_payment_id: paymentId })
+      .update({ status: 'paid', payment_id: paymentId })
       .eq('id', orderId)
       .select('*, order_items(*)')
       .single()
