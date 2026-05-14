@@ -9,12 +9,32 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [user, setUser] = useState<User | null>(null)
+  const [dashboardUrl, setDashboardUrl] = useState('/account')
+  const [dashboardLabel, setDashboardLabel] = useState('Mijn Account')
   const pathname = usePathname()
   const supabase = createClient()
 
   useEffect(() => {
     window.addEventListener('scroll', () => setScrolled(window.scrollY > 10))
-    supabase.auth.getSession().then(({ data: { session } }) => setUser(session?.user ?? null))
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      const u = session?.user ?? null
+      setUser(u)
+      if (u) {
+        const role = u.user_metadata?.role
+        if (role === 'kapsalon') {
+          // Check of ze een salon hebben
+          const { data } = await supabase.from('kapsalons').select('id').eq('owner_id', u.id).single()
+          if (data) { setDashboardUrl('/kapsalons/dashboard'); setDashboardLabel('✂️ Salon Dashboard') }
+          else { setDashboardUrl('/kapsalons#register'); setDashboardLabel('✂️ Salon registreren') }
+        } else if (role === 'verkoper') {
+          setDashboardUrl('/verkoper'); setDashboardLabel('🏪 Verkoper Dashboard')
+        } else if (role === 'admin') {
+          setDashboardUrl('/admin'); setDashboardLabel('⚙️ Admin')
+        } else {
+          setDashboardUrl('/account'); setDashboardLabel('👤 Mijn Account')
+        }
+      }
+    })
   }, [])
 
   const links = [
@@ -39,7 +59,6 @@ export default function Navbar() {
 
   return (
     <>
-      {/* ✅ FIX: enkelvoudige quotes verwijderd uit font-family — veroorzaakten hydration mismatch */}
       <style>{`
         .kw-nav{position:sticky;top:0;z-index:100;background:rgba(255,249,240,.88);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(0,0,0,.04);padding:0 16px;transition:all .3s;font-family:Nunito,sans-serif}
         .kw-nav.scrolled{box-shadow:0 4px 20px rgba(0,0,0,.08);background:rgba(255,249,240,.96)}
@@ -53,6 +72,8 @@ export default function Navbar() {
         .kw-right{margin-left:auto;display:flex;align-items:center;gap:8px;flex-shrink:0}
         .kw-verkoper-btn{padding:8px 14px;border-radius:50px;background:#FFF3E0;color:#E8913A;font-family:Fredoka,sans-serif;font-size:13px;font-weight:700;text-decoration:none;transition:all .2s;border:1.5px solid #F5A855;white-space:nowrap}
         .kw-verkoper-btn:hover{background:#E8913A;color:white}
+        .kw-dashboard-btn{padding:8px 14px;border-radius:50px;background:#E8F0E4;color:#2D5A27;font-family:Fredoka,sans-serif;font-size:13px;font-weight:700;text-decoration:none;transition:all .2s;border:1.5px solid #4A7C3F;white-space:nowrap}
+        .kw-dashboard-btn:hover{background:#2D5A27;color:white}
         .kw-user{display:flex;align-items:center;gap:6px;padding:5px 12px 5px 5px;border-radius:50px;background:white;border:2px solid #F5EDE0;cursor:pointer;text-decoration:none;flex-shrink:0}
         .kw-ua{width:30px;height:30px;border-radius:50%;background:#4A7C3F;color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0}
         .kw-user-name{font-size:13px;font-weight:700;color:#2C2C2C;white-space:nowrap}
@@ -71,7 +92,7 @@ export default function Navbar() {
         .kw-mob-account{padding:16px 24px;background:#F5EDE0;display:flex;gap:12px}
         .kw-mob-acc-btn{flex:1;padding:13px;border-radius:50px;background:#2D5A27;color:white;font-family:Fredoka,sans-serif;font-size:15px;font-weight:600;text-decoration:none;text-align:center;border:none;cursor:pointer}
         .kw-mob-out-btn{padding:13px 20px;border-radius:50px;background:white;color:#2C2C2C;font-family:Fredoka,sans-serif;font-size:15px;font-weight:600;text-decoration:none;text-align:center;border:2px solid #F5EDE0;cursor:pointer}
-        @media(max-width:1024px){.kw-links{display:none}.kw-ham{display:block}.kw-verkoper-btn{display:none}}
+        @media(max-width:1024px){.kw-links{display:none}.kw-ham{display:block}.kw-verkoper-btn{display:none}.kw-dashboard-btn{display:none}}
         @media(max-width:480px){.kw-user-name{display:none}.kw-user{padding:4px}.kw-brand{font-size:18px}}
       `}</style>
 
@@ -90,6 +111,9 @@ export default function Navbar() {
           </ul>
           <div className="kw-right">
             <a href="/word-verkoper" className="kw-verkoper-btn">🏪 Word Verkoper</a>
+            {user && (
+              <a href={dashboardUrl} className="kw-dashboard-btn">{dashboardLabel}</a>
+            )}
             {user ? (
               <a href="/account" className="kw-user">
                 <div className="kw-ua">
@@ -130,7 +154,7 @@ export default function Navbar() {
             <div className="kw-mob-account">
               {user ? (
                 <>
-                  <a href="/account" className="kw-mob-acc-btn" onClick={() => setMobileOpen(false)}>👤 Mijn Account</a>
+                  <a href={dashboardUrl} className="kw-mob-acc-btn" onClick={() => setMobileOpen(false)}>{dashboardLabel}</a>
                   <button className="kw-mob-out-btn" onClick={async () => { await supabase.auth.signOut(); setMobileOpen(false); window.location.href = '/' }}>Uitloggen</button>
                 </>
               ) : (
