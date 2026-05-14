@@ -47,6 +47,7 @@ function AccountPage() {
   const [saveMsg, setSaveMsg] = useState('Opslaan')
   const [unreadCount, setUnreadCount] = useState(0)
 
+  const [orders, setOrders] = useState<any[]>([]) 
   // Berichten state
   const [inbox, setInbox] = useState<any[]>([])
   const [activeConv, setActiveConv] = useState<string | null>(null)
@@ -79,6 +80,7 @@ function AccountPage() {
       setSettingsTel(m?.telefoon || '')
       setSettingsLocatie(m?.locatie || '')
       setLoading(false)
+      loadOrders(user.id)
       loadInbox(user.id)
     })
 
@@ -99,6 +101,15 @@ function AccountPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
+  
+  const loadOrders = async (userId: string) => {
+  const { data } = await supabase
+    .from('orders')
+    .select('*, order_items(*)')
+    .eq('buyer_id', userId)
+    .order('created_at', { ascending: false })
+  setOrders(data || [])
+}
   const loadInbox = async (userId: string) => {
     setInboxLoading(true)
     try {
@@ -372,12 +383,43 @@ function AccountPage() {
             <EmptyState icon="🐾" title="Nog geen huisdieren" desc="Voeg je hond, kat of ander huisdier toe om vaccinaties bij te houden, afspraken te boeken en persoonlijke producttips te ontvangen." cta="+ Huisdier Toevoegen" />
           </div>
 
-          {/* ORDERS */}
-          <div className={`panel ${activePanel === 'orders' ? 'active' : ''}`}>
-            <div className="panel-header"><h2>Bestellingen 📦</h2></div>
-            <div className="notice notice-green"><span style={{ fontSize: 18 }}>🚧</span>De Kwispelclub webshop opent binnenkort. Je bestellingen verschijnen hier automatisch.</div>
-            <EmptyState icon="📦" title="Nog geen bestellingen" desc="Zodra de shop open is kun je producten bestellen voor jouw huisdier." cta="Bekijk de Shop" ctaHref="/#shop" />
+        {/* ORDERS */}
+<div className={`panel ${activePanel === 'orders' ? 'active' : ''}`}>
+  <div className="panel-header"><h2>Bestellingen 📦</h2></div>
+  {orders.length === 0 ? (
+    <EmptyState icon="📦" title="Nog geen bestellingen" desc="Je bestellingen verschijnen hier na betaling." cta="Ga naar de Shop" ctaHref="/winkel" />
+  ) : (
+    <div style={{display:'flex',flexDirection:'column',gap:16}}>
+      {orders.map(o => (
+        <div key={o.id} className="card" style={{display:'flex',flexDirection:'column',gap:12}}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+            <div style={{fontFamily:'Fredoka,sans-serif',fontSize:16,fontWeight:700,color:'var(--green-dark)'}}>
+              Order #{o.order_number || o.id.slice(0,8)}
+            </div>
+            <span style={{padding:'3px 12px',borderRadius:50,fontSize:12,fontWeight:700,
+              background: o.status==='paid'||o.status==='betaald' ? 'var(--green-pale)' : 'var(--orange-pale)',
+              color: o.status==='paid'||o.status==='betaald' ? 'var(--green-dark)' : '#5C3D2E'}}>
+              {o.status==='paid'||o.status==='betaald' ? '✅ Betaald' : o.status==='pending' ? '⏳ In behandeling' : o.status}
+            </span>
           </div>
+          {(o.order_items||[]).map((item:any) => (
+            <div key={item.id} style={{display:'flex',justifyContent:'space-between',fontSize:14,color:'var(--text-mid)'}}>
+              <span>{item.naam||item.product_name} × {item.aantal||item.quantity}</span>
+              <span>€{((item.prijs||item.unit_price)*(item.aantal||item.quantity)).toFixed(2)}</span>
+            </div>
+          ))}
+          <div style={{display:'flex',justifyContent:'space-between',paddingTop:10,borderTop:'1px solid var(--cream-dark)',fontFamily:'Fredoka,sans-serif',fontSize:16,fontWeight:700,color:'var(--green-dark)'}}>
+            <span>Totaal</span>
+            <span>€{Number(o.total||o.totaal||0).toFixed(2)}</span>
+          </div>
+          <div style={{fontSize:12,color:'var(--text-light)'}}>
+            {new Date(o.created_at).toLocaleDateString('nl-BE',{day:'2-digit',month:'long',year:'numeric'})}
+          </div>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
 
           {/* FAVORITES */}
           <div className={`panel ${activePanel === 'favorites' ? 'active' : ''}`}>
