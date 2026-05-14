@@ -11,6 +11,7 @@ export default function Navbar() {
   const [user, setUser] = useState<User | null>(null)
   const [dashboardUrl, setDashboardUrl] = useState('/account')
   const [dashboardLabel, setDashboardLabel] = useState('Mijn Account')
+  const [hasVerkoper, setHasVerkoper] = useState(false)
   const pathname = usePathname()
   const supabase = createClient()
 
@@ -21,24 +22,33 @@ export default function Navbar() {
       setUser(u)
       if (u) {
         const role = u.user_metadata?.role
-        if (role === 'kapsalon') {
-          // Check of ze een salon hebben
-          const { data } = await supabase.from('kapsalons').select('id').eq('owner_id', u.id).single()
-          if (data) { setDashboardUrl('/kapsalons/dashboard'); setDashboardLabel('✂️ Salon Dashboard') }
-          else { setDashboardUrl('/kapsalons#register'); setDashboardLabel('✂️ Salon registreren') }
-        } else if (role === 'verkoper') {
-          setDashboardUrl('/verkoper'); setDashboardLabel('🏪 Verkoper Dashboard')
-        } else if (role === 'admin') {
+        if (role === 'admin') {
           setDashboardUrl('/admin'); setDashboardLabel('⚙️ Admin')
         } else {
-          setDashboardUrl('/account'); setDashboardLabel('👤 Mijn Account')
+          // Check beide: kapsalon én verkoper (iemand kan beide zijn)
+          const [{ data: salon }, { data: verkoper }] = await Promise.all([
+            supabase.from('kapsalons').select('id').eq('owner_id', u.id).single(),
+            supabase.from('verkopers').select('id').eq('profile_id', u.id).single(),
+          ])
+          if (salon && verkoper) {
+            // Beide rollen — toon dropdown via twee aparte states
+            setDashboardUrl('/kapsalons/dashboard')
+            setDashboardLabel('✂️ Salon Dashboard')
+            setHasVerkoper(true)
+          } else if (salon) {
+            setDashboardUrl('/kapsalons/dashboard'); setDashboardLabel('✂️ Salon Dashboard')
+          } else if (verkoper) {
+            setDashboardUrl('/verkoper/dashboard'); setDashboardLabel('🏪 Verkoper Dashboard')
+          } else {
+            setDashboardUrl('/account'); setDashboardLabel('👤 Mijn Account')
+          }
         }
       }
     })
   }, [])
 
   const links = [
-    { href: '/winkel', label: 'Shop' },
+    { href: '/#shop', label: 'Shop' },
     { href: '/kapsalons', label: 'Kapsalons' },
     { href: '/dierenarts', label: 'Dierenarts' },
     { href: '/2dehands', label: '2de Hands' },
@@ -114,6 +124,9 @@ export default function Navbar() {
             {user && (
               <a href={dashboardUrl} className="kw-dashboard-btn">{dashboardLabel}</a>
             )}
+            {user && hasVerkoper && (
+              <a href="/verkoper/dashboard" className="kw-dashboard-btn" style={{background:'#FFF3E0',color:'#E8913A',borderColor:'#F5A855'}}>🏪 Verkoper</a>
+            )}
             {user ? (
               <a href="/account" className="kw-user">
                 <div className="kw-ua">
@@ -155,6 +168,7 @@ export default function Navbar() {
               {user ? (
                 <>
                   <a href={dashboardUrl} className="kw-mob-acc-btn" onClick={() => setMobileOpen(false)}>{dashboardLabel}</a>
+                  {hasVerkoper && <a href="/verkoper/dashboard" className="kw-mob-acc-btn" style={{background:'#E8913A'}} onClick={() => setMobileOpen(false)}>🏪 Verkoper</a>}
                   <button className="kw-mob-out-btn" onClick={async () => { await supabase.auth.signOut(); setMobileOpen(false); window.location.href = '/' }}>Uitloggen</button>
                 </>
               ) : (
