@@ -42,9 +42,9 @@ export async function POST(req: NextRequest) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         type: 'bestelling_bevestiging',
-        to: payment.metadata?.customerEmail,
+        to: meta?.customerEmail,
         data: {
-          ownerName: payment.metadata?.customerName,
+          ownerName: meta?.customerName,
           orderId: order.id,
           items: order.order_items,
           totaal: order.totaal || order.total,
@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
           data: {
             shopNaam: (verkoper as any)?.shop_naam,
             items: sellerItems,
-            koperNaam: payment.metadata?.customerName,
+            koperNaam: meta?.customerName,
             leveradres,
             orderId: order.id,
           }
