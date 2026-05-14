@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     })
 
     // Stuur mail naar elke unieke verkoper
-    const sellerIds = [...new Set((order.order_items || []).map((i: any) => i.verkoper_id).filter(Boolean))]
+    const sellerIds = Array.from(new Set((order.order_items || []).map((i: any) => i.verkoper_id).filter(Boolean)))
     for (const sellerId of sellerIds) {
       const { data: verkoper } = await supabase
         .from('verkopers')
