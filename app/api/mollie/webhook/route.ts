@@ -13,22 +13,26 @@ export async function POST(req: NextRequest) {
     let paymentId: string | null = null
     const contentType = req.headers.get('content-type') || ''
 
-    if (contentType.includes('application/x-www-form-urlencoded') || contentType.includes('multipart/form-data')) {
-      const body = await req.formData()
-      paymentId = body.get('id') as string
-    } else {
-      try {
-        const body = await req.json()
-        paymentId = body.id || body.paymentId || null
-      } catch {
-        const text = await req.text()
-        const match = text.match(/id=([^&]+)/)
-        if (match) paymentId = decodeURIComponent(match[1])
+    try {
+      if (contentType.includes('application/x-www-form-urlencoded') || contentType.includes('multipart/form-data')) {
+        const body = await req.formData()
+        paymentId = body.get('id') as string
+      } else {
+        try {
+          const body = await req.json()
+          paymentId = body.id || body.paymentId || null
+        } catch {
+          const text = await req.text()
+          const match = text.match(/id=([^&]+)/)
+          if (match) paymentId = decodeURIComponent(match[1])
+        }
       }
+    } catch {
+      // Body parsing mislukt (bijv. hook.ping) — gewoon doorgaan met null
     }
 
     if (!paymentId) {
-      console.log('Webhook: geen payment ID ontvangen')
+      // hook.ping of lege request — gewoon 200 teruggeven
       return NextResponse.json({ ok: true })
     }
 
