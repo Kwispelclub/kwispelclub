@@ -21,7 +21,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true })
     }
 
-    const orderId = payment.metadata?.orderId
+    const meta = payment.metadata as any
+    const orderId = meta?.orderId
     if (!orderId) return NextResponse.json({ ok: true })
 
     // Update order status
