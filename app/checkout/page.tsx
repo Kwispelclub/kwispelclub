@@ -10,6 +10,7 @@ interface CartItem {
   prijs: number
   aantal: number
   emoji: string
+  seller_id?: string
 }
 
 export default function CheckoutPage() {
