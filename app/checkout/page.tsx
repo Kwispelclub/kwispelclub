@@ -96,9 +96,10 @@ export default function CheckoutPage() {
       await supabase.from('order_items').insert(
         cart.map(item => ({
           order_id: order.id,
-          product_name: item.naam,       // ✅ was product_naam
-          quantity: item.aantal,          // ✅ was aantal
-          unit_price: item.prijs,         // ✅ was prijs
+          product_name: item.naam,
+          quantity: item.aantal,
+          unit_price: item.prijs,
+          verkoper_id: item.seller_id || null,
           total_price: item.prijs * item.aantal,
         }))
       )
