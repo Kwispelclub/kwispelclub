@@ -13,12 +13,25 @@ function ResetPasswordInner() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const [show, setShow] = useState(false)
+  const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    // Supabase zet automatisch de sessie via de URL hash
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) router.push('/auth')
+    // Supabase zet de sessie via de URL hash (access_token)
+    // onAuthStateChange vangt PASSWORD_RECOVERY event op
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setReady(true)
+      } else if (event === 'SIGNED_IN' && session) {
+        setReady(true)
+      }
     })
+
+    // Check ook direct of er al een sessie is
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) setReady(true)
+    })
+
+    return () => subscription.unsubscribe()
   }, [])
 
   const handleReset = async () => {
@@ -41,7 +54,7 @@ function ResetPasswordInner() {
       <style>{`
         *{margin:0;padding:0;box-sizing:border-box}
         body{font-family:Nunito,sans-serif;background:#FFF9F0;color:#2C2C2C}
-        h1,h2{font-family:Fredoka,sans-serif}
+        h1,h2,h3{font-family:Fredoka,sans-serif}
         .page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px 20px}
         .card{background:white;border-radius:28px;width:100%;max-width:420px;padding:48px;box-shadow:0 8px 40px rgba(0,0,0,.12);text-align:center;position:relative;overflow:hidden}
         .card::before{content:'';position:absolute;top:0;left:0;right:0;height:5px;background:linear-gradient(90deg,#4A7C3F,#E8913A)}
@@ -55,39 +68,54 @@ function ResetPasswordInner() {
         .pw-wrap input:focus{border-color:#6B9E5E;box-shadow:0 0 0 3px rgba(107,158,94,.12)}
         .pw-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;opacity:.4}
         .btn{width:100%;padding:15px;border-radius:50px;background:#4A7C3F;color:white;border:none;font-family:Fredoka,sans-serif;font-size:16px;font-weight:600;cursor:pointer;transition:all .2s;margin-top:8px}
-        .btn:hover:not(:disabled){background:#2D5A27}
+        .btn:hover:not(:disabled){background:#2D5A27;transform:translateY(-2px)}
         .btn:disabled{opacity:.6;cursor:not-allowed}
-        .error{background:#FFF0F0;border:1px solid #E84E4E;border-radius:10px;padding:10px 14px;font-size:13px;color:#E84E4E;margin-bottom:16px;font-weight:600}
-        .success{text-align:center;padding:16px 0}
-        .success .si{font-size:64px;margin-bottom:12px}
-        .success h3{color:#2D5A27;font-size:22px;margin-bottom:8px}
-        .success p{color:#5A5A5A;font-size:14px}
+        .error{background:#FFF0F0;border:1px solid #E84E4E;border-radius:10px;padding:10px 14px;font-size:13px;color:#E84E4E;margin-bottom:16px;font-weight:600;text-align:left}
+        .loading-state{padding:40px 0;color:#8A8A8A;font-size:15px}
       `}</style>
       <div className="page">
         <div className="card">
           {success ? (
-            <div className="success">
-              <div className="si">✅</div>
-              <h3>Wachtwoord gewijzigd!</h3>
+            <>
+              <div className="icon">✅</div>
+              <h2>Wachtwoord gewijzigd!</h2>
               <p>Je wordt doorgestuurd naar je account...</p>
+            </>
+          ) : !ready ? (
+            <div className="loading-state">
+              <div className="icon">🔑</div>
+              <p>Link wordt gevalideerd...</p>
             </div>
           ) : (
             <>
               <div className="icon">🔑</div>
               <h2>Nieuw wachtwoord</h2>
-              <p>Kies een nieuw wachtwoord voor je account.</p>
+              <p>Kies een sterk wachtwoord voor je account.</p>
               {error && <div className="error">⚠️ {error}</div>}
               <div className="field">
                 <label>Nieuw wachtwoord</label>
                 <div className="pw-wrap">
-                  <input type={show ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="Min. 8 tekens" />
-                  <button className="pw-toggle" onClick={() => setShow(!show)}>{show ? '🙈' : '👁️'}</button>
+                  <input
+                    type={show ? 'text' : 'password'}
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="Min. 8 tekens"
+                  />
+                  <button className="pw-toggle" onClick={() => setShow(!show)}>
+                    {show ? '🙈' : '👁️'}
+                  </button>
                 </div>
               </div>
               <div className="field">
                 <label>Bevestig wachtwoord</label>
                 <div className="pw-wrap">
-                  <input type={show ? 'text' : 'password'} value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="Herhaal wachtwoord" onKeyDown={e => e.key === 'Enter' && handleReset()} />
+                  <input
+                    type={show ? 'text' : 'password'}
+                    value={confirm}
+                    onChange={e => setConfirm(e.target.value)}
+                    placeholder="Herhaal wachtwoord"
+                    onKeyDown={e => e.key === 'Enter' && handleReset()}
+                  />
                 </div>
               </div>
               <button className="btn" onClick={handleReset} disabled={loading}>
