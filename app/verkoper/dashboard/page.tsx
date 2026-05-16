@@ -61,6 +61,7 @@ export default function VerkoperDashboard() {
         setMollieMode(d.settings?.mollie_mode || process.env.NEXT_PUBLIC_MOLLIE_MODE || 'test')
       })
       await loadProducten(v.profile_id)
+      await loadBestellingen(v.profile_id)
       setLoading(false)
     })
   }, [])
@@ -74,6 +75,21 @@ export default function VerkoperDashboard() {
       .order('created_at', { ascending: false })
     setProducten(data || [])
     setProductenLoading(false)
+  }
+
+  const loadBestellingen = async (profileId: string) => {
+    const { data: items } = await supabase
+      .from('order_items')
+      .select('order_id')
+      .eq('verkoper_id', profileId)
+    if (!items || items.length === 0) return
+    const orderIds = Array.from(new Set(items.map((i: any) => i.order_id)))
+    const { data: orders } = await supabase
+      .from('orders')
+      .select('*')
+      .in('id', orderIds)
+      .order('created_at', { ascending: false })
+    setBestellingen(orders || [])
   }
 
   const handleSaveInstellingen = async () => {
