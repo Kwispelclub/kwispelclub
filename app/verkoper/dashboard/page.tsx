@@ -495,7 +495,17 @@ export default function VerkoperDashboard() {
                           <td><strong>#{b.order_number || b.id?.slice(0, 8)}</strong></td>
                           <td>{b.shipping_address?.name || '—'}</td>
                           <td style={{ fontFamily: 'Fredoka, sans-serif', fontWeight: 700, color: 'var(--green-dark)' }}>€{b.total?.toFixed(2) || '—'}</td>
-                          <td><span className="badge badge-orange">{b.status}</span></td>
+                          <td>
+                            {b.status === 'paid' || b.status === 'betaald'
+                              ? <span className="badge badge-green">✅ Betaald</span>
+                              : b.status === 'shipped'
+                              ? <span className="badge badge-teal">📦 Verzonden</span>
+                              : b.status === 'delivered'
+                              ? <span className="badge badge-green">🏠 Geleverd</span>
+                              : b.status === 'cancelled' || b.status === 'geannuleerd'
+                              ? <span className="badge badge-red">❌ Geannuleerd</span>
+                              : <span className="badge badge-orange">⏳ In behandeling</span>}
+                          </td>
                           <td style={{ fontSize: 12, color: 'var(--text-light)' }}>{formatDate(b.created_at)}</td>
                         </tr>
                       ))}
