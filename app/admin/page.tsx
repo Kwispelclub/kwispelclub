@@ -196,6 +196,7 @@ export default function AdminPage() {
 const [editBanner, setEditBanner] = useState<any>(null)
 const [bannerSaving, setBannerSaving] = useState(false)
   const [editCommissie, setEditCommissie] = useState<{ id: string; val: string } | null>(null)
+  const [userActionLoading, setUserActionLoading] = useState<string | null>(null)
 
   useEffect(() => {
     const adminSession = sessionStorage.getItem('kw_admin')
@@ -386,6 +387,30 @@ supabase.from('page_banners').select('*').order('pagina'),      ])
     if (isNaN(val) || val < 0 || val > 50) return
     await supabase.from('verkopers').update({ commissie_pct: val }).eq('id', id)
     setEditCommissie(null)
+    loadData()
+  }
+
+  const pauseUser = async (userId: string, pause: boolean) => {
+    if (pause && !confirm('Account pauzeren? De gebruiker kan niet meer inloggen.')) return
+    setUserActionLoading(userId)
+    await fetch('/api/admin/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: pause ? 'pause' : 'unpause', userId, sendMail: pause }),
+    })
+    setUserActionLoading(null)
+    loadData()
+  }
+
+  const deleteUser = async (userId: string, email: string) => {
+    if (!confirm(`Gebruiker ${email} definitief verwijderen? Dit kan niet ongedaan worden gemaakt.`)) return
+    setUserActionLoading(userId)
+    await fetch('/api/admin/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'delete', userId, sendMail: true }),
+    })
+    setUserActionLoading(null)
     loadData()
   }
 
@@ -859,15 +884,37 @@ supabase.from('page_banners').select('*').order('pagina'),      ])
                   <div className="empty-state"><div className="ei">👥</div><p>Geen gebruikers gevonden</p></div>
                 ) : (
                   <table className="table">
-                    <thead><tr><th>Naam</th><th>Rol</th><th>Locatie</th><th>Bedrijf</th><th>Datum</th></tr></thead>
+                    <thead><tr><th>Naam</th><th>E-mail</th><th>Rol</th><th>Status</th><th>Datum</th><th>Actie</th></tr></thead>
                     <tbody>
                       {gebruikers.map(u => (
                         <tr key={u.id}>
                           <td><strong>{`${u.first_name || ''} ${u.last_name || ''}`.trim() || '—'}</strong></td>
+                          <td style={{ fontSize: 13, color: 'var(--text-light)' }}>{u.email || '—'}</td>
                           <td><span className={`role-pill role-${u.role || 'koper'}`}>{u.role || 'koper'}</span></td>
-                          <td>{u.location || '—'}</td>
-                          <td>{u.company_name || '—'}</td>
+                          <td>
+                            {u.actief === false
+                              ? <span className="badge badge-red">⏸ Gepauzeerd</span>
+                              : <span className="badge badge-green">✓ Actief</span>}
+                          </td>
                           <td>{u.created_at ? formatDate(u.created_at) : '—'}</td>
+                          <td>
+                            <div className="action-btns">
+                              {userActionLoading === u.id ? (
+                                <span style={{ fontSize: 12, color: 'var(--text-light)' }}>⏳ Bezig...</span>
+                              ) : (
+                                <>
+                                  {u.actief === false
+                                    ? <button className="btn-sm btn-approve" onClick={() => pauseUser(u.id, false)}>▶ Heractiveren</button>
+                                    : <button className="btn-sm btn-reject" onClick={() => pauseUser(u.id, true)}>⏸ Pauzeren</button>
+                                  }
+                                  <button className="btn-sm" onClick={() => deleteUser(u.id, u.email)}
+                                    style={{ background: '#FFF0F0', color: 'var(--red)', fontWeight: 700 }}>
+                                    🗑️ Verwijderen
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
