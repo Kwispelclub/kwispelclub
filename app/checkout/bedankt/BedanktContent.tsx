@@ -59,15 +59,28 @@ export default function BedanktContent() {
           <p>Je betaling is ontvangen. We sturen je een bevestiging per e-mail.</p>
           {bestelling && (
             <div className="order-box">
-              <div className="order-row"><span>Order #</span><span>{bestelling.order_number}</span></div>
-              <div className="order-row"><span>Status</span><span>✅ Bevestigd</span></div>
+              <div className="order-row"><span>Order #</span><span>{bestelling.order_number || bestelling.id?.slice(0,8)}</span></div>
+              <div className="order-row"><span>Status</span>
+                <span style={{display:'flex',alignItems:'center',gap:6}}>
+                  <span style={{width:18,height:18,borderRadius:4,background:'#4A7C3F',display:'inline-flex',alignItems:'center',justifyContent:'center',fontSize:11}}>✓</span>
+                  {bestelling.status === 'paid' || bestelling.status === 'betaald' ? 'Bevestigd' : 'In behandeling'}
+                </span>
+              </div>
+              {(() => {
+                const adres = bestelling.shipping_address
+                if (adres && typeof adres === 'object') {
+                  const adresStr = [adres.street, adres.postcode, adres.city, adres.country].filter(Boolean).join(', ')
+                  return <div className="order-row"><span>Leveradres</span><span style={{fontSize:13}}>{adresStr}</span></div>
+                }
+                return null
+              })()}
               {bestelling.order_items?.map((item: any) => (
                 <div key={item.id} className="order-row">
-                  <span>{item.product_name} × {item.quantity}</span>
-                  <span>€{(item.unit_price * item.quantity).toFixed(2)}</span>
+                  <span>{item.naam || item.product_name} × {item.aantal || item.quantity}</span>
+                  <span>€{((item.prijs || item.unit_price) * (item.aantal || item.quantity)).toFixed(2)}</span>
                 </div>
               ))}
-              <div className="order-row"><span>Totaal</span><span>€{bestelling.total?.toFixed(2)}</span></div>
+              <div className="order-row"><span>Totaal</span><span>€{Number(bestelling.total || 0).toFixed(2)}</span></div>
             </div>
           )}
           <div className="btns">

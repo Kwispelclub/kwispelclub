@@ -32,12 +32,14 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) {
-        setUser(user)
-        setVoornaam(user.user_metadata?.first_name || '')
-        setAchternaam(user.user_metadata?.last_name || '')
-        setEmail(user.email || '')
+      if (!user) {
+        router.push('/auth?redirect=/checkout')
+        return
       }
+      setUser(user)
+      setVoornaam(user.user_metadata?.first_name || '')
+      setAchternaam(user.user_metadata?.last_name || '')
+      setEmail(user.email || '')
     })
     try {
       const saved = localStorage.getItem('kc_cart')
