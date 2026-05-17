@@ -128,27 +128,17 @@ export async function POST(request: NextRequest) {
         emailContent = listingBevestigingEmail(data)
         break
       case 'account_gepauzeerd':
-        subject = 'Je Kwispelclub account is tijdelijk gepauzeerd'
-        html = `
-          <div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:32px">
-            <h2 style="color:#2D5A27">Je account is tijdelijk gepauzeerd</h2>
-            <p>Hallo ${data.firstName},</p>
-            <p>Je Kwispelclub account is tijdelijk gepauzeerd door een beheerder.</p>
-            <p>Als je vragen hebt of dit wil bespreken, neem dan contact op via <a href="mailto:${data.contactEmail}">${data.contactEmail}</a>.</p>
-            <p>Met vriendelijke groeten,<br/>Het Kwispelclub team 🐾</p>
-          </div>`
+        emailContent = {
+          subject: 'Je Kwispelclub account is tijdelijk gepauzeerd',
+          html: baseTemplate(`<div style="text-align:center;margin-bottom:28px;"><div style="font-size:56px;margin-bottom:8px;">⏸️</div>${h1('Account tijdelijk gepauzeerd')}${p(`Hallo ${data.firstName}, je Kwispelclub account is tijdelijk gepauzeerd door een beheerder.`)}</div>${p(`Als je vragen hebt of dit wil bespreken, neem dan contact op via <a href="mailto:${data.contactEmail}" style="color:#4A7C3F;">${data.contactEmail}</a>.`)}<div style="text-align:center;">${btn('Contact opnemen →', `mailto:${data.contactEmail}`)}</div>`)
+        }
         break
 
       case 'account_verwijderd':
-        subject = 'Je Kwispelclub account is verwijderd'
-        html = `
-          <div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:32px">
-            <h2 style="color:#2D5A27">Je account is verwijderd</h2>
-            <p>Hallo ${data.firstName},</p>
-            <p>Je Kwispelclub account en alle bijbehorende gegevens zijn verwijderd.</p>
-            <p>Als je vragen hebt, neem dan contact op via <a href="mailto:${data.contactEmail}">${data.contactEmail}</a>.</p>
-            <p>Met vriendelijke groeten,<br/>Het Kwispelclub team 🐾</p>
-          </div>`
+        emailContent = {
+          subject: 'Je Kwispelclub account is verwijderd',
+          html: baseTemplate(`<div style="text-align:center;margin-bottom:28px;"><div style="font-size:56px;margin-bottom:8px;">🗑️</div>${h1('Account verwijderd')}${p(`Hallo ${data.firstName}, je Kwispelclub account en alle bijbehorende gegevens zijn verwijderd.`)}</div>${p(`Als je vragen hebt, neem dan contact op via <a href="mailto:${data.contactEmail}" style="color:#4A7C3F;">${data.contactEmail}</a>.`)}<div style="text-align:center;">${btn('Contact opnemen →', `mailto:${data.contactEmail}`)}</div>`)
+        }
         break
 
       case 'cursus_aankoop':
