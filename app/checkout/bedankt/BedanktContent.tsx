@@ -76,8 +76,8 @@ export default function BedanktContent() {
               })()}
               {bestelling.order_items?.map((item: any) => (
                 <div key={item.id} className="order-row">
-                  <span>{item.naam || item.product_name} × {item.aantal || item.quantity}</span>
-                  <span>€{((item.prijs || item.unit_price) * (item.aantal || item.quantity)).toFixed(2)}</span>
+                  <span>{item.product_name || '—'} × {item.quantity || 1}</span>
+                  <span>€{Number(item.total_price || item.unit_price * item.quantity || 0).toFixed(2)}</span>
                 </div>
               ))}
               <div className="order-row"><span>Totaal</span><span>€{Number(bestelling.total || 0).toFixed(2)}</span></div>

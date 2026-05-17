@@ -91,11 +91,17 @@ export async function POST(req: NextRequest) {
           type: 'bestelling_bevestiging',
           to: meta.customerEmail,
           data: {
-            ownerName: meta.customerName,
-            orderId: order.id,
-            items: order.order_items,
-            totaal: order.totaal || order.total,
-            leveradres,
+            firstName: meta.customerName?.split(' ')[0] || 'Klant',
+            orderNummer: order.order_number || order.id?.slice(0,8),
+            items: (order.order_items || []).map((i: any) => ({
+              naam: i.product_name || '—',
+              aantal: i.quantity || 1,
+              prijs: i.unit_price || 0,
+            })),
+            totaal: Number(order.total || 0),
+            leveradres: typeof leveradres === 'object'
+              ? [leveradres.street, leveradres.postcode, leveradres.city, leveradres.country].filter(Boolean).join(', ')
+              : leveradres || '—',
           }
         })
       })
