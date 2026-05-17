@@ -37,6 +37,28 @@ function EmptyState({ icon, title, desc, cta, ctaHref, onCtaClick }: {
   )
 }
 
+function getTrackingUrl(trackingNumber: string): { url: string; carrier: string } | null {
+  const t = trackingNumber.replace(/\s/g, '').toUpperCase()
+  // PostNL: begint met 3S, JVGL, of TNPOST
+  if (/^(3S|JVGL|TNPOST)/i.test(t)) {
+    return { url: `https://postnl.nl/tracktrace/?B=${t}&P=`, carrier: 'PostNL' }
+  }
+  // bpost: begint met 323, JD, of is 10-14 cijfers
+  if (/^(323|JD)/i.test(t) || /^\d{10,14}$/.test(t)) {
+    return { url: `https://track.bpost.cloud/btr/web/#/search?itemCode=${t}`, carrier: 'bpost' }
+  }
+  // DHL: begint met 1Z of JD
+  if (/^(1Z)/i.test(t)) {
+    return { url: `https://www.dhl.com/be-nl/home/tracking.html?tracking-id=${t}`, carrier: 'DHL' }
+  }
+  // DPD: begint met 0
+  if (/^\d{14}$/.test(t)) {
+    return { url: `https://tracking.dpd.de/status/nl_NL/parcel/${t}`, carrier: 'DPD' }
+  }
+  // Onbekend — generieke bpost link
+  return { url: `https://track.bpost.cloud/btr/web/#/search?itemCode=${t}`, carrier: 'Track' }
+}
+
 function AccountPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -412,11 +434,22 @@ function AccountPage() {
                 : o.status}
             </span>
           </div>
-          {o.tracking_number && (
-            <div style={{background:'var(--teal-pale,#E0F5F1)',borderRadius:10,padding:'10px 14px',fontSize:13,fontWeight:600,color:'#2A9D8F'}}>
-              📦 Tracking: <strong>{o.tracking_number}</strong>
-            </div>
-          )}
+          {o.tracking_number && (() => {
+            const info = getTrackingUrl(o.tracking_number)
+            return (
+              <div style={{background:'#E0F5F1',borderRadius:10,padding:'10px 14px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:12}}>
+                <div style={{fontSize:13,fontWeight:600,color:'#2A9D8F'}}>
+                  📦 Tracking: <strong>{o.tracking_number}</strong>
+                </div>
+                {info && (
+                  <a href={info.url} target="_blank" rel="noopener noreferrer"
+                    style={{display:'inline-flex',alignItems:'center',gap:4,padding:'6px 14px',borderRadius:50,background:'#2A9D8F',color:'white',fontSize:12,fontWeight:700,textDecoration:'none',whiteSpace:'nowrap'}}>
+                    🔍 Volg via {info.carrier} →
+                  </a>
+                )}
+              </div>
+            )
+          })()}
           {(o.order_items||[]).map((item:any) => (
             <div key={item.id} style={{display:'flex',justifyContent:'space-between',fontSize:14,color:'var(--text-mid)'}}>
               <span>{item.naam||item.product_name} × {item.aantal||item.quantity}</span>

@@ -127,7 +127,15 @@ export async function POST(request: NextRequest) {
       case 'listing_bevestiging':
         emailContent = listingBevestigingEmail(data)
         break
-      case 'bestelling_verzonden':
+      case 'bestelling_verzonden': {
+        const t = (data.trackingNumber || '').replace(/\s/g, '').toUpperCase()
+        let trackingUrl = ''
+        let carrier = 'bpost'
+        if (t) {
+          if (/^(3S|JVGL)/i.test(t)) { carrier = 'PostNL'; trackingUrl = `https://postnl.nl/tracktrace/?B=${t}&P=` }
+          else if (/^1Z/i.test(t)) { carrier = 'DHL'; trackingUrl = `https://www.dhl.com/be-nl/home/tracking.html?tracking-id=${t}` }
+          else { carrier = 'bpost'; trackingUrl = `https://track.bpost.cloud/btr/web/#/search?itemCode=${t}` }
+        }
         emailContent = {
           subject: `📦 Je bestelling #${data.orderNummer} is verzonden!`,
           html: baseTemplate(`
@@ -139,13 +147,14 @@ export async function POST(request: NextRequest) {
             ${infoBox([
               ['Order #', data.orderNummer],
               ['Status', '📦 Verzonden'],
-              ...(data.trackingNumber ? [['Tracking', data.trackingNumber] as [string,string]] : []),
+              ...(data.trackingNumber ? [['Tracking', data.trackingNumber] as [string,string], ['Vervoerder', carrier] as [string,string]] : []),
             ])}
-            ${data.trackingNumber ? p(`Je kunt je pakket volgen met trackingnummer: <strong>${data.trackingNumber}</strong>`) : ''}
+            ${data.trackingNumber && trackingUrl ? `<div style="text-align:center;margin:20px 0;">${btn(`🔍 Volg je pakket via ${carrier} →`, trackingUrl)}</div>` : ''}
             <div style="text-align:center;">${btn('Bekijk je bestelling →', `${APP_URL}/account`)}</div>
           `)
         }
         break
+      }
 
       case 'account_gepauzeerd':
         emailContent = {
