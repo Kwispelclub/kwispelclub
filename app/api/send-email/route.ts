@@ -127,6 +127,26 @@ export async function POST(request: NextRequest) {
       case 'listing_bevestiging':
         emailContent = listingBevestigingEmail(data)
         break
+      case 'bestelling_verzonden':
+        emailContent = {
+          subject: `📦 Je bestelling #${data.orderNummer} is verzonden!`,
+          html: baseTemplate(`
+            <div style="text-align:center;margin-bottom:28px;">
+              <div style="font-size:56px;margin-bottom:8px;">📦</div>
+              ${h1(`Je bestelling is onderweg, ${data.firstName}!`)}
+              ${p(`Goed nieuws! <strong>${data.shopNaam}</strong> heeft je bestelling verzonden.`)}
+            </div>
+            ${infoBox([
+              ['Order #', data.orderNummer],
+              ['Status', '📦 Verzonden'],
+              ...(data.trackingNumber ? [['Tracking', data.trackingNumber] as [string,string]] : []),
+            ])}
+            ${data.trackingNumber ? p(`Je kunt je pakket volgen met trackingnummer: <strong>${data.trackingNumber}</strong>`) : ''}
+            <div style="text-align:center;">${btn('Bekijk je bestelling →', `${APP_URL}/account`)}</div>
+          `)
+        }
+        break
+
       case 'account_gepauzeerd':
         emailContent = {
           subject: 'Je Kwispelclub account is tijdelijk gepauzeerd',

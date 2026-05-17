@@ -107,6 +107,37 @@ export default function VerkoperDashboard() {
     const updateData: any = { status }
     if (trackingNumber !== undefined) updateData.tracking_number = trackingNumber
     await supabase.from('orders').update(updateData).eq('id', orderId)
+
+    // Stuur mail naar koper bij verzending
+    if (status === 'shipped') {
+      const bestelling = bestellingen.find(b => b.id === orderId)
+      const buyerId = bestelling?.buyer_id
+      if (buyerId) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('email, first_name')
+          .eq('id', buyerId)
+          .single()
+        if (profile?.email) {
+          const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.kwispelclub.be'
+          await fetch(`${siteUrl}/api/send-email`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'bestelling_verzonden',
+              to: profile.email,
+              data: {
+                firstName: profile.first_name || 'Klant',
+                orderNummer: bestelling?.order_number || orderId.slice(0, 8),
+                shopNaam: verkoper?.shop_naam || 'de verkoper',
+                trackingNumber: trackingNumber || null,
+              }
+            })
+          }).catch(() => {})
+        }
+      }
+    }
+
     await loadBestellingen(verkoper.profile_id)
     setUpdatingOrder(null)
   }
