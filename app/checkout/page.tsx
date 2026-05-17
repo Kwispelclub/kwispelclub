@@ -19,6 +19,7 @@ export default function CheckoutPage() {
   const [cart, setCart] = useState<CartItem[]>([])
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(false)
+  const [errors, setErrors] = useState<Record<string, string>>({})
   const [step, setStep] = useState<'cart' | 'gegevens' | 'betaling'>('cart')
 
   const [voornaam, setVoornaam] = useState('')
@@ -61,11 +62,21 @@ export default function CheckoutPage() {
     })
   }
 
+  const validateGegevens = () => {
+    const e: Record<string, string> = {}
+    if (!voornaam.trim()) e.voornaam = 'Voornaam is verplicht'
+    if (!achternaam.trim()) e.achternaam = 'Achternaam is verplicht'
+    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = 'Geldig e-mailadres is verplicht'
+    if (!straat.trim()) e.straat = 'Straat is verplicht'
+    if (!nr.trim()) e.nr = 'Huisnummer is verplicht'
+    if (!postcode.trim()) e.postcode = 'Postcode is verplicht'
+    if (!stad.trim()) e.stad = 'Stad is verplicht'
+    setErrors(e)
+    return Object.keys(e).length === 0
+  }
+
   const handleCheckout = async () => {
-    if (!voornaam || !email || !straat || !postcode || !stad) {
-      alert('Vul alle verplichte velden in')
-      return
-    }
+    if (!validateGegevens()) return
 
     setLoading(true)
 
@@ -227,17 +238,17 @@ export default function CheckoutPage() {
               <div className="main-card">
                 <h2>📦 Levergegevens</h2>
                 <div className="field-row">
-                  <div className="field"><label>Voornaam *</label><input value={voornaam} onChange={e => setVoornaam(e.target.value)} placeholder="Jan" /></div>
-                  <div className="field"><label>Achternaam *</label><input value={achternaam} onChange={e => setAchternaam(e.target.value)} placeholder="Peeters" /></div>
+                  <div className="field"><label>Voornaam *</label><input value={voornaam} onChange={e => { setVoornaam(e.target.value); setErrors(p => ({...p, voornaam: ''})) }} placeholder="Jan" className={errors.voornaam ? 'error' : ''} />{errors.voornaam && <div className="field-error">⚠️ {errors.voornaam}</div>}</div>
+                  <div className="field"><label>Achternaam *</label><input value={achternaam} onChange={e => { setAchternaam(e.target.value); setErrors(p => ({...p, achternaam: ''})) }} placeholder="Peeters" className={errors.achternaam ? 'error' : ''} />{errors.achternaam && <div className="field-error">⚠️ {errors.achternaam}</div>}</div>
                 </div>
-                <div className="field"><label>E-mailadres *</label><input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="jan@voorbeeld.be" /></div>
+                <div className="field"><label>E-mailadres *</label><input type="email" value={email} onChange={e => { setEmail(e.target.value); setErrors(p => ({...p, email: ''})) }} placeholder="jan@voorbeeld.be" className={errors.email ? 'error' : ''} />{errors.email && <div className="field-error">⚠️ {errors.email}</div>}</div>
                 <div className="field-row">
-                  <div className="field" style={{ flex: 2 }}><label>Straat *</label><input value={straat} onChange={e => setStraat(e.target.value)} placeholder="Kerkstraat" /></div>
-                  <div className="field"><label>Nr *</label><input value={nr} onChange={e => setNr(e.target.value)} placeholder="12" /></div>
+                  <div className="field" style={{ flex: 2 }}><label>Straat *</label><input value={straat} onChange={e => { setStraat(e.target.value); setErrors(p => ({...p, straat: ''})) }} placeholder="Kerkstraat" className={errors.straat ? 'error' : ''} />{errors.straat && <div className="field-error">⚠️ {errors.straat}</div>}</div>
+                  <div className="field"><label>Nr *</label><input value={nr} onChange={e => { setNr(e.target.value); setErrors(p => ({...p, nr: ''})) }} placeholder="12" className={errors.nr ? 'error' : ''} />{errors.nr && <div className="field-error">⚠️ {errors.nr}</div>}</div>
                 </div>
                 <div className="field-row">
-                  <div className="field"><label>Postcode *</label><input value={postcode} onChange={e => setPostcode(e.target.value)} placeholder="3960" /></div>
-                  <div className="field"><label>Stad *</label><input value={stad} onChange={e => setStad(e.target.value)} placeholder="Bree" /></div>
+                  <div className="field"><label>Postcode *</label><input value={postcode} onChange={e => { setPostcode(e.target.value); setErrors(p => ({...p, postcode: ''})) }} placeholder="3960" className={errors.postcode ? 'error' : ''} />{errors.postcode && <div className="field-error">⚠️ {errors.postcode}</div>}</div>
+                  <div className="field"><label>Stad *</label><input value={stad} onChange={e => { setStad(e.target.value); setErrors(p => ({...p, stad: ''})) }} placeholder="Bree" className={errors.stad ? 'error' : ''} />{errors.stad && <div className="field-error">⚠️ {errors.stad}</div>}</div>
                 </div>
                 <div className="field">
                   <label>Land</label>

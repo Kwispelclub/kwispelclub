@@ -3,6 +3,8 @@
 import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase'
 
+import ContacteerVerkoper from '@/components/ContacteerVerkoper'
+
 const CATEGORIES = ['Alle','Voeding & Snacks','Speelgoed','Verzorging','Kleding & Accessoires','Gezondheid','Overig']
 
 export default function WinkelPage() {
@@ -225,6 +227,15 @@ export default function WinkelPage() {
                         {addedIds.has(p.id) ? '✓ Toegevoegd' : '🛒 Kopen'}
                       </button>
                     </div>
+                    {p.verkopers?.profile_id && (
+                      <div style={{ padding: '10px 16px 16px', borderTop: '1px solid var(--cream-dark)' }}>
+                        <ContacteerVerkoper
+                          receiverId={p.verkopers.profile_id}
+                          productId={p.id}
+                          productNaam={p.name}
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}

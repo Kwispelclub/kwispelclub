@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 
-type Tab = 'overzicht' | 'producten' | 'bestellingen' | 'instellingen'
+type Tab = 'overzicht' | 'producten' | 'bestellingen' | 'berichten' | 'instellingen'
 
 export default function VerkoperDashboard() {
   const router = useRouter()
@@ -18,6 +18,13 @@ export default function VerkoperDashboard() {
   const [producten, setProducten] = useState<any[]>([])
   const [productenLoading, setProductenLoading] = useState(false)
   const [bestellingen, setBestellingen] = useState<any[]>([])
+  const [inbox, setInbox] = useState<any[]>([])
+  const [activeConv, setActiveConv] = useState<string | null>(null)
+  const [messages, setMessages] = useState<any[]>([])
+  const [newMessage, setNewMessage] = useState('')
+  const [sendingMsg, setSendingMsg] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const [shopNaam, setShopNaam] = useState('')
   const [beschrijving, setBeschrijving] = useState('')
@@ -62,6 +69,7 @@ export default function VerkoperDashboard() {
       })
       await loadProducten(v.profile_id)
       await loadBestellingen(v.profile_id)
+      await loadInbox(v.profile_id)
       setLoading(false)
     })
   }, [])
@@ -90,6 +98,48 @@ export default function VerkoperDashboard() {
       .in('id', orderIds)
       .order('created_at', { ascending: false })
     setBestellingen(orders || [])
+  }
+
+  const loadInbox = async (userId: string) => {
+    try {
+      const res = await fetch(`/api/messages?user_id=${userId}`)
+      const data = await res.json()
+      setInbox(data.inbox || [])
+      const unread = (data.inbox || []).filter((m: any) => !m.gelezen && m.receiver_id === userId).length
+      setUnreadCount(unread)
+    } catch (e) { console.error(e) }
+  }
+
+  const loadMessages = async (convId: string, userId: string) => {
+    try {
+      const res = await fetch(`/api/messages?conversation_id=${convId}&user_id=${userId}`)
+      const data = await res.json()
+      setMessages(data.messages || [])
+      loadInbox(userId)
+    } catch (e) { console.error(e) }
+  }
+
+  const sendMessage = async () => {
+    if (!newMessage.trim() || !user || !activeConv) return
+    setSendingMsg(true)
+    try {
+      const conv = inbox.find(m => m.conversation_id === activeConv)
+      const receiverId = conv?.sender_id === user.id ? conv?.receiver_id : conv?.sender_id
+      if (!receiverId) return
+      await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sender_id: user.id,
+          receiver_id: receiverId,
+          conversation_id: activeConv,
+          message: newMessage.trim(),
+        })
+      })
+      setNewMessage('')
+      loadMessages(activeConv, user.id)
+    } catch (e) { console.error(e) }
+    setSendingMsg(false)
   }
 
   const handleSaveInstellingen = async () => {
@@ -280,13 +330,15 @@ export default function VerkoperDashboard() {
           </div>
           <nav className="sb-nav">
             {([
-              ['overzicht', '📊', 'Overzicht'],
-              ['producten', '📦', 'Producten'],
-              ['bestellingen', '🛍️', 'Bestellingen'],
-              ['instellingen', '⚙️', 'Instellingen'],
-            ] as [Tab, string, string][]).map(([id, icon, label]) => (
-              <div key={id} className={`sb-item ${tab === id ? 'active' : ''}`} onClick={() => setTab(id)}>
+              ['overzicht', '📊', 'Overzicht', null],
+              ['producten', '📦', 'Producten', null],
+              ['bestellingen', '🛍️', 'Bestellingen', null],
+              ['berichten', '💬', 'Berichten', unreadCount || null],
+              ['instellingen', '⚙️', 'Instellingen', null],
+            ] as [Tab, string, string, number | null][]).map(([id, icon, label, badge]) => (
+              <div key={id} className={`sb-item ${tab === id ? 'active' : ''}`} onClick={() => { setTab(id); if (id === 'berichten' && user) loadInbox(user.id) }}>
                 <span className="si">{icon}</span>{label}
+                {badge ? <span style={{marginLeft:'auto',background:'var(--red)',color:'white',fontSize:10,fontWeight:800,padding:'2px 7px',borderRadius:50}}>{badge}</span> : null}
               </div>
             ))}
           </nav>
@@ -304,6 +356,7 @@ export default function VerkoperDashboard() {
                 {tab === 'overzicht' && 'Dashboard'}
                 {tab === 'producten' && 'Producten'}
                 {tab === 'bestellingen' && 'Bestellingen'}
+                {tab === 'berichten' && 'Berichten 💬'}
                 {tab === 'instellingen' && 'Shop Instellingen'}
               </h1>
               <p>{shopUrl}</p>
@@ -512,6 +565,101 @@ export default function VerkoperDashboard() {
                     </tbody>
                   </table>
                 )}
+              </div>
+            )}
+
+            {/* BERICHTEN */}
+            {tab === 'berichten' && (
+              <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', minHeight: 500 }}>
+                  {/* Inbox */}
+                  <div style={{ borderRight: '2px solid var(--cream-dark)', overflowY: 'auto' }}>
+                    <div style={{ padding: '16px 20px', borderBottom: '2px solid var(--cream-dark)', fontFamily: 'Fredoka, sans-serif', fontSize: 16, fontWeight: 700, color: 'var(--green-dark)' }}>
+                      Conversaties
+                    </div>
+                    {inbox.length === 0 ? (
+                      <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-light)', fontSize: 13 }}>
+                        <div style={{ fontSize: 32, marginBottom: 8, opacity: .3 }}>💬</div>
+                        Nog geen berichten
+                      </div>
+                    ) : inbox.map(conv => {
+                      const isMe = conv.sender_id === user?.id
+                      const otherName = isMe
+                        ? `${conv.receiver?.first_name || ''} ${conv.receiver?.last_name?.[0] || ''}.`
+                        : `${conv.sender?.first_name || ''} ${conv.sender?.last_name?.[0] || ''}.`
+                      const unread = !conv.gelezen && conv.receiver_id === user?.id
+                      return (
+                        <div key={conv.conversation_id}
+                          onClick={() => { setActiveConv(conv.conversation_id); loadMessages(conv.conversation_id, user.id) }}
+                          style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 20px', cursor: 'pointer', borderBottom: '1px solid var(--cream-dark)', background: activeConv === conv.conversation_id ? 'var(--green-pale)' : 'white', transition: 'background .15s' }}>
+                          <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'var(--green-main)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 800, flexShrink: 0 }}>
+                            {otherName[0]?.toUpperCase() || '?'}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-dark)' }}>{otherName}</div>
+                            <div style={{ fontSize: 12, color: 'var(--text-light)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {conv.product?.name && <span style={{ color: 'var(--green-main)', fontWeight: 700 }}>{conv.product.name} · </span>}
+                              {conv.body}
+                            </div>
+                          </div>
+                          {unread && <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--green-main)', flexShrink: 0 }} />}
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {/* Chat venster */}
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    {!activeConv ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, padding: 40, textAlign: 'center', color: 'var(--text-light)' }}>
+                        <div style={{ fontSize: 40, marginBottom: 12, opacity: .4 }}>💬</div>
+                        <p>Selecteer een conversatie</p>
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ padding: '14px 20px', borderBottom: '2px solid var(--cream-dark)' }}>
+                          {(() => {
+                            const conv = inbox.find(m => m.conversation_id === activeConv)
+                            const isMe = conv?.sender_id === user?.id
+                            const name = isMe ? `${conv?.receiver?.first_name || ''} ${conv?.receiver?.last_name || ''}` : `${conv?.sender?.first_name || ''} ${conv?.sender?.last_name || ''}`
+                            return <div style={{ fontFamily: 'Fredoka, sans-serif', fontSize: 16, fontWeight: 700 }}>{name}</div>
+                          })()}
+                        </div>
+                        <div style={{ flex: 1, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 12, minHeight: 300 }}>
+                          {messages.map(msg => (
+                            <div key={msg.id} style={{ display: 'flex', gap: 8, maxWidth: '75%', alignSelf: msg.sender_id === user?.id ? 'flex-end' : 'flex-start', flexDirection: msg.sender_id === user?.id ? 'row-reverse' : 'row' }}>
+                              <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--green-pale)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, flexShrink: 0, color: 'var(--green-dark)' }}>
+                                {msg.sender?.first_name?.[0]?.toUpperCase() || '?'}
+                              </div>
+                              <div>
+                                <div style={{ padding: '10px 14px', borderRadius: 16, fontSize: 14, lineHeight: 1.5, background: msg.sender_id === user?.id ? 'var(--green-main)' : 'var(--cream-dark)', color: msg.sender_id === user?.id ? 'white' : 'var(--text-dark)', borderBottomRightRadius: msg.sender_id === user?.id ? 4 : 16, borderBottomLeftRadius: msg.sender_id === user?.id ? 16 : 4 }}>
+                                  {msg.body}
+                                </div>
+                                <div style={{ fontSize: 11, opacity: .6, marginTop: 4, textAlign: 'right' }}>
+                                  {new Date(msg.created_at).toLocaleTimeString('nl-BE', { hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                          <div ref={messagesEndRef} />
+                        </div>
+                        <div style={{ padding: '14px 20px', borderTop: '2px solid var(--cream-dark)', display: 'flex', gap: 10 }}>
+                          <input
+                            placeholder="Typ een bericht..."
+                            value={newMessage}
+                            onChange={e => setNewMessage(e.target.value)}
+                            onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
+                            style={{ flex: 1, padding: '11px 16px', border: '2px solid var(--cream-dark)', borderRadius: 50, fontFamily: 'Nunito, sans-serif', fontSize: 14, outline: 'none' }}
+                          />
+                          <button onClick={sendMessage} disabled={sendingMsg || !newMessage.trim()}
+                            style={{ padding: '11px 20px', borderRadius: 50, background: 'var(--green-main)', color: 'white', border: 'none', fontFamily: 'Fredoka, sans-serif', fontSize: 14, fontWeight: 600, cursor: 'pointer', opacity: sendingMsg || !newMessage.trim() ? .6 : 1 }}>
+                            {sendingMsg ? '...' : 'Verstuur →'}
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
 
