@@ -127,10 +127,16 @@ export async function POST(req: NextRequest) {
           to: sellerEmail,
           data: {
             shopNaam: (verkoper as any)?.shop_naam,
-            items: sellerItems,
+            items: sellerItems.map((i: any) => ({
+              naam: i.product_name || '—',
+              aantal: i.quantity || 1,
+              prijs: i.unit_price || 0,
+            })),
             koperNaam: meta?.customerName,
-            leveradres,
-            orderId: order.id,
+            leveradres: typeof leveradres === 'object'
+              ? [leveradres.street, leveradres.postcode, leveradres.city, leveradres.country].filter(Boolean).join(', ')
+              : leveradres || '—',
+            orderId: order.order_number || order.id?.slice(0,8),
           }
         })
       })
