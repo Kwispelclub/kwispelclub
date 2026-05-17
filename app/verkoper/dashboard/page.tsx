@@ -18,6 +18,8 @@ export default function VerkoperDashboard() {
   const [producten, setProducten] = useState<any[]>([])
   const [productenLoading, setProductenLoading] = useState(false)
   const [bestellingen, setBestellingen] = useState<any[]>([])
+  const [updatingOrder, setUpdatingOrder] = useState<string | null>(null)
+  const [trackingInputs, setTrackingInputs] = useState<Record<string, string>>({})
   const [inbox, setInbox] = useState<any[]>([])
   const [activeConv, setActiveConv] = useState<string | null>(null)
   const [messages, setMessages] = useState<any[]>([])
@@ -98,6 +100,15 @@ export default function VerkoperDashboard() {
       .in('id', orderIds)
       .order('created_at', { ascending: false })
     setBestellingen(orders || [])
+  }
+
+  const updateBestelling = async (orderId: string, status: string, trackingNumber?: string) => {
+    setUpdatingOrder(orderId)
+    const updateData: any = { status }
+    if (trackingNumber !== undefined) updateData.tracking_number = trackingNumber
+    await supabase.from('orders').update(updateData).eq('id', orderId)
+    await loadBestellingen(verkoper.profile_id)
+    setUpdatingOrder(null)
   }
 
   const loadInbox = async (userId: string) => {
@@ -540,30 +551,75 @@ export default function VerkoperDashboard() {
                 {bestellingen.length === 0 ? (
                   <div className="empty"><div className="ei">🛍️</div><p>Nog geen bestellingen ontvangen.</p></div>
                 ) : (
-                  <table className="table">
-                    <thead><tr><th>Order</th><th>Klant</th><th>Totaal</th><th>Status</th><th>Datum</th></tr></thead>
-                    <tbody>
-                      {bestellingen.map(b => (
-                        <tr key={b.id}>
-                          <td><strong>#{b.order_number || b.id?.slice(0, 8)}</strong></td>
-                          <td>{b.shipping_address?.name || '—'}</td>
-                          <td style={{ fontFamily: 'Fredoka, sans-serif', fontWeight: 700, color: 'var(--green-dark)' }}>€{b.total?.toFixed(2) || '—'}</td>
-                          <td>
-                            {b.status === 'paid' || b.status === 'betaald'
-                              ? <span className="badge badge-green">✅ Betaald</span>
-                              : b.status === 'shipped'
-                              ? <span className="badge badge-teal">📦 Verzonden</span>
-                              : b.status === 'delivered'
-                              ? <span className="badge badge-green">🏠 Geleverd</span>
-                              : b.status === 'cancelled' || b.status === 'geannuleerd'
-                              ? <span className="badge badge-red">❌ Geannuleerd</span>
-                              : <span className="badge badge-orange">⏳ In behandeling</span>}
-                          </td>
-                          <td style={{ fontSize: 12, color: 'var(--text-light)' }}>{formatDate(b.created_at)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  <div style={{display:'flex',flexDirection:'column',gap:16}}>
+                    {bestellingen.map(b => {
+                      const adres = b.shipping_address
+                      const adresStr = adres ? [adres.street, adres.postcode, adres.city].filter(Boolean).join(', ') : '—'
+                      const isPaid = b.status === 'paid' || b.status === 'betaald'
+                      const isShipped = b.status === 'shipped'
+                      const isDelivered = b.status === 'delivered'
+                      return (
+                        <div key={b.id} style={{background:'white',borderRadius:14,padding:20,border:'1.5px solid #E5EAF0'}}>
+                          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
+                            <div>
+                              <div style={{fontFamily:'Fredoka,sans-serif',fontSize:16,fontWeight:700,color:'var(--green-dark)'}}>
+                                Order #{b.order_number || b.id?.slice(0,8)}
+                              </div>
+                              <div style={{fontSize:12,color:'var(--text-light)',marginTop:2}}>{formatDate(b.created_at)}</div>
+                            </div>
+                            <div style={{display:'flex',alignItems:'center',gap:8}}>
+                              <span style={{fontFamily:'Fredoka,sans-serif',fontSize:16,fontWeight:700,color:'var(--green-dark)'}}>
+                                €{Number(b.total||0).toFixed(2)}
+                              </span>
+                              {isPaid && <span className="badge badge-green">✅ Betaald</span>}
+                              {isShipped && <span className="badge" style={{background:'#E0F5F1',color:'#2A9D8F'}}>📦 Verzonden</span>}
+                              {isDelivered && <span className="badge badge-green">🏠 Geleverd</span>}
+                              {!isPaid && !isShipped && !isDelivered && <span className="badge badge-orange">⏳ In behandeling</span>}
+                            </div>
+                          </div>
+
+                          <div style={{fontSize:13,color:'var(--text-mid)',marginBottom:14}}>
+                            <strong>{b.shipping_address?.name || '—'}</strong> — {adresStr}
+                          </div>
+
+                          {/* Status acties */}
+                          <div style={{display:'flex',gap:8,flexWrap:'wrap',paddingTop:12,borderTop:'1px solid #F0F4F8'}}>
+                            {(isPaid) && (
+                              <div style={{display:'flex',gap:8,alignItems:'center',flex:1,flexWrap:'wrap'}}>
+                                <input
+                                  placeholder="Trackingnummer (optioneel)"
+                                  value={trackingInputs[b.id] || b.tracking_number || ''}
+                                  onChange={e => setTrackingInputs(p => ({...p, [b.id]: e.target.value}))}
+                                  style={{flex:1,minWidth:160,padding:'8px 12px',border:'2px solid #E5EAF0',borderRadius:8,fontFamily:'Nunito,sans-serif',fontSize:13,outline:'none'}}
+                                />
+                                <button
+                                  onClick={() => updateBestelling(b.id, 'shipped', trackingInputs[b.id] || b.tracking_number || '')}
+                                  disabled={updatingOrder === b.id}
+                                  className="btn btn-green btn-sm"
+                                >
+                                  {updatingOrder === b.id ? '⏳' : '📦 Markeer als verzonden'}
+                                </button>
+                              </div>
+                            )}
+                            {isShipped && (
+                              <button
+                                onClick={() => updateBestelling(b.id, 'delivered')}
+                                disabled={updatingOrder === b.id}
+                                className="btn btn-green btn-sm"
+                              >
+                                {updatingOrder === b.id ? '⏳' : '🏠 Markeer als geleverd'}
+                              </button>
+                            )}
+                            {b.tracking_number && (
+                              <div style={{fontSize:12,fontWeight:700,color:'#2A9D8F',padding:'8px 12px',background:'#E0F5F1',borderRadius:8}}>
+                                📦 Tracking: {b.tracking_number}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
                 )}
               </div>
             )}

@@ -397,11 +397,26 @@ function AccountPage() {
               Order #{o.order_number || o.id.slice(0,8)}
             </div>
             <span style={{padding:'3px 12px',borderRadius:50,fontSize:12,fontWeight:700,
-              background: o.status==='paid'||o.status==='betaald' ? 'var(--green-pale)' : 'var(--orange-pale)',
-              color: o.status==='paid'||o.status==='betaald' ? 'var(--green-dark)' : '#5C3D2E'}}>
-              {o.status==='paid'||o.status==='betaald' ? '✅ Betaald' : o.status==='pending' ? '⏳ In behandeling' : o.status}
+              background: o.status==='paid'||o.status==='betaald' ? 'var(--green-pale)'
+                : o.status==='shipped' ? 'var(--teal-pale,#E0F5F1)'
+                : o.status==='delivered' ? 'var(--green-pale)'
+                : 'var(--orange-pale)',
+              color: o.status==='paid'||o.status==='betaald' ? 'var(--green-dark)'
+                : o.status==='shipped' ? '#2A9D8F'
+                : o.status==='delivered' ? 'var(--green-dark)'
+                : '#5C3D2E'}}>
+              {o.status==='paid'||o.status==='betaald' ? '✅ Betaald'
+                : o.status==='shipped' ? '📦 Verzonden'
+                : o.status==='delivered' ? '🏠 Geleverd'
+                : o.status==='pending' ? '⏳ In behandeling'
+                : o.status}
             </span>
           </div>
+          {o.tracking_number && (
+            <div style={{background:'var(--teal-pale,#E0F5F1)',borderRadius:10,padding:'10px 14px',fontSize:13,fontWeight:600,color:'#2A9D8F'}}>
+              📦 Tracking: <strong>{o.tracking_number}</strong>
+            </div>
+          )}
           {(o.order_items||[]).map((item:any) => (
             <div key={item.id} style={{display:'flex',justifyContent:'space-between',fontSize:14,color:'var(--text-mid)'}}>
               <span>{item.naam||item.product_name} × {item.aantal||item.quantity}</span>
@@ -412,8 +427,25 @@ function AccountPage() {
             <span>Totaal</span>
             <span>€{Number(o.total||o.totaal||0).toFixed(2)}</span>
           </div>
-          <div style={{fontSize:12,color:'var(--text-light)'}}>
-            {new Date(o.created_at).toLocaleDateString('nl-BE',{day:'2-digit',month:'long',year:'numeric'})}
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+            <div style={{fontSize:12,color:'var(--text-light)'}}>
+              {new Date(o.created_at).toLocaleDateString('nl-BE',{day:'2-digit',month:'long',year:'numeric'})}
+            </div>
+            <button
+              onClick={() => {
+                const sellerId = o.order_items?.[0]?.verkoper_id
+                if (sellerId) {
+                  setActivePanel('berichten')
+                } else {
+                  alert('Geen verkoper gekoppeld aan deze bestelling.')
+                }
+              }}
+              style={{display:'flex',alignItems:'center',gap:6,padding:'7px 16px',borderRadius:50,border:'2px solid var(--green-main)',background:'transparent',color:'var(--green-main)',fontFamily:'Fredoka,sans-serif',fontSize:13,fontWeight:600,cursor:'pointer',transition:'all .2s'}}
+              onMouseOver={e=>(e.currentTarget.style.background='var(--green-pale)')}
+              onMouseOut={e=>(e.currentTarget.style.background='transparent')}
+            >
+              💬 Vraag stellen
+            </button>
           </div>
         </div>
       ))}
