@@ -14,6 +14,8 @@ export default function VerkoperDashboard() {
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<Tab>('overzicht')
   const [mollieMode, setMollieMode] = useState('test')
+  const [verzendkosten, setVerzendkosten] = useState('4.95')
+  const [gratisVanaf, setGratisVanaf] = useState('50.00')
 
   const [producten, setProducten] = useState<any[]>([])
   const [productenLoading, setProductenLoading] = useState(false)
@@ -61,6 +63,8 @@ export default function VerkoperDashboard() {
       if (v.status === 'geweigerd') { router.push('/word-verkoper'); return }
       setVerkoper(v)
       setShopNaam(v.shop_naam || '')
+      setVerzendkosten(String(v.verzendkosten ?? '4.95'))
+      setGratisVanaf(String(v.gratis_verzending_vanaf ?? '50.00'))
       setBeschrijving(v.beschrijving || '')
       setWebsite(v.website || '')
       setInstagram(v.instagram || '')
@@ -190,6 +194,8 @@ export default function VerkoperDashboard() {
       shop_naam: shopNaam, beschrijving,
       website: website || null, instagram: instagram || null,
       logo_url: logoUrl || null, banner_url: bannerUrl || null,
+      verzendkosten: parseFloat(verzendkosten) || 4.95,
+      gratis_verzending_vanaf: parseFloat(gratisVanaf) || 50.00,
       updated_at: new Date().toISOString(),
     }).eq('id', verkoper.id)
     setSaveMsg('✓ Opgeslagen!')
@@ -799,6 +805,35 @@ export default function VerkoperDashboard() {
                       <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--green-dark)' }}>Jouw commissietarief</div>
                       <div style={{ fontSize: 12, color: 'var(--text-mid)' }}>Neem contact op voor aanpassing.</div>
                     </div>
+                  </div>
+                </div>
+                <div className="card">
+                  <div className="card-header"><h2>🚚 Verzendkosten</h2></div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                    <div className="fg">
+                      <label>Verzendkosten (€)</label>
+                      <input
+                        type="number" min="0" step="0.01"
+                        value={verzendkosten}
+                        onChange={e => setVerzendkosten(e.target.value)}
+                        placeholder="4.95"
+                      />
+                      <div style={{ fontSize: 11, color: 'var(--text-light)', marginTop: 4 }}>Standaard verzendkosten per bestelling</div>
+                    </div>
+                    <div className="fg">
+                      <label>Gratis verzending vanaf (€)</label>
+                      <input
+                        type="number" min="0" step="0.01"
+                        value={gratisVanaf}
+                        onChange={e => setGratisVanaf(e.target.value)}
+                        placeholder="50.00"
+                      />
+                      <div style={{ fontSize: 11, color: 'var(--text-light)', marginTop: 4 }}>0 = altijd gratis verzending</div>
+                    </div>
+                  </div>
+                  <div style={{ padding: '12px 16px', background: 'var(--green-pale)', borderRadius: 10, fontSize: 13, color: 'var(--green-dark)', fontWeight: 600 }}>
+                    💡 Klanten zien: €{verzendkosten} verzendkosten
+                    {parseFloat(gratisVanaf) > 0 && `, gratis vanaf €${gratisVanaf}`}
                   </div>
                 </div>
                 <button className="btn btn-green" onClick={handleSaveInstellingen} style={{ width: '100%', justifyContent: 'center', padding: 14, fontSize: 15 }}>

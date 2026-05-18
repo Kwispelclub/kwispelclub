@@ -49,7 +49,28 @@ export default function CheckoutPage() {
   }, [])
 
   const totaal = cart.reduce((sum, item) => sum + item.prijs * item.aantal, 0)
-  const verzending = totaal >= 50 ? 0 : 4.95
+  const [verzendkosten, setVerzendkosten] = useState<number>(4.95)
+  const [gratisVanaf, setGratisVanaf] = useState<number>(50)
+
+  useEffect(() => {
+    // Haal verzendkosten op van de eerste verkoper in de cart
+    const sellerId = cart[0]?.seller_id
+    if (!sellerId) return
+    const fetchVerzendkosten = async () => {
+      const { data } = await supabase
+        .from('verkopers')
+        .select('verzendkosten, gratis_verzending_vanaf')
+        .eq('profile_id', sellerId)
+        .single()
+      if (data) {
+        setVerzendkosten(data.verzendkosten ?? 4.95)
+        setGratisVanaf(data.gratis_verzending_vanaf ?? 50)
+      }
+    }
+    fetchVerzendkosten()
+  }, [cart])
+
+  const verzending = gratisVanaf > 0 && totaal >= gratisVanaf ? 0 : verzendkosten
   const totaalInclVerzending = totaal + verzending
 
   const updateAantal = (id: string, delta: number) => {
