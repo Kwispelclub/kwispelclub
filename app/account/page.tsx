@@ -382,7 +382,7 @@ function AccountPage() {
             <div className="stats-grid">
               {([
                 ['🐾', '0', 'Huisdieren', 'pets'],
-                ['📦', '0', 'Bestellingen', 'orders'],
+                ['📦', String(orders.length), 'Bestellingen', 'orders'],
                 ['❤️', '0', 'Favorieten', 'favorites'],
                 ['💬', String(unreadCount || 0), 'Berichten', 'berichten'],
               ] as [string, string, string, Panel][]).map(([icon, val, label, panel]) => (

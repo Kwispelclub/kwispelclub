@@ -227,7 +227,7 @@ const [bannerSaving, setBannerSaving] = useState(false)
         supabase.from('kapsalons').select('*').order('created_at', { ascending: false }),
         supabase.from('profiles').select('*').order('created_at', { ascending: false }),
         supabase.from('listings').select('*').order('created_at', { ascending: false }),
-        supabase.from('bestellingen').select('*').order('created_at', { ascending: false }),
+        supabase.from('orders').select('*, order_items(*)').order('created_at', { ascending: false }),
         supabase.from('verkopers').select('*, profiles(first_name, last_name, email)').order('created_at', { ascending: false }),
         supabase.from('academy_verkopers').select('*, profiles(first_name, last_name, email)').order('created_at', { ascending: false }),
         supabase.from('team_members').select('*').order('volgorde'),
@@ -973,15 +973,16 @@ supabase.from('page_banners').select('*').order('pagina'),      ])
                   <div className="empty-state"><div className="ei">📦</div><p>Nog geen bestellingen</p></div>
                 ) : (
                   <table className="table">
-                    <thead><tr><th>Order #</th><th>Totaal</th><th>Status</th><th>Datum</th></tr></thead>
+                    <thead><tr><th>Order #</th><th>Koper</th><th>Totaal</th><th>Status</th><th>Datum</th></tr></thead>
                     <tbody>
                       {bestellingen.map(b => (
                         <tr key={b.id}>
-                          <td><strong>{b.order_nummer || b.id?.slice(0, 8)}</strong></td>
-                          <td style={{ fontFamily: 'Fredoka, sans-serif', fontWeight: 700, color: 'var(--green-dark)' }}>€{b.totaal?.toFixed(2) || '—'}</td>
+                          <td><strong>{b.order_number || b.id?.slice(0, 8)}</strong></td>
+                          <td style={{ fontSize: 13, color: 'var(--text-mid)' }}>{b.buyer_email || '—'}</td>
+                          <td style={{ fontFamily: 'Fredoka, sans-serif', fontWeight: 700, color: 'var(--green-dark)' }}>€{(b.total_amount ?? b.totaal)?.toFixed(2) || '—'}</td>
                           <td>
-                            {b.status === 'geleverd' ? <span className="badge badge-green">Geleverd</span>
-                              : b.status === 'verzonden' ? <span className="badge badge-teal">Verzonden</span>
+                            {b.status === 'delivered' || b.status === 'geleverd' ? <span className="badge badge-green">Geleverd</span>
+                              : b.status === 'shipped' || b.status === 'verzonden' ? <span className="badge badge-teal">Verzonden</span>
                               : <span className="badge badge-orange">In behandeling</span>}
                           </td>
                           <td>{b.created_at ? formatDate(b.created_at) : '—'}</td>
