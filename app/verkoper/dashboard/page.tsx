@@ -244,9 +244,10 @@ export default function VerkoperDashboard() {
       description: pBeschrijving || null,
       price: parseFloat(pPrijs),
       image_url: pFotos[0] || null,
+      images: pFotos.length > 0 ? pFotos : null,
       stock: pVoorraad ? parseInt(pVoorraad) : null,
       species_target: pDier || null,
-      category: pCategorie || null,
+      categorie: pCategorie || null,
     }
     let error
     if (editProductId) {
@@ -271,8 +272,8 @@ export default function VerkoperDashboard() {
     setPNaam(p.name || '')
     setPBeschrijving(p.description || '')
     setPPrijs(String(p.price || ''))
-    setPCategorie(p.category || 'Voeding & Snacks')
-    setPFotos(p.image_url ? [p.image_url] : [])
+    setPCategorie(p.categorie || p.category || 'Voeding & Snacks')
+    setPFotos(p.images && p.images.length > 0 ? p.images : p.image_url ? [p.image_url] : [])
     setPVoorraad(p.stock !== null ? String(p.stock) : '')
     setPDier(p.species_target || 'beide')
     setShowProductForm(true)
