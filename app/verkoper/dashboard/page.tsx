@@ -546,11 +546,26 @@ export default function VerkoperDashboard() {
                     <div className="fg"><label>Beschrijving</label><textarea placeholder="Beschrijf je product..." value={pBeschrijving} onChange={e => setPBeschrijving(e.target.value)} /></div>
                     <div className="fg">
                       <label>Foto's (max. 4)</label>
-                      {pFotos[0] && <img src={pFotos[0]} className="foto-thumb" alt="" style={{ marginBottom: 8 }} />}
-                      <label className="upload-btn" style={{ display: 'block', marginTop: 8 }}>
-                        {uploadingFoto ? '⏳ Uploaden...' : '📸 Foto\'s toevoegen'}
-                        <input ref={fotoRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleFotoUpload} />
-                      </label>
+                      {pFotos.length > 0 && (
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+                          {pFotos.map((foto, i) => (
+                            <div key={i} style={{ position: 'relative' }}>
+                              <img src={foto} className="foto-thumb" alt="" style={{ width: 72, height: 72, borderRadius: 8, objectFit: 'cover', display: 'block' }} />
+                              <button
+                                type="button"
+                                onClick={() => setPFotos(prev => prev.filter((_, idx) => idx !== i))}
+                                style={{ position: 'absolute', top: -8, right: -8, width: 22, height: 22, borderRadius: '50%', background: '#E84E4E', color: 'white', border: 'none', cursor: 'pointer', fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, lineHeight: 1 }}
+                              >✕</button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {pFotos.length < 4 && (
+                        <label className="upload-btn" style={{ display: 'block', marginTop: 8 }}>
+                          {uploadingFoto ? '⏳ Uploaden...' : `📸 Foto toevoegen (${pFotos.length}/4)`}
+                          <input ref={fotoRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleFotoUpload} />
+                        </label>
+                      )}
                     </div>
                     {pErr && <div style={{ background: '#FFF0F0', border: '1.5px solid #FFCDD2', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#C62828', marginBottom: 12 }}>⚠️ {pErr}</div>}
                     <button className="btn btn-green" onClick={handleSaveProduct} disabled={pSaving} style={{ width: '100%', justifyContent: 'center', padding: 14 }}>
