@@ -41,6 +41,7 @@ export default function VerkoperDashboard() {
   const [uploadingBanner, setUploadingBanner] = useState(false)
 
   const [showProductForm, setShowProductForm] = useState(false)
+  const [editProductId, setEditProductId] = useState<string | null>(null)
   const [pNaam, setPNaam] = useState('')
   const [pBeschrijving, setPBeschrijving] = useState('')
   const [pPrijs, setPPrijs] = useState('')
@@ -238,21 +239,44 @@ export default function VerkoperDashboard() {
   const handleSaveProduct = async () => {
     if (!pNaam || !pPrijs) { setPErr('Naam en prijs zijn verplicht'); return }
     setPSaving(true); setPErr('')
-    const { error } = await supabase.from('products').insert({
-      seller_id: verkoper.profile_id,
+    const productData = {
       name: pNaam,
       description: pBeschrijving || null,
       price: parseFloat(pPrijs),
-      status: 'actief',
       image_url: pFotos[0] || null,
       stock: pVoorraad ? parseInt(pVoorraad) : null,
       species_target: pDier || null,
-    })
+      category: pCategorie || null,
+    }
+    let error
+    if (editProductId) {
+      // Update bestaand product
+      const res = await supabase.from('products').update(productData).eq('id', editProductId)
+      error = res.error
+    } else {
+      // Nieuw product
+      const res = await supabase.from('products').insert({ ...productData, seller_id: verkoper.profile_id, status: 'actief' })
+      error = res.error
+    }
     if (error) { setPErr(error.message); setPSaving(false); return }
     setPNaam(''); setPBeschrijving(''); setPPrijs(''); setPFotos([]); setPVoorraad('')
+    setEditProductId(null)
     setShowProductForm(false)
     await loadProducten(verkoper.profile_id)
     setPSaving(false)
+  }
+
+  const startEditProduct = (p: any) => {
+    setEditProductId(p.id)
+    setPNaam(p.name || '')
+    setPBeschrijving(p.description || '')
+    setPPrijs(String(p.price || ''))
+    setPCategorie(p.category || 'Voeding & Snacks')
+    setPFotos(p.image_url ? [p.image_url] : [])
+    setPVoorraad(p.stock !== null ? String(p.stock) : '')
+    setPDier(p.species_target || 'beide')
+    setShowProductForm(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const toggleProductActief = async (id: string, isActief: boolean) => {
@@ -491,8 +515,8 @@ export default function VerkoperDashboard() {
                 {showProductForm && (
                   <div className="card" style={{ border: '2px solid var(--green-pale)' }}>
                     <div className="card-header">
-                      <h2>Nieuw Product</h2>
-                      <button className="btn btn-ghost btn-sm" onClick={() => setShowProductForm(false)}>✕ Annuleren</button>
+                      <h2>{editProductId ? '✏️ Product Bewerken' : 'Nieuw Product'}</h2>
+                      <button className="btn btn-ghost btn-sm" onClick={() => { setShowProductForm(false); setEditProductId(null); setPNaam(''); setPBeschrijving(''); setPPrijs(''); setPFotos([]) }}>✕ Annuleren</button>
                     </div>
                     <div className="form-row">
                       <div className="fg"><label>Productnaam *</label><input placeholder="Bijv. Hondensnoepjes Zalm 200g" value={pNaam} onChange={e => setPNaam(e.target.value)} /></div>
@@ -530,7 +554,7 @@ export default function VerkoperDashboard() {
                     </div>
                     {pErr && <div style={{ background: '#FFF0F0', border: '1.5px solid #FFCDD2', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#C62828', marginBottom: 12 }}>⚠️ {pErr}</div>}
                     <button className="btn btn-green" onClick={handleSaveProduct} disabled={pSaving} style={{ width: '100%', justifyContent: 'center', padding: 14 }}>
-                      {pSaving ? 'Bezig...' : '✓ Product Opslaan'}
+                      {pSaving ? 'Bezig...' : editProductId ? '✓ Wijzigingen Opslaan' : '✓ Product Opslaan'}
                     </button>
                   </div>
                 )}
@@ -561,8 +585,9 @@ export default function VerkoperDashboard() {
                             <td><span className={`badge ${p.status === 'actief' ? 'badge-green' : 'badge-gray'}`}>{p.status === 'actief' ? 'Actief' : 'Inactief'}</span></td>
                             <td>
                               <div style={{ display: 'flex', gap: 6 }}>
+                                <button className="btn btn-ghost btn-sm" onClick={() => startEditProduct(p)}>✏️ Bewerken</button>
                                 <button className="btn btn-ghost btn-sm" onClick={() => toggleProductActief(p.id, p.status === 'actief')}>
-                                  {p.status === 'actief' ? '⏸ Pauzeer' : '▶ Activeer'}
+                                  {p.status === 'actief' ? '⏸' : '▶'}
                                 </button>
                                 <button className="btn btn-danger btn-sm" onClick={() => deleteProduct(p.id)}>🗑️</button>
                               </div>
