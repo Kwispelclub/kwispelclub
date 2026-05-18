@@ -13,6 +13,9 @@ export default function WinkelPage() {
   const [notFound, setNotFound] = useState(false)
   const [isEigenaar, setIsEigenaar] = useState(false)
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set())
+  const [selectedProduct, setSelectedProduct] = useState<any>(null)
+  const [modalAantal, setModalAantal] = useState(1)
+  const [modalAdded, setModalAdded] = useState(false)
 
   useEffect(() => {
     loadVerkoper()
@@ -122,6 +125,22 @@ export default function WinkelPage() {
     .not-found{text-align:center;padding:80px 20px;max-width:400px;margin:0 auto}
     .not-found .ni{font-size:56px;margin-bottom:16px}
     @media(max-width:768px){.shop-body{grid-template-columns:1fr}}
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s ease}
+    .modal{background:white;border-radius:24px;max-width:680px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.2);animation:slideUp .3s ease}
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+    @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+    .modal-img{width:100%;height:280px;object-fit:cover;border-radius:24px 24px 0 0}
+    .modal-img-ph{width:100%;height:280px;display:flex;align-items:center;justify-content:center;font-size:72px;background:var(--cream);border-radius:24px 24px 0 0}
+    .modal-body{padding:28px}
+    .modal-close{position:absolute;top:16px;right:16px;width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.4);color:white;border:none;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s}
+    .modal-close:hover{background:rgba(0,0,0,.6)}
+    .modal-prijs{font-family:'Fredoka',sans-serif;font-size:32px;font-weight:700;color:var(--green-main);margin-bottom:16px}
+    .modal-desc{font-size:14px;color:var(--text-mid);line-height:1.7;margin-bottom:20px}
+    .aantal-ctrl{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+    .aantal-btn{width:36px;height:36px;border-radius:50%;border:2px solid var(--cream-dark);background:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;font-weight:700}
+    .aantal-btn:hover{border-color:var(--green-main);color:var(--green-main)}
+    .aantal-val{font-family:'Fredoka',sans-serif;font-size:20px;font-weight:700;min-width:32px;text-align:center}
+    .modal-actions{display:flex;flex-direction:column;gap:10px}
   `
 
   if (loading) return (
@@ -230,7 +249,7 @@ export default function WinkelPage() {
           ) : (
             <div className="products-grid">
               {products.map(p => (
-                <div key={p.id} className="product-card">
+                <div key={p.id} className="product-card" style={{cursor:'pointer'}} onClick={() => { setSelectedProduct(p); setModalAantal(1); setModalAdded(false) }}>
                   {p.image_url
                     ? <img src={p.image_url} alt={p.name} className="product-img" />
                     : <div className="product-img-placeholder">🐾</div>}
@@ -238,10 +257,9 @@ export default function WinkelPage() {
                     <div className="product-naam">{p.name}</div>
                     {p.description && <div className="product-desc">{p.description}</div>}
                     <div className="product-prijs">€{parseFloat(p.price).toFixed(2)}</div>
-                    {/* ✅ Winkelwagen knop */}
                     <button
                       className={`btn-cart ${addedIds.has(p.id) ? 'btn-cart-added' : 'btn-cart-add'}`}
-                      onClick={() => addToCart(p)}
+                      onClick={e => { e.stopPropagation(); addToCart(p) }}
                     >
                       {addedIds.has(p.id) ? '✓ Toegevoegd!' : '🛒 In winkelwagen'}
                     </button>
@@ -252,6 +270,65 @@ export default function WinkelPage() {
           )}
         </div>
       </div>
+      {/* PRODUCT MODAL */}
+      {selectedProduct && (
+        <div className="modal-overlay" onClick={() => setSelectedProduct(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{position:'relative'}}>
+            <button className="modal-close" onClick={() => setSelectedProduct(null)}>✕</button>
+            {selectedProduct.image_url
+              ? <img src={selectedProduct.image_url} alt={selectedProduct.name} className="modal-img" />
+              : <div className="modal-img-ph">🐾</div>}
+            <div className="modal-body">
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:8}}>
+                <h2 style={{fontFamily:'Fredoka,sans-serif',fontSize:24,color:'var(--text-dark)',flex:1,paddingRight:16}}>{selectedProduct.name}</h2>
+                {selectedProduct.stock !== null && selectedProduct.stock <= 5 && selectedProduct.stock > 0 && (
+                  <span style={{fontSize:11,fontWeight:700,color:'var(--orange-main)',background:'var(--orange-pale)',padding:'4px 10px',borderRadius:50,flexShrink:0}}>⚠️ Nog {selectedProduct.stock} op voorraad</span>
+                )}
+              </div>
+              <div className="modal-prijs">€{parseFloat(selectedProduct.price).toFixed(2)}</div>
+              {selectedProduct.description && (
+                <div className="modal-desc">{selectedProduct.description}</div>
+              )}
+
+              {/* Aantal */}
+              <div style={{fontSize:13,fontWeight:700,color:'var(--text-mid)',marginBottom:8}}>Aantal:</div>
+              <div className="aantal-ctrl">
+                <button className="aantal-btn" onClick={() => setModalAantal(a => Math.max(1, a - 1))}>−</button>
+                <span className="aantal-val">{modalAantal}</span>
+                <button className="aantal-btn" onClick={() => setModalAantal(a => a + 1)}>+</button>
+                <span style={{fontSize:13,color:'var(--text-light)',fontWeight:600}}>= €{(parseFloat(selectedProduct.price) * modalAantal).toFixed(2)}</span>
+              </div>
+
+              <div className="modal-actions">
+                <button
+                  onClick={() => {
+                    for (let i = 0; i < modalAantal; i++) addToCart(selectedProduct)
+                    setModalAdded(true)
+                    setTimeout(() => setSelectedProduct(null), 1200)
+                  }}
+                  style={{width:'100%',padding:'14px',borderRadius:50,background: modalAdded ? 'var(--green-pale)' : 'var(--green-main)',color: modalAdded ? 'var(--green-dark)' : 'white',border:'none',fontFamily:'Fredoka,sans-serif',fontSize:16,fontWeight:700,cursor:'pointer',transition:'all .2s'}}
+                >
+                  {modalAdded ? '✓ Toegevoegd aan winkelwagen!' : `🛒 In winkelwagen — €${(parseFloat(selectedProduct.price) * modalAantal).toFixed(2)}`}
+                </button>
+                <a href="/checkout" style={{width:'100%',padding:'14px',borderRadius:50,background:'var(--orange-main)',color:'white',border:'none',fontFamily:'Fredoka,sans-serif',fontSize:16,fontWeight:700,cursor:'pointer',transition:'all .2s',textDecoration:'none',textAlign:'center',display:'block'}}>
+                  💳 Direct afrekenen →
+                </a>
+              </div>
+
+              {/* Verkoper info */}
+              <div style={{marginTop:20,paddingTop:16,borderTop:'1px solid var(--cream-dark)',display:'flex',alignItems:'center',gap:12}}>
+                <div style={{width:40,height:40,borderRadius:10,background:'var(--green-pale)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,flexShrink:0}}>
+                  {verkoper?.logo_url ? <img src={verkoper.logo_url} style={{width:'100%',height:'100%',borderRadius:10,objectFit:'cover'}} /> : '🏪'}
+                </div>
+                <div>
+                  <div style={{fontSize:13,fontWeight:700,color:'var(--text-dark)'}}>{verkoper?.shop_naam}</div>
+                  <div style={{fontSize:11,color:'var(--text-light)'}}>✓ Geverifieerde verkoper</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
