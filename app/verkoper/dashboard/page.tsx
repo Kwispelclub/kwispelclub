@@ -236,6 +236,8 @@ export default function VerkoperDashboard() {
     setUploadingFoto(false)
   }
 
+  const getFotoUrl = (p: any) => p.image_url || (p.images && p.images[0]) || (p.fotos && JSON.parse(p.fotos || '[]')[0]) || null
+
   const handleSaveProduct = async () => {
     if (!pNaam || !pPrijs) { setPErr('Naam en prijs zijn verplicht'); return }
     setPSaving(true); setPErr('')
@@ -245,6 +247,7 @@ export default function VerkoperDashboard() {
       price: parseFloat(pPrijs),
       image_url: pFotos[0] || null,
       images: pFotos.length > 0 ? pFotos : null,
+      fotos: JSON.stringify(pFotos),
       voorraad: pVoorraad ? parseInt(pVoorraad) : 0,
       species_target: pDier || null,
     }
@@ -272,7 +275,7 @@ export default function VerkoperDashboard() {
     setPBeschrijving(p.description || '')
     setPPrijs(String(p.price || ''))
     setPCategorie(p.categorie || p.category || 'Voeding & Snacks')
-    setPFotos(p.images && p.images.length > 0 ? p.images : p.image_url ? [p.image_url] : [])
+    setPFotos(p.images && p.images.length > 0 ? p.images : p.image_url ? [p.image_url] : (p.fotos && JSON.parse(p.fotos || '[]').length > 0 ? JSON.parse(p.fotos) : []))
     setPVoorraad(p.voorraad !== null ? String(p.voorraad) : '')
     setPDier(p.species_target || 'beide')
     setShowProductForm(true)
@@ -492,8 +495,8 @@ export default function VerkoperDashboard() {
                         {producten.slice(0, 5).map(p => (
                           <tr key={p.id}>
                             <td style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                              {p.image_url
-                                ? <img src={p.image_url} className="product-img" alt={p.name} />
+                              {getFotoUrl(p)
+                                ? <img src={getFotoUrl(p)!} className="product-img" alt={p.name} />
                                 : <div className="product-img" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>📦</div>}
                               <strong>{p.name}</strong>
                             </td>
@@ -588,8 +591,8 @@ export default function VerkoperDashboard() {
                           <tr key={p.id}>
                             <td>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                {p.image_url
-                                  ? <img src={p.image_url} className="product-img" alt={p.name} />
+                                {getFotoUrl(p)
+                                  ? <img src={getFotoUrl(p)!} className="product-img" alt={p.name} />
                                   : <div className="product-img" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>📦</div>}
                                 <strong style={{ fontSize: 13 }}>{p.name}</strong>
                               </div>

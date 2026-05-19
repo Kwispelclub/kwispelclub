@@ -71,7 +71,7 @@ export default function WinkelPage() {
   }
 
   const filtered = products
-    .filter(p => cat === 'Alle' || p.category === cat)
+    .filter(p => cat === 'Alle') // TODO: category_id koppelen aan categorie naam
     .filter(p => !search || p.name?.toLowerCase().includes(search.toLowerCase()) || p.description?.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => {
       if (sortBy === 'prijs-laag') return parseFloat(a.price) - parseFloat(b.price)
@@ -197,8 +197,8 @@ export default function WinkelPage() {
               {filtered.map(p => (
                 <div key={p.id} className="card">
                   <a href={`/winkel/${p.verkopers?.slug}`} style={{textDecoration:'none',color:'inherit'}}>
-                    {p.image_url
-                      ? <img src={p.image_url} alt={p.name} className="card-img" />
+                    {(p.image_url || (p.images && p.images[0]) || (p.fotos && JSON.parse(p.fotos||'[]')[0]))
+                      ? <img src={p.image_url || (p.images && p.images[0]) || JSON.parse(p.fotos||'[]')[0]} alt={p.name} className="card-img" />
                       : <div className="card-img-ph">🐾</div>}
                   </a>
                   <div className="card-body">
@@ -212,17 +212,17 @@ export default function WinkelPage() {
                     <div className="card-footer">
                       <div>
                         <div className="card-prijs">€{parseFloat(p.price).toFixed(2)}</div>
-                        {p.stock !== null && p.stock <= 5 && p.stock > 0 && (
+                        {(p.voorraad ?? p.stock) !== null && (p.voorraad ?? p.stock) <= 5 && (p.voorraad ?? p.stock) > 0 && (
                           <div style={{fontSize:11,color:'var(--orange-main)',fontWeight:700}}>⚠️ Nog {p.stock} op voorraad</div>
                         )}
-                        {p.stock === 0 && (
+                        {(p.voorraad ?? p.stock) === 0 && (
                           <div style={{fontSize:11,color:'var(--red)',fontWeight:700}}>Uitverkocht</div>
                         )}
                       </div>
                       <button
                         className={`btn-cart ${addedIds.has(p.id) ? 'btn-added' : 'btn-add'}`}
                         onClick={() => addToCart(p)}
-                        disabled={p.stock === 0}
+                        disabled={(p.voorraad ?? p.stock) === 0}
                       >
                         {addedIds.has(p.id) ? '✓ Toegevoegd' : '🛒 Kopen'}
                       </button>
