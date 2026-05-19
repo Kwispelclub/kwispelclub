@@ -206,7 +206,7 @@ export default function WinkelPage() {
               {filtered.map(p => (
                 <div key={p.id} className="card">
                   <a href={`/winkel/${p.verkopers?.slug}`} style={{textDecoration:'none',color:'inherit'}}>
-                    {{getFotoUrl(p)
+                    {getFotoUrl(p)
                       ? <img src={getFotoUrl(p)!} alt={p.name} className="card-img" />
                       : <div className="card-img-ph">🐾</div>}
                   </a>
