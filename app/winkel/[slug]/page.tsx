@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useParams } from 'next/navigation'
 
 export default function WinkelPage() {
   const { slug } = useParams<{ slug: string }>()
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
   const [verkoper, setVerkoper] = useState<any>(null)
   const [products, setProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -20,6 +20,15 @@ export default function WinkelPage() {
   useEffect(() => {
     loadVerkoper()
   }, [slug])
+
+
+  const parseFotos = (fotos: any): string[] => {
+    if (!fotos) return []
+    if (Array.isArray(fotos)) return fotos
+    try { const r = JSON.parse(fotos); return Array.isArray(r) ? r : [] } catch { return [] }
+  }
+  const getFotoUrl = (p: any): string | null =>
+    p.image_url || (Array.isArray(p.images) && p.images[0]) || parseFotos(p.fotos)[0] || null
 
   const loadVerkoper = async () => {
     const { data: v } = await supabase
@@ -62,7 +71,7 @@ export default function WinkelPage() {
           prijs: parseFloat(p.price),
           aantal: 1,
           emoji: '🐾',
-          img: p.image_url || null,
+          img: getFotoUrl(p),
         })
       }
       localStorage.setItem('kc_cart', JSON.stringify(cart))
@@ -250,8 +259,8 @@ export default function WinkelPage() {
             <div className="products-grid">
               {products.map(p => (
                 <div key={p.id} className="product-card" style={{cursor:'pointer'}} onClick={() => { setSelectedProduct(p); setModalAantal(1); setModalAdded(false) }}>
-                  {p.image_url
-                    ? <img src={p.image_url} alt={p.name} className="product-img" />
+                  {getFotoUrl(p)
+                    ? <img src={getFotoUrl(p)!} alt={p.name} className="product-img" />
                     : <div className="product-img-placeholder">🐾</div>}
                   <div className="product-body">
                     <div className="product-naam">{p.name}</div>
@@ -275,14 +284,14 @@ export default function WinkelPage() {
         <div className="modal-overlay" onClick={() => setSelectedProduct(null)}>
           <div className="modal" onClick={e => e.stopPropagation()} style={{position:'relative'}}>
             <button className="modal-close" onClick={() => setSelectedProduct(null)}>✕</button>
-            {selectedProduct.image_url
-              ? <img src={selectedProduct.image_url} alt={selectedProduct.name} className="modal-img" />
+            {getFotoUrl(selectedProduct)
+              ? <img src={getFotoUrl(selectedProduct)!} alt={selectedProduct.name} className="modal-img" />
               : <div className="modal-img-ph">🐾</div>}
             <div className="modal-body">
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:8}}>
                 <h2 style={{fontFamily:'Fredoka,sans-serif',fontSize:24,color:'var(--text-dark)',flex:1,paddingRight:16}}>{selectedProduct.name}</h2>
-                {selectedProduct.stock !== null && selectedProduct.stock <= 5 && selectedProduct.stock > 0 && (
-                  <span style={{fontSize:11,fontWeight:700,color:'var(--orange-main)',background:'var(--orange-pale)',padding:'4px 10px',borderRadius:50,flexShrink:0}}>⚠️ Nog {selectedProduct.stock} op voorraad</span>
+                {(selectedProduct.voorraad ?? selectedProduct.stock) !== null && (selectedProduct.voorraad ?? selectedProduct.stock) <= 5 && (selectedProduct.voorraad ?? selectedProduct.stock) > 0 && (
+                  <span style={{fontSize:11,fontWeight:700,color:'var(--orange-main)',background:'var(--orange-pale)',padding:'4px 10px',borderRadius:50,flexShrink:0}}>⚠️ Nog {selectedProduct.voorraad ?? selectedProduct.stock} op voorraad</span>
                 )}
               </div>
               <div className="modal-prijs">€{parseFloat(selectedProduct.price).toFixed(2)}</div>
