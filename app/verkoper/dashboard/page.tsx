@@ -245,9 +245,8 @@ export default function VerkoperDashboard() {
       price: parseFloat(pPrijs),
       image_url: pFotos[0] || null,
       images: pFotos.length > 0 ? pFotos : null,
-      stock: pVoorraad ? parseInt(pVoorraad) : null,
+      voorraad: pVoorraad ? parseInt(pVoorraad) : 0,
       species_target: pDier || null,
-      categorie: pCategorie || null,
     }
     let error
     if (editProductId) {
@@ -274,7 +273,7 @@ export default function VerkoperDashboard() {
     setPPrijs(String(p.price || ''))
     setPCategorie(p.categorie || p.category || 'Voeding & Snacks')
     setPFotos(p.images && p.images.length > 0 ? p.images : p.image_url ? [p.image_url] : [])
-    setPVoorraad(p.stock !== null ? String(p.stock) : '')
+    setPVoorraad(p.voorraad !== null ? String(p.voorraad) : '')
     setPDier(p.species_target || 'beide')
     setShowProductForm(true)
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -597,7 +596,7 @@ export default function VerkoperDashboard() {
                             </td>
                             <td style={{ fontSize: 12, color: 'var(--text-mid)', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.description || '—'}</td>
                             <td style={{ fontFamily: 'Fredoka, sans-serif', fontWeight: 700, color: 'var(--teal)' }}>€{parseFloat(p.price).toFixed(2)}</td>
-                            <td style={{ fontSize: 13 }}>{p.stock ?? '∞'}</td>
+                            <td style={{ fontSize: 13 }}>{p.voorraad ?? '∞'}</td>
                             <td><span className={`badge ${p.status === 'actief' ? 'badge-green' : 'badge-gray'}`}>{p.status === 'actief' ? 'Actief' : 'Inactief'}</span></td>
                             <td>
                               <div style={{ display: 'flex', gap: 6 }}>
