@@ -236,7 +236,13 @@ export default function VerkoperDashboard() {
     setUploadingFoto(false)
   }
 
-  const getFotoUrl = (p: any) => p.image_url || (p.images && p.images[0]) || (p.fotos && JSON.parse(p.fotos || '[]')[0]) || null
+  const parseFotos = (fotos: any): string[] => {
+    if (!fotos) return []
+    if (Array.isArray(fotos)) return fotos
+    try { const r = JSON.parse(fotos); return Array.isArray(r) ? r : [] } catch { return [] }
+  }
+  const getFotoUrl = (p: any): string | null =>
+    p.image_url || (Array.isArray(p.images) && p.images[0]) || parseFotos(p.fotos)[0] || null
 
   const handleSaveProduct = async () => {
     if (!pNaam || !pPrijs) { setPErr('Naam en prijs zijn verplicht'); return }
@@ -275,7 +281,7 @@ export default function VerkoperDashboard() {
     setPBeschrijving(p.description || '')
     setPPrijs(String(p.price || ''))
     setPCategorie(p.categorie || p.category || 'Voeding & Snacks')
-    setPFotos(p.images && p.images.length > 0 ? p.images : p.image_url ? [p.image_url] : (p.fotos && JSON.parse(p.fotos || '[]').length > 0 ? JSON.parse(p.fotos) : []))
+    setPFotos(Array.isArray(p.images) && p.images.length > 0 ? p.images : p.image_url ? [p.image_url] : (() => { try { const f = JSON.parse(p.fotos||'[]'); return Array.isArray(f) ? f : [] } catch { return [] } })())
     setPVoorraad(p.voorraad !== null ? String(p.voorraad) : '')
     setPDier(p.species_target || 'beide')
     setShowProductForm(true)

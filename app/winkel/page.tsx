@@ -133,6 +133,15 @@ export default function WinkelPage() {
     @media(max-width:480px){.grid{grid-template-columns:1fr}}
   `
 
+
+  const parseFotos = (fotos: any): string[] => {
+    if (!fotos) return []
+    if (Array.isArray(fotos)) return fotos
+    try { const r = JSON.parse(fotos); return Array.isArray(r) ? r : [] } catch { return [] }
+  }
+  const getFotoUrl = (p: any): string | null =>
+    p.image_url || (Array.isArray(p.images) && p.images[0]) || parseFotos(p.fotos)[0] || null
+
   return (
     <>
       <style dangerouslySetInnerHTML={{__html: CSS}} />
@@ -197,8 +206,8 @@ export default function WinkelPage() {
               {filtered.map(p => (
                 <div key={p.id} className="card">
                   <a href={`/winkel/${p.verkopers?.slug}`} style={{textDecoration:'none',color:'inherit'}}>
-                    {(p.image_url || (p.images && p.images[0]) || (p.fotos && JSON.parse(p.fotos||'[]')[0]))
-                      ? <img src={p.image_url || (p.images && p.images[0]) || JSON.parse(p.fotos||'[]')[0]} alt={p.name} className="card-img" />
+                    {{getFotoUrl(p)
+                      ? <img src={getFotoUrl(p)!} alt={p.name} className="card-img" />
                       : <div className="card-img-ph">🐾</div>}
                   </a>
                   <div className="card-body">
