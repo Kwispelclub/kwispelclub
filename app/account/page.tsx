@@ -171,7 +171,8 @@ function AccountPage() {
 
   const loadPets = async (userId: string) => {
     setPetsLoading(true)
-    const { data } = await supabase.from('pets').select('*').eq('owner_id', userId).order('created_at', { ascending: false })
+    const { data, error } = await supabase.from('pets').select('*').eq('owner_id', userId).order('created_at', { ascending: false })
+    console.log('loadPets userId:', userId, 'data:', data, 'error:', error)
     setPets(data || [])
     setPetsLoading(false)
   }
