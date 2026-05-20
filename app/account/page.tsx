@@ -198,9 +198,11 @@ function AccountPage() {
     setPetSaving(true)
     const petData = { name: petNaam, species: petSoort.toLowerCase() === 'hond' ? 'hond' : petSoort.toLowerCase() === 'kat' ? 'kat' : petSoort.toLowerCase() === 'konijn' ? 'konijn' : 'overig', breed: petRas || null, geboortedatum: petGeboortedatum || null, gender: petGeslacht || 'onbekend', avatar_url: petFotoUrl || null, owner_id: user.id }
     if (editPet) {
-      await supabase.from('pets').update(petData).eq('id', editPet.id)
+      const { error } = await supabase.from('pets').update(petData).eq('id', editPet.id)
+      console.log('Update error:', error)
     } else {
-      await supabase.from('pets').insert(petData)
+      const { error } = await supabase.from('pets').insert(petData)
+      console.log('Insert error:', error)
     }
     await loadPets(user.id)
     setShowPetForm(false)
