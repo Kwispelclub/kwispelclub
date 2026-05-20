@@ -72,6 +72,18 @@ function AccountPage() {
   const [orders, setOrders] = useState<any[]>([])
   const [favorites, setFavorites] = useState<any[]>([])
   const [favLoading, setFavLoading] = useState(false)
+  const [pets, setPets] = useState<any[]>([])
+  const [petsLoading, setPetsLoading] = useState(false)
+  const [showPetForm, setShowPetForm] = useState(false)
+  const [editPet, setEditPet] = useState<any>(null)
+  const [petNaam, setPetNaam] = useState('')
+  const [petSoort, setPetSoort] = useState('Hond')
+  const [petRas, setPetRas] = useState('')
+  const [petGeboortedatum, setPetGeboortedatum] = useState('')
+  const [petGeslacht, setPetGeslacht] = useState('')
+  const [petFotoUrl, setPetFotoUrl] = useState('')
+  const [petSaving, setPetSaving] = useState(false)
+  const [uploadingPetFoto, setUploadingPetFoto] = useState(false)
   // Berichten state
   const [inbox, setInbox] = useState<any[]>([])
   const [activeConv, setActiveConv] = useState<string | null>(null)
@@ -107,6 +119,7 @@ function AccountPage() {
       loadOrders(user.id)
       loadInbox(user.id)
       loadFavorites(user.id)
+      loadPets(user.id)
     })
 
     // Check URL params voor directe berichten navigatie
@@ -150,6 +163,64 @@ function AccountPage() {
   const removeFavorite = async (favoriteId: string) => {
     await supabase.from('favorites').delete().eq('id', favoriteId)
     setFavorites(prev => prev.filter(f => f.id !== favoriteId))
+  }
+
+
+  const loadPets = async (userId: string) => {
+    setPetsLoading(true)
+    const { data } = await supabase.from('pets').select('*').eq('user_id', userId).order('created_at', { ascending: false })
+    setPets(data || [])
+    setPetsLoading(false)
+  }
+
+  const openPetForm = (pet?: any) => {
+    if (pet) {
+      setEditPet(pet)
+      setPetNaam(pet.naam || '')
+      setPetSoort(pet.soort || 'Hond')
+      setPetRas(pet.ras || '')
+      setPetGeboortedatum(pet.geboortedatum || '')
+      setPetGeslacht(pet.geslacht || '')
+      setPetFotoUrl(pet.foto_url || '')
+    } else {
+      setEditPet(null)
+      setPetNaam(''); setPetSoort('Hond'); setPetRas(''); setPetGeboortedatum(''); setPetGeslacht(''); setPetFotoUrl('')
+    }
+    setShowPetForm(true)
+  }
+
+  const savePet = async () => {
+    if (!petNaam || !petSoort) return
+    setPetSaving(true)
+    const petData = { naam: petNaam, soort: petSoort, ras: petRas || null, geboortedatum: petGeboortedatum || null, geslacht: petGeslacht || null, foto_url: petFotoUrl || null, user_id: user.id }
+    if (editPet) {
+      await supabase.from('pets').update(petData).eq('id', editPet.id)
+    } else {
+      await supabase.from('pets').insert(petData)
+    }
+    await loadPets(user.id)
+    setShowPetForm(false)
+    setPetSaving(false)
+  }
+
+  const deletePet = async (id: string) => {
+    if (!confirm('Huisdier verwijderen?')) return
+    await supabase.from('pets').delete().eq('id', id)
+    setPets(prev => prev.filter(p => p.id !== id))
+  }
+
+  const uploadPetFoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingPetFoto(true)
+    const ext = file.name.split('.').pop()
+    const path = `huisdieren/${user.id}/${Date.now()}.${ext}`
+    const { data, error } = await supabase.storage.from('listings').upload(path, file, { upsert: true })
+    if (!error && data) {
+      const { data: url } = supabase.storage.from('listings').getPublicUrl(data.path)
+      setPetFotoUrl(url.publicUrl)
+    }
+    setUploadingPetFoto(false)
   }
 
   const loadInbox = async (userId: string) => {
@@ -401,7 +472,7 @@ function AccountPage() {
             </div>
             <div className="stats-grid">
               {([
-                ['🐾', '0', 'Huisdieren', 'pets'],
+                ['🐾', String(pets.length), 'Huisdieren', 'pets'],
                 ['📦', String(orders.length), 'Bestellingen', 'orders'],
                 ['❤️', String(favorites.length), 'Favorieten', 'favorites'],
                 ['💬', String(unreadCount || 0), 'Berichten', 'berichten'],
@@ -421,8 +492,84 @@ function AccountPage() {
 
           {/* PETS */}
           <div className={`panel ${activePanel === 'pets' ? 'active' : ''}`}>
-            <div className="panel-header"><h2>Mijn Huisdieren 🐾</h2></div>
-            <EmptyState icon="🐾" title="Nog geen huisdieren" desc="Voeg je hond, kat of ander huisdier toe om vaccinaties bij te houden, afspraken te boeken en persoonlijke producttips te ontvangen." cta="+ Huisdier Toevoegen" />
+            <div className="panel-header">
+              <h2>Mijn Huisdieren 🐾</h2>
+              <button className="btn btn-green" onClick={() => openPetForm()}>+ Toevoegen</button>
+            </div>
+
+            {/* FORMULIER */}
+            {showPetForm && (
+              <div style={{ background: 'var(--cream)', borderRadius: 16, padding: 24, marginBottom: 24, border: '2px solid var(--cream-dark)' }}>
+                <h3 style={{ fontFamily: 'Fredoka, sans-serif', marginBottom: 16, color: 'var(--green-dark)' }}>{editPet ? 'Huisdier Bewerken' : 'Nieuw Huisdier'}</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-mid)', display: 'block', marginBottom: 4 }}>Naam *</label>
+                    <input value={petNaam} onChange={e => setPetNaam(e.target.value)} placeholder="Bijv. Max" style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '2px solid var(--cream-dark)', fontFamily: 'Nunito, sans-serif', fontSize: 14, outline: 'none' }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-mid)', display: 'block', marginBottom: 4 }}>Soort *</label>
+                    <select value={petSoort} onChange={e => setPetSoort(e.target.value)} style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '2px solid var(--cream-dark)', fontFamily: 'Nunito, sans-serif', fontSize: 14, background: 'white', outline: 'none' }}>
+                      <option>Hond</option><option>Kat</option><option>Konijn</option><option>Vogel</option><option>Vis</option><option>Knaagdier</option><option>Reptiel</option><option>Anders</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-mid)', display: 'block', marginBottom: 4 }}>Ras</label>
+                    <input value={petRas} onChange={e => setPetRas(e.target.value)} placeholder="Bijv. Labrador" style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '2px solid var(--cream-dark)', fontFamily: 'Nunito, sans-serif', fontSize: 14, outline: 'none' }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-mid)', display: 'block', marginBottom: 4 }}>Geboortedatum</label>
+                    <input type="date" value={petGeboortedatum} onChange={e => setPetGeboortedatum(e.target.value)} style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '2px solid var(--cream-dark)', fontFamily: 'Nunito, sans-serif', fontSize: 14, outline: 'none' }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-mid)', display: 'block', marginBottom: 4 }}>Geslacht</label>
+                    <select value={petGeslacht} onChange={e => setPetGeslacht(e.target.value)} style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '2px solid var(--cream-dark)', fontFamily: 'Nunito, sans-serif', fontSize: 14, background: 'white', outline: 'none' }}>
+                      <option value="">Onbekend</option><option value="Mannelijk">Mannelijk</option><option value="Vrouwelijk">Vrouwelijk</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-mid)', display: 'block', marginBottom: 4 }}>Foto</label>
+                    <label style={{ display: 'block', padding: '10px 14px', borderRadius: 10, border: '2px dashed var(--cream-dark)', cursor: 'pointer', fontSize: 13, color: 'var(--text-mid)', textAlign: 'center' }}>
+                      {uploadingPetFoto ? '⏳ Uploaden...' : petFotoUrl ? '✅ Foto geüpload' : '📸 Foto uploaden'}
+                      <input type="file" accept="image/*" style={{ display: 'none' }} onChange={uploadPetFoto} />
+                    </label>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+                  <button className="btn btn-green" onClick={savePet} disabled={petSaving || !petNaam}>{petSaving ? 'Opslaan...' : '✓ Opslaan'}</button>
+                  <button className="btn btn-ghost" onClick={() => setShowPetForm(false)}>Annuleren</button>
+                </div>
+              </div>
+            )}
+
+            {/* LIJST */}
+            {petsLoading ? (
+              <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-light)' }}>⏳ Laden...</div>
+            ) : pets.length === 0 && !showPetForm ? (
+              <EmptyState icon="🐾" title="Nog geen huisdieren" desc="Voeg je hond, kat of ander huisdier toe." cta="+ Huisdier Toevoegen" onCtaClick={() => openPetForm()} />
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+                {pets.map(pet => {
+                  const leeftijd = pet.geboortedatum ? Math.floor((Date.now() - new Date(pet.geboortedatum).getTime()) / (1000 * 60 * 60 * 24 * 365)) : null
+                  const emoji = pet.soort === 'Hond' ? '🐶' : pet.soort === 'Kat' ? '🐱' : pet.soort === 'Konijn' ? '🐰' : pet.soort === 'Vogel' ? '🐦' : pet.soort === 'Vis' ? '🐟' : '🐾'
+                  return (
+                    <div key={pet.id} style={{ background: 'white', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,.06)', border: '2px solid var(--cream-dark)' }}>
+                      {pet.foto_url
+                        ? <img src={pet.foto_url} alt={pet.naam} style={{ width: '100%', height: 140, objectFit: 'cover', display: 'block' }} />
+                        : <div style={{ width: '100%', height: 140, background: 'linear-gradient(135deg, var(--cream), var(--cream-dark))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 48 }}>{emoji}</div>}
+                      <div style={{ padding: '14px 16px' }}>
+                        <div style={{ fontFamily: 'Fredoka, sans-serif', fontSize: 18, fontWeight: 700, color: 'var(--text-dark)', marginBottom: 4 }}>{pet.naam}</div>
+                        <div style={{ fontSize: 13, color: 'var(--text-mid)', marginBottom: 2 }}>{pet.soort}{pet.ras ? ` · ${pet.ras}` : ''}</div>
+                        {leeftijd !== null && <div style={{ fontSize: 12, color: 'var(--text-light)' }}>{leeftijd} jaar{pet.geslacht ? ` · ${pet.geslacht}` : ''}</div>}
+                        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                          <button className="btn btn-ghost btn-sm" onClick={() => openPetForm(pet)}>✏️ Bewerken</button>
+                          <button className="btn btn-ghost btn-sm" style={{ color: 'var(--red)' }} onClick={() => deletePet(pet.id)}>🗑️</button>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
         {/* ORDERS */}
