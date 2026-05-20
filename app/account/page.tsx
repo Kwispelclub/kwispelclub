@@ -190,7 +190,7 @@ function AccountPage() {
   }
 
   const savePet = async () => {
-    if (!petNaam || !petSoort) return
+    if (!petNaam || !petSoort || !user) return
     setPetSaving(true)
     const petData = { naam: petNaam, soort: petSoort, ras: petRas || null, geboortedatum: petGeboortedatum || null, geslacht: petGeslacht || null, foto_url: petFotoUrl || null, user_id: user.id }
     if (editPet) {
