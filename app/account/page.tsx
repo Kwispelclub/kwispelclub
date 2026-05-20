@@ -218,7 +218,12 @@ function AccountPage() {
     setUploadingPetFoto(true)
     const ext = file.name.split('.').pop()
     const path = `${user.id}/${Date.now()}.${ext}`
+    console.log('Upload path:', path, 'User id:', user.id)
     const { data, error } = await supabase.storage.from('pets').upload(path, file, { upsert: true })
+    if (error) {
+      console.error('Upload error:', error)
+      alert(`Upload fout: ${error.message}`)
+    }
     if (!error && data) {
       const { data: url } = supabase.storage.from('pets').getPublicUrl(data.path)
       setPetFotoUrl(url.publicUrl)
