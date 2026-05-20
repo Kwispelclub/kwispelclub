@@ -82,6 +82,13 @@ function AccountPage() {
   const [petGeboortedatum, setPetGeboortedatum] = useState('')
   const [petGeslacht, setPetGeslacht] = useState('onbekend')
   const [petFotoUrl, setPetFotoUrl] = useState('')
+  const [petGewicht, setPetGewicht] = useState('')
+  const [petGesteriliseerd, setPetGesteriliseerd] = useState(false)
+  const [petChip, setPetChip] = useState(false)
+  const [petChipNummer, setPetChipNummer] = useState('')
+  const [petAllergies, setPetAllergies] = useState('')
+  const [petNotes, setPetNotes] = useState('')
+  const [petVerzekering, setPetVerzekering] = useState('')
   const [petSaving, setPetSaving] = useState(false)
   const [uploadingPetFoto, setUploadingPetFoto] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -185,9 +192,17 @@ function AccountPage() {
       setPetGeboortedatum(pet.geboortedatum || '')
       setPetGeslacht(pet.gender || 'onbekend')
       setPetFotoUrl(pet.avatar_url || '')
+      setPetGewicht(pet.weight_kg ? String(pet.weight_kg) : '')
+      setPetGesteriliseerd(pet.sterilised || false)
+      setPetChip(pet.chipped || false)
+      setPetChipNummer(pet.chip_number || '')
+      setPetAllergies(pet.allergies || '')
+      setPetNotes(pet.notes || '')
+      setPetVerzekering(pet.insurance || '')
     } else {
       setEditPet(null)
       setPetNaam(''); setPetSoort('hond'); setPetRas(''); setPetGeboortedatum(''); setPetGeslacht('onbekend'); setPetFotoUrl('')
+      setPetGewicht(''); setPetGesteriliseerd(false); setPetChip(false); setPetChipNummer(''); setPetAllergies(''); setPetNotes(''); setPetVerzekering('')
     }
     setShowPetForm(true)
   }
@@ -195,7 +210,7 @@ function AccountPage() {
   const savePet = async () => {
     if (!petNaam || !petSoort || !user) return
     setPetSaving(true)
-    const petData = { name: petNaam, species: petSoort.toLowerCase() === 'hond' ? 'hond' : petSoort.toLowerCase() === 'kat' ? 'kat' : petSoort.toLowerCase() === 'konijn' ? 'konijn' : 'overig', breed: petRas || null, geboortedatum: petGeboortedatum || null, gender: petGeslacht || 'onbekend', avatar_url: petFotoUrl || null, owner_id: user.id }
+    const petData = { name: petNaam, species: petSoort.toLowerCase() === 'hond' ? 'hond' : petSoort.toLowerCase() === 'kat' ? 'kat' : petSoort.toLowerCase() === 'konijn' ? 'konijn' : 'overig', breed: petRas || null, geboortedatum: petGeboortedatum || null, gender: petGeslacht || 'onbekend', avatar_url: petFotoUrl || null, owner_id: user.id, weight_kg: petGewicht ? parseFloat(petGewicht) : null, sterilised: petGesteriliseerd, chipped: petChip, chip_number: petChipNummer || null, allergies: petAllergies || null, notes: petNotes || null, insurance: petVerzekering || null }
     if (editPet) {
       const { error } = await supabase.from('pets').update(petData).eq('id', editPet.id)
       if (!error) setPets(prev => prev.map(p => p.id === editPet.id ? { ...p, ...petData } : p))
@@ -559,6 +574,38 @@ function AccountPage() {
                     <select value={petGeslacht} onChange={e => setPetGeslacht(e.target.value)} style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '2px solid var(--cream-dark)', fontFamily: 'Nunito, sans-serif', fontSize: 14, background: 'white', outline: 'none' }}>
                       <option value="onbekend">Onbekend</option><option value="reu">Reu (mannelijk hond)</option><option value="teef">Teef (vrouwelijk hond)</option><option value="kater">Kater (mannelijk kat)</option><option value="poes">Poes (vrouwelijk kat)</option>
                     </select>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-mid)', display: 'block', marginBottom: 4 }}>Gewicht (kg)</label>
+                    <input type="number" step="0.1" value={petGewicht} onChange={e => setPetGewicht(e.target.value)} placeholder="Bijv. 25.5" style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '2px solid var(--cream-dark)', fontFamily: 'Nunito, sans-serif', fontSize: 14, outline: 'none' }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-mid)', display: 'block', marginBottom: 4 }}>Verzekering</label>
+                    <input value={petVerzekering} onChange={e => setPetVerzekering(e.target.value)} placeholder="Bijv. Animalia" style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '2px solid var(--cream-dark)', fontFamily: 'Nunito, sans-serif', fontSize: 14, outline: 'none' }} />
+                  </div>
+                  <div style={{ gridColumn: 'span 2', display: 'flex', gap: 24, alignItems: 'center' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600 }}>
+                      <input type="checkbox" checked={petChip} onChange={e => setPetChip(e.target.checked)} style={{ width: 16, height: 16 }} />
+                      Gechipt
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600 }}>
+                      <input type="checkbox" checked={petGesteriliseerd} onChange={e => setPetGesteriliseerd(e.target.checked)} style={{ width: 16, height: 16 }} />
+                      Gesteriliseerd / Gecastreerd
+                    </label>
+                  </div>
+                  {petChip && (
+                    <div style={{ gridColumn: 'span 2' }}>
+                      <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-mid)', display: 'block', marginBottom: 4 }}>Chipnummer</label>
+                      <input value={petChipNummer} onChange={e => setPetChipNummer(e.target.value)} placeholder="15-cijferig chipnummer" style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '2px solid var(--cream-dark)', fontFamily: 'Nunito, sans-serif', fontSize: 14, outline: 'none' }} />
+                    </div>
+                  )}
+                  <div style={{ gridColumn: 'span 2' }}>
+                    <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-mid)', display: 'block', marginBottom: 4 }}>Allergieën</label>
+                    <input value={petAllergies} onChange={e => setPetAllergies(e.target.value)} placeholder="Bijv. kip, granen" style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '2px solid var(--cream-dark)', fontFamily: 'Nunito, sans-serif', fontSize: 14, outline: 'none' }} />
+                  </div>
+                  <div style={{ gridColumn: 'span 2' }}>
+                    <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-mid)', display: 'block', marginBottom: 4 }}>Notities</label>
+                    <textarea value={petNotes} onChange={e => setPetNotes(e.target.value)} placeholder="Extra info over je huisdier..." rows={2} style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '2px solid var(--cream-dark)', fontFamily: 'Nunito, sans-serif', fontSize: 14, outline: 'none', resize: 'vertical' }} />
                   </div>
                   <div>
                     <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-mid)', display: 'block', marginBottom: 4 }}>Foto</label>
