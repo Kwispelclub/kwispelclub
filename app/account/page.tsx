@@ -194,6 +194,7 @@ function AccountPage() {
 
   const savePet = async () => {
     if (!petNaam || !petSoort || !user) return
+    console.log('Saving pet, avatar_url:', petFotoUrl)
     setPetSaving(true)
     const petData = { name: petNaam, species: petSoort.toLowerCase() === 'hond' ? 'hond' : petSoort.toLowerCase() === 'kat' ? 'kat' : petSoort.toLowerCase() === 'konijn' ? 'konijn' : 'overig', breed: petRas || null, geboortedatum: petGeboortedatum || null, gender: petGeslacht || 'onbekend', avatar_url: petFotoUrl || null, owner_id: user.id }
     if (editPet) {
@@ -225,6 +226,7 @@ function AccountPage() {
     }
     if (!error && data) {
       const { data: url } = supabase.storage.from('pets').getPublicUrl(data.path)
+      console.log('Foto URL:', url.publicUrl)
       setPetFotoUrl(url.publicUrl)
     }
     setUploadingPetFoto(false)
