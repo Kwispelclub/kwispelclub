@@ -16,11 +16,17 @@ export default function WinkelPage() {
   const [sortBy, setSortBy] = useState('nieuwst')
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set())
   const [cartCount, setCartCount] = useState(0)
+  const [user, setUser] = useState<any>(null)
+  const [favIds, setFavIds] = useState<Set<string>>(new Set())
+  const [favMap, setFavMap] = useState<Record<string, string>>({}) // product_id -> favorite_id
 
   useEffect(() => {
     loadProducts()
     updateCartCount()
     window.addEventListener('cart-updated', updateCartCount)
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) { setUser(user); loadFavorites(user.id) }
+    })
     return () => window.removeEventListener('cart-updated', updateCartCount)
   }, [])
 
@@ -29,6 +35,38 @@ export default function WinkelPage() {
       const cart = JSON.parse(localStorage.getItem('kc_cart') || '[]')
       setCartCount(cart.reduce((s: number, i: any) => s + i.aantal, 0))
     } catch {}
+  }
+
+
+  const loadFavorites = async (userId: string) => {
+    const { data } = await supabase
+      .from('favorites')
+      .select('id, product_id')
+      .eq('user_id', userId)
+    if (data) {
+      setFavIds(new Set(data.map((f: any) => f.product_id)))
+      const map: Record<string, string> = {}
+      data.forEach((f: any) => { map[f.product_id] = f.id })
+      setFavMap(map)
+    }
+  }
+
+  const toggleFavorite = async (e: React.MouseEvent, productId: string) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!user) { window.location.href = '/auth'; return }
+    if (favIds.has(productId)) {
+      const favId = favMap[productId]
+      await supabase.from('favorites').delete().eq('id', favId)
+      setFavIds(prev => { const n = new Set(prev); n.delete(productId); return n })
+      setFavMap(prev => { const n = {...prev}; delete n[productId]; return n })
+    } else {
+      const { data } = await supabase.from('favorites').insert({ user_id: user.id, product_id: productId }).select('id').single()
+      if (data) {
+        setFavIds(prev => new Set(prev).add(productId))
+        setFavMap(prev => ({ ...prev, [productId]: data.id }))
+      }
+    }
   }
 
   const loadProducts = async () => {
@@ -129,6 +167,9 @@ export default function WinkelPage() {
     .vs-text{font-size:14px;color:var(--text-mid)}.vs-text strong{color:var(--text-dark);display:block}
     .btn-small{padding:8px 16px;border-radius:50px;background:var(--green-main);color:white;font-family:Fredoka,sans-serif;font-size:13px;font-weight:700;text-decoration:none;transition:all .2s}
     .btn-small:hover{background:var(--green-dark)}
+    .fav-btn{position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.92);border:none;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.12);transition:transform .15s;z-index:2}
+    .fav-btn:hover{transform:scale(1.15)}
+    .card-img-wrap{position:relative;display:block}
     @media(max-width:768px){.hero-inner{grid-template-columns:1fr}.cart-btn{width:100%;justify-content:center}.grid{grid-template-columns:repeat(2,1fr)}}
     @media(max-width:480px){.grid{grid-template-columns:1fr}}
   `
@@ -205,10 +246,13 @@ export default function WinkelPage() {
             <div className="grid">
               {filtered.map(p => (
                 <div key={p.id} className="card">
-                  <a href={`/winkel/${p.verkopers?.slug}`} style={{textDecoration:'none',color:'inherit'}}>
+                  <a href={`/winkel/${p.verkopers?.slug}`} className="card-img-wrap" style={{textDecoration:'none',color:'inherit'}}>
                     {getFotoUrl(p)
                       ? <img src={getFotoUrl(p)!} alt={p.name} className="card-img" />
                       : <div className="card-img-ph">🐾</div>}
+                    <button className="fav-btn" onClick={e => toggleFavorite(e, p.id)} title={favIds.has(p.id) ? 'Verwijder favoriet' : 'Voeg toe aan favorieten'}>
+                      {favIds.has(p.id) ? '❤️' : '🤍'}
+                    </button>
                   </a>
                   <div className="card-body">
                     {p.verkopers && (

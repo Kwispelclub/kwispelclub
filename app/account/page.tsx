@@ -69,7 +69,9 @@ function AccountPage() {
   const [saveMsg, setSaveMsg] = useState('Opslaan')
   const [unreadCount, setUnreadCount] = useState(0)
 
-  const [orders, setOrders] = useState<any[]>([]) 
+  const [orders, setOrders] = useState<any[]>([])
+  const [favorites, setFavorites] = useState<any[]>([])
+  const [favLoading, setFavLoading] = useState(false)
   // Berichten state
   const [inbox, setInbox] = useState<any[]>([])
   const [activeConv, setActiveConv] = useState<string | null>(null)
@@ -104,6 +106,7 @@ function AccountPage() {
       setLoading(false)
       loadOrders(user.id)
       loadInbox(user.id)
+      loadFavorites(user.id)
     })
 
     // Check URL params voor directe berichten navigatie
@@ -132,6 +135,23 @@ function AccountPage() {
     .order('created_at', { ascending: false })
   setOrders(data || [])
 }
+
+  const loadFavorites = async (userId: string) => {
+    setFavLoading(true)
+    const { data } = await supabase
+      .from('favorites')
+      .select('*, products(*)')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+    setFavorites(data || [])
+    setFavLoading(false)
+  }
+
+  const removeFavorite = async (favoriteId: string) => {
+    await supabase.from('favorites').delete().eq('id', favoriteId)
+    setFavorites(prev => prev.filter(f => f.id !== favoriteId))
+  }
+
   const loadInbox = async (userId: string) => {
     setInboxLoading(true)
     try {
@@ -383,7 +403,7 @@ function AccountPage() {
               {([
                 ['🐾', '0', 'Huisdieren', 'pets'],
                 ['📦', String(orders.length), 'Bestellingen', 'orders'],
-                ['❤️', '0', 'Favorieten', 'favorites'],
+                ['❤️', String(favorites.length), 'Favorieten', 'favorites'],
                 ['💬', String(unreadCount || 0), 'Berichten', 'berichten'],
               ] as [string, string, string, Panel][]).map(([icon, val, label, panel]) => (
                 <div key={label} className="stat-card" onClick={() => setActivePanel(panel)}>
@@ -489,7 +509,37 @@ function AccountPage() {
           {/* FAVORITES */}
           <div className={`panel ${activePanel === 'favorites' ? 'active' : ''}`}>
             <div className="panel-header"><h2>Favorieten ❤️</h2></div>
-            <EmptyState icon="❤️" title="Nog geen favorieten" desc="Bewaar producten, kapsalons of cursussen als favoriet." cta="Ontdek de Shop" ctaHref="/#shop" />
+            {favLoading ? (
+              <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-light)' }}>⏳ Laden...</div>
+            ) : favorites.length === 0 ? (
+              <EmptyState icon="❤️" title="Nog geen favorieten" desc="Klik op het hartje bij een product om het op te slaan." cta="Ontdek de Shop" ctaHref="/winkel" />
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
+                {favorites.map(f => {
+                  const p = f.products
+                  if (!p) return null
+                  const fotoUrl = p.image_url || (Array.isArray(p.images) && p.images[0]) || null
+                  return (
+                    <div key={f.id} style={{ background: 'white', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,.06)', border: '2px solid var(--cream-dark)', position: 'relative' }}>
+                      <button
+                        onClick={() => removeFavorite(f.id)}
+                        title="Verwijder favoriet"
+                        style={{ position: 'absolute', top: 8, right: 8, width: 28, height: 28, borderRadius: '50%', background: 'rgba(255,255,255,.9)', border: 'none', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}
+                      >❤️</button>
+                      <a href={`/winkel/${p.seller_id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                        {fotoUrl
+                          ? <img src={fotoUrl} alt={p.name} style={{ width: '100%', height: 140, objectFit: 'cover', display: 'block', background: 'var(--cream)' }} />
+                          : <div style={{ width: '100%', height: 140, background: 'var(--cream)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36 }}>🐾</div>}
+                        <div style={{ padding: '12px 14px' }}>
+                          <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4, color: 'var(--text-dark)' }}>{p.name}</div>
+                          <div style={{ fontFamily: 'Fredoka, sans-serif', fontSize: 18, fontWeight: 700, color: 'var(--green-main)' }}>€{parseFloat(p.price).toFixed(2)}</div>
+                        </div>
+                      </a>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
           {/* 2DE HANDS */}
