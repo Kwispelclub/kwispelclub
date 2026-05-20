@@ -201,11 +201,12 @@ function AccountPage() {
     if (editPet) {
       const { error } = await supabase.from('pets').update(petData).eq('id', editPet.id)
       console.log('Update error:', error)
+      if (!error) setPets(prev => prev.map(p => p.id === editPet.id ? { ...p, ...petData } : p))
     } else {
-      const { error } = await supabase.from('pets').insert(petData)
-      console.log('Insert error:', error)
+      const { data: inserted, error } = await supabase.from('pets').insert(petData).select().single()
+      console.log('Insert error:', error, 'inserted:', inserted)
+      if (!error && inserted) setPets(prev => [inserted, ...prev])
     }
-    await loadPets(user.id)
     setShowPetForm(false)
     setPetSaving(false)
   }

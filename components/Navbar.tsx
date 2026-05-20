@@ -28,14 +28,12 @@ export default function Navbar() {
       if (role === 'admin') {
         setDashboardUrl('/admin'); setDashboardLabel('⚙️ Admin'); return
       }
-      const [{ data: salon }, { data: verkoper }, { data: academy }] = await Promise.all([
+      const [{ data: salon }, { data: verkoper }] = await Promise.all([
         supabase.from('kapsalons').select('id').eq('owner_id', u.id).maybeSingle(),
         supabase.from('verkopers').select('id').eq('profile_id', u.id).maybeSingle(),
-        supabase.from('trainers').select('id').eq('profile_id', u.id).maybeSingle(),
       ])
       if (salon) setHasSalon(true)
       if (verkoper) setHasVerkoper(true)
-      if (academy) setHasAcademy(true)
       if (salon && verkoper) {
         setDashboardLabel('Dashboards ▾')
       } else if (salon) {
