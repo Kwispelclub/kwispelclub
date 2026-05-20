@@ -218,9 +218,9 @@ function AccountPage() {
     setUploadingPetFoto(true)
     const ext = file.name.split('.').pop()
     const path = `huisdieren/${user.id}/${Date.now()}.${ext}`
-    const { data, error } = await supabase.storage.from('listings').upload(path, file, { upsert: true })
+    const { data, error } = await supabase.storage.from('pets').upload(path, file, { upsert: true })
     if (!error && data) {
-      const { data: url } = supabase.storage.from('listings').getPublicUrl(data.path)
+      const { data: url } = supabase.storage.from('pets').getPublicUrl(data.path)
       setPetFotoUrl(url.publicUrl)
     }
     setUploadingPetFoto(false)
