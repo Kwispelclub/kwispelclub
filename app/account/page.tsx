@@ -211,7 +211,7 @@ function AccountPage() {
 
   const uploadPetFoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (!file) return
+    if (!file || !user) return
     setUploadingPetFoto(true)
     const ext = file.name.split('.').pop()
     const path = `huisdieren/${user.id}/${Date.now()}.${ext}`
