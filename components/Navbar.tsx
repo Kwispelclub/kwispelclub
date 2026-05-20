@@ -13,6 +13,7 @@ export default function Navbar() {
   const [dashboardLabel, setDashboardLabel] = useState('Mijn Account')
   const [hasVerkoper, setHasVerkoper] = useState(false)
   const [hasSalon, setHasSalon] = useState(false)
+  const [hasAcademy, setHasAcademy] = useState(false)
   const [ddOpen, setDdOpen] = useState(false)
   const pathname = usePathname()
   const supabase = createClient()
@@ -27,12 +28,14 @@ export default function Navbar() {
       if (role === 'admin') {
         setDashboardUrl('/admin'); setDashboardLabel('⚙️ Admin'); return
       }
-      const [{ data: salon }, { data: verkoper }] = await Promise.all([
+      const [{ data: salon }, { data: verkoper }, { data: academy }] = await Promise.all([
         supabase.from('kapsalons').select('id').eq('owner_id', u.id).maybeSingle(),
         supabase.from('verkopers').select('id').eq('profile_id', u.id).maybeSingle(),
+        supabase.from('trainers').select('id').eq('profile_id', u.id).maybeSingle(),
       ])
       if (salon) setHasSalon(true)
       if (verkoper) setHasVerkoper(true)
+      if (academy) setHasAcademy(true)
       if (salon && verkoper) {
         setDashboardLabel('Dashboards ▾')
       } else if (salon) {
@@ -54,8 +57,9 @@ export default function Navbar() {
   ]
 
   const extraLinks = [
-    { href: '/word-verkoper', label: '🏪 Word Verkoper' },
-    { href: '/academy-verkoper', label: '🎓 Word Trainer' },
+    ...(!hasVerkoper ? [{ href: '/word-verkoper', label: '🏪 Word Verkoper' }] : [{ href: '/verkoper/dashboard', label: '🏪 Verkoper Dashboard' }]),
+    ...(!hasAcademy ? [{ href: '/academy-verkoper', label: '🎓 Word Trainer' }] : [{ href: '/puppy-training/dashboard', label: '🎓 Trainer Dashboard' }]),
+    ...(!hasSalon ? [{ href: '/word-kapper', label: '✂️ Word Kapper' }] : [{ href: '/kapsalons/dashboard', label: '✂️ Salon Dashboard' }]),
   ]
 
   const isActive = (href: string) => {
@@ -171,7 +175,7 @@ export default function Navbar() {
                 </a>
               ))}
             </div>
-            <div className="kw-mob-divider">Voor verkopers & trainers</div>
+            <div className="kw-mob-divider">{hasVerkoper || hasSalon || hasAcademy ? 'Mijn dashboards' : 'Voor verkopers & trainers'}</div>
             <div className="kw-mob-extra">
               <div className="kw-mob-links">
                 {extraLinks.map(l => (
