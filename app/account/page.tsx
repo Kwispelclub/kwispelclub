@@ -217,8 +217,7 @@ function AccountPage() {
     if (!file || !user) return
     setUploadingPetFoto(true)
     const ext = file.name.split('.').pop()
-    const path = `${user.id}/${Date.now()}.${ext}`
-    console.log('Upload path:', path, 'User id:', user.id)
+    const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
     const { data, error } = await supabase.storage.from('pets').upload(path, file, { upsert: true })
     if (error) {
       console.error('Upload error:', error)
