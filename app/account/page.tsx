@@ -172,7 +172,6 @@ function AccountPage() {
   const loadPets = async (userId: string) => {
     setPetsLoading(true)
     const { data, error } = await supabase.from('pets').select('*').eq('owner_id', userId).order('created_at', { ascending: false })
-    console.log('loadPets userId:', userId, 'data:', data, 'error:', error)
     setPets(data || [])
     setPetsLoading(false)
   }
@@ -195,17 +194,19 @@ function AccountPage() {
 
   const savePet = async () => {
     if (!petNaam || !petSoort || !user) return
-    console.log('Saving pet, avatar_url:', petFotoUrl)
     setPetSaving(true)
     const petData = { name: petNaam, species: petSoort.toLowerCase() === 'hond' ? 'hond' : petSoort.toLowerCase() === 'kat' ? 'kat' : petSoort.toLowerCase() === 'konijn' ? 'konijn' : 'overig', breed: petRas || null, geboortedatum: petGeboortedatum || null, gender: petGeslacht || 'onbekend', avatar_url: petFotoUrl || null, owner_id: user.id }
     if (editPet) {
       const { error } = await supabase.from('pets').update(petData).eq('id', editPet.id)
-      console.log('Update error:', error)
       if (!error) setPets(prev => prev.map(p => p.id === editPet.id ? { ...p, ...petData } : p))
     } else {
       const { data: inserted, error } = await supabase.from('pets').insert(petData).select().single()
-      console.log('Insert error:', error, 'inserted:', inserted)
-      if (!error && inserted) setPets(prev => [inserted, ...prev])
+      if (!error && inserted) {
+        setPets(prev => [inserted, ...prev])
+        setShowPetForm(false)
+        setPetSaving(false)
+        return
+      }
     }
     setShowPetForm(false)
     setPetSaving(false)
@@ -225,12 +226,10 @@ function AccountPage() {
     const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
     const { data, error } = await supabase.storage.from('pets').upload(path, file, { upsert: true })
     if (error) {
-      console.error('Upload error:', error)
       alert(`Upload fout: ${error.message}`)
     }
     if (!error && data) {
       const { data: url } = supabase.storage.from('pets').getPublicUrl(data.path)
-      console.log('Foto URL:', url.publicUrl)
       setPetFotoUrl(url.publicUrl)
     }
     setUploadingPetFoto(false)
@@ -588,8 +587,8 @@ function AccountPage() {
                   const emoji = pet.species === 'hond' ? '🐶' : pet.species === 'kat' ? '🐱' : pet.species === 'konijn' ? '🐰' : '🐾'
                   return (
                     <div key={pet.id} style={{ background: 'white', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,.06)', border: '2px solid var(--cream-dark)' }}>
-                      {pet.foto_url
-                        ? <img src={pet.avatar_url} alt={pet.naam} style={{ width: '100%', height: 140, objectFit: 'cover', display: 'block' }} />
+                      {pet.avatar_url
+                        ? <img src={pet.avatar_url} alt={pet.name} style={{ width: '100%', height: 140, objectFit: 'cover', display: 'block' }} />
                         : <div style={{ width: '100%', height: 140, background: 'linear-gradient(135deg, var(--cream), var(--cream-dark))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 48 }}>{emoji}</div>}
                       <div style={{ padding: '14px 16px' }}>
                         <div style={{ fontFamily: 'Fredoka, sans-serif', fontSize: 18, fontWeight: 700, color: 'var(--text-dark)', marginBottom: 4 }}>{pet.name}</div>
