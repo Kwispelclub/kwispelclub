@@ -80,7 +80,7 @@ function AccountPage() {
   const [petSoort, setPetSoort] = useState('Hond')
   const [petRas, setPetRas] = useState('')
   const [petGeboortedatum, setPetGeboortedatum] = useState('')
-  const [petGeslacht, setPetGeslacht] = useState('')
+  const [petGeslacht, setPetGeslacht] = useState('onbekend')
   const [petFotoUrl, setPetFotoUrl] = useState('')
   const [petSaving, setPetSaving] = useState(false)
   const [uploadingPetFoto, setUploadingPetFoto] = useState(false)
@@ -171,7 +171,7 @@ function AccountPage() {
 
   const loadPets = async (userId: string) => {
     setPetsLoading(true)
-    const { data } = await supabase.from('pets').select('*').eq('user_id', userId).order('created_at', { ascending: false })
+    const { data } = await supabase.from('pets').select('*').eq('owner_id', userId).order('created_at', { ascending: false })
     setPets(data || [])
     setPetsLoading(false)
   }
@@ -179,15 +179,15 @@ function AccountPage() {
   const openPetForm = (pet?: any) => {
     if (pet) {
       setEditPet(pet)
-      setPetNaam(pet.naam || '')
-      setPetSoort(pet.soort || 'Hond')
-      setPetRas(pet.ras || '')
+      setPetNaam(pet.name || '')
+      setPetSoort(pet.species || 'hond')
+      setPetRas(pet.breed || '')
       setPetGeboortedatum(pet.geboortedatum || '')
-      setPetGeslacht(pet.geslacht || '')
-      setPetFotoUrl(pet.foto_url || '')
+      setPetGeslacht(pet.gender || 'onbekend')
+      setPetFotoUrl(pet.avatar_url || '')
     } else {
       setEditPet(null)
-      setPetNaam(''); setPetSoort('Hond'); setPetRas(''); setPetGeboortedatum(''); setPetGeslacht(''); setPetFotoUrl('')
+      setPetNaam(''); setPetSoort('hond'); setPetRas(''); setPetGeboortedatum(''); setPetGeslacht('onbekend'); setPetFotoUrl('')
     }
     setShowPetForm(true)
   }
@@ -195,7 +195,7 @@ function AccountPage() {
   const savePet = async () => {
     if (!petNaam || !petSoort || !user) return
     setPetSaving(true)
-    const petData = { naam: petNaam, soort: petSoort, ras: petRas || null, geboortedatum: petGeboortedatum || null, geslacht: petGeslacht || null, foto_url: petFotoUrl || null, user_id: user.id }
+    const petData = { name: petNaam, species: petSoort.toLowerCase() === 'hond' ? 'hond' : petSoort.toLowerCase() === 'kat' ? 'kat' : petSoort.toLowerCase() === 'konijn' ? 'konijn' : 'overig', breed: petRas || null, geboortedatum: petGeboortedatum || null, gender: petGeslacht || 'onbekend', avatar_url: petFotoUrl || null, owner_id: user.id }
     if (editPet) {
       await supabase.from('pets').update(petData).eq('id', editPet.id)
     } else {
@@ -534,7 +534,7 @@ function AccountPage() {
                   <div>
                     <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-mid)', display: 'block', marginBottom: 4 }}>Soort *</label>
                     <select value={petSoort} onChange={e => setPetSoort(e.target.value)} style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '2px solid var(--cream-dark)', fontFamily: 'Nunito, sans-serif', fontSize: 14, background: 'white', outline: 'none' }}>
-                      <option>Hond</option><option>Kat</option><option>Konijn</option><option>Vogel</option><option>Vis</option><option>Knaagdier</option><option>Reptiel</option><option>Anders</option>
+                      <option value="hond">🐶 Hond</option><option value="kat">🐱 Kat</option><option value="konijn">🐰 Konijn</option><option value="overig">🐾 Overig</option>
                     </select>
                   </div>
                   <div>
@@ -548,7 +548,7 @@ function AccountPage() {
                   <div>
                     <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-mid)', display: 'block', marginBottom: 4 }}>Geslacht</label>
                     <select value={petGeslacht} onChange={e => setPetGeslacht(e.target.value)} style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '2px solid var(--cream-dark)', fontFamily: 'Nunito, sans-serif', fontSize: 14, background: 'white', outline: 'none' }}>
-                      <option value="">Onbekend</option><option value="Mannelijk">Mannelijk</option><option value="Vrouwelijk">Vrouwelijk</option>
+                      <option value="onbekend">Onbekend</option><option value="reu">Reu (mannelijk hond)</option><option value="teef">Teef (vrouwelijk hond)</option><option value="kater">Kater (mannelijk kat)</option><option value="poes">Poes (vrouwelijk kat)</option>
                     </select>
                   </div>
                   <div>
@@ -575,16 +575,16 @@ function AccountPage() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
                 {pets.map(pet => {
                   const leeftijd = pet.geboortedatum ? Math.floor((Date.now() - new Date(pet.geboortedatum).getTime()) / (1000 * 60 * 60 * 24 * 365)) : null
-                  const emoji = pet.soort === 'Hond' ? '🐶' : pet.soort === 'Kat' ? '🐱' : pet.soort === 'Konijn' ? '🐰' : pet.soort === 'Vogel' ? '🐦' : pet.soort === 'Vis' ? '🐟' : '🐾'
+                  const emoji = pet.species === 'hond' ? '🐶' : pet.species === 'kat' ? '🐱' : pet.species === 'konijn' ? '🐰' : '🐾'
                   return (
                     <div key={pet.id} style={{ background: 'white', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,.06)', border: '2px solid var(--cream-dark)' }}>
                       {pet.foto_url
-                        ? <img src={pet.foto_url} alt={pet.naam} style={{ width: '100%', height: 140, objectFit: 'cover', display: 'block' }} />
+                        ? <img src={pet.avatar_url} alt={pet.naam} style={{ width: '100%', height: 140, objectFit: 'cover', display: 'block' }} />
                         : <div style={{ width: '100%', height: 140, background: 'linear-gradient(135deg, var(--cream), var(--cream-dark))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 48 }}>{emoji}</div>}
                       <div style={{ padding: '14px 16px' }}>
-                        <div style={{ fontFamily: 'Fredoka, sans-serif', fontSize: 18, fontWeight: 700, color: 'var(--text-dark)', marginBottom: 4 }}>{pet.naam}</div>
-                        <div style={{ fontSize: 13, color: 'var(--text-mid)', marginBottom: 2 }}>{pet.soort}{pet.ras ? ` · ${pet.ras}` : ''}</div>
-                        {leeftijd !== null && <div style={{ fontSize: 12, color: 'var(--text-light)' }}>{leeftijd} jaar{pet.geslacht ? ` · ${pet.geslacht}` : ''}</div>}
+                        <div style={{ fontFamily: 'Fredoka, sans-serif', fontSize: 18, fontWeight: 700, color: 'var(--text-dark)', marginBottom: 4 }}>{pet.name}</div>
+                        <div style={{ fontSize: 13, color: 'var(--text-mid)', marginBottom: 2 }}>{pet.species}{pet.breed ? ` · ${pet.breed}` : ''}</div>
+                        {leeftijd !== null && <div style={{ fontSize: 12, color: 'var(--text-light)' }}>{leeftijd} jaar{pet.gender && pet.gender !== 'onbekend' ? ` · ${pet.gender}` : ''}</div>}
                         <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
                           <button className="btn btn-ghost btn-sm" onClick={() => openPetForm(pet)}>✏️ Bewerken</button>
                           <button className="btn btn-ghost btn-sm" style={{ color: 'var(--red)' }} onClick={() => deletePet(pet.id)}>🗑️</button>
