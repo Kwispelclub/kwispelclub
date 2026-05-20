@@ -89,6 +89,7 @@ function AccountPage() {
   const [petAllergies, setPetAllergies] = useState('')
   const [petNotes, setPetNotes] = useState('')
   const [petVerzekering, setPetVerzekering] = useState('')
+  const [expandedPetId, setExpandedPetId] = useState<string | null>(null)
   const [petSaving, setPetSaving] = useState(false)
   const [uploadingPetFoto, setUploadingPetFoto] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -632,20 +633,43 @@ function AccountPage() {
                 {pets.map(pet => {
                   const leeftijd = pet.geboortedatum ? Math.floor((Date.now() - new Date(pet.geboortedatum).getTime()) / (1000 * 60 * 60 * 24 * 365)) : null
                   const emoji = pet.species === 'hond' ? '🐶' : pet.species === 'kat' ? '🐱' : pet.species === 'konijn' ? '🐰' : '🐾'
+                  const isExpanded = expandedPetId === pet.id
                   return (
-                    <div key={pet.id} style={{ background: 'white', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,.06)', border: '2px solid var(--cream-dark)' }}>
-                      {pet.avatar_url
-                        ? <img src={pet.avatar_url} alt={pet.name} style={{ width: '100%', height: 140, objectFit: 'cover', display: 'block' }} />
-                        : <div style={{ width: '100%', height: 140, background: 'linear-gradient(135deg, var(--cream), var(--cream-dark))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 48 }}>{emoji}</div>}
-                      <div style={{ padding: '14px 16px' }}>
-                        <div style={{ fontFamily: 'Fredoka, sans-serif', fontSize: 18, fontWeight: 700, color: 'var(--text-dark)', marginBottom: 4 }}>{pet.name}</div>
-                        <div style={{ fontSize: 13, color: 'var(--text-mid)', marginBottom: 2 }}>{pet.species}{pet.breed ? ` · ${pet.breed}` : ''}</div>
-                        {leeftijd !== null && <div style={{ fontSize: 12, color: 'var(--text-light)' }}>{leeftijd} jaar{pet.gender && pet.gender !== 'onbekend' ? ` · ${pet.gender}` : ''}</div>}
-                        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                          <button className="btn btn-ghost btn-sm" onClick={() => openPetForm(pet)}>✏️ Bewerken</button>
-                          <button className="btn btn-ghost btn-sm" style={{ color: 'var(--red)' }} onClick={() => deletePet(pet.id)}>🗑️</button>
+                    <div key={pet.id} style={{ background: 'white', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,.06)', border: `2px solid ${isExpanded ? 'var(--green-main)' : 'var(--cream-dark)'}`, transition: 'border-color .2s' }}>
+                      {/* Klikbare header */}
+                      <div style={{ cursor: 'pointer' }} onClick={() => setExpandedPetId(isExpanded ? null : pet.id)}>
+                        {pet.avatar_url
+                          ? <img src={pet.avatar_url} alt={pet.name} style={{ width: '100%', height: 140, objectFit: 'cover', display: 'block' }} />
+                          : <div style={{ width: '100%', height: 140, background: 'linear-gradient(135deg, var(--cream), var(--cream-dark))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 48 }}>{emoji}</div>}
+                        <div style={{ padding: '14px 16px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <div>
+                            <div style={{ fontFamily: 'Fredoka, sans-serif', fontSize: 18, fontWeight: 700, color: 'var(--text-dark)', marginBottom: 2 }}>{pet.name}</div>
+                            <div style={{ fontSize: 13, color: 'var(--text-mid)' }}>{pet.species}{pet.breed ? ` · ${pet.breed}` : ''}</div>
+                            {leeftijd !== null && <div style={{ fontSize: 12, color: 'var(--text-light)', marginTop: 2 }}>{leeftijd} jaar{pet.gender && pet.gender !== 'onbekend' ? ` · ${pet.gender}` : ''}</div>}
+                          </div>
+                          <span style={{ fontSize: 18, color: 'var(--text-light)', marginTop: 4 }}>{isExpanded ? '▲' : '▼'}</span>
                         </div>
                       </div>
+
+                      {/* Uitklapbare details */}
+                      {isExpanded && (
+                        <div style={{ padding: '0 16px 16px', borderTop: '1px solid var(--cream-dark)' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px', marginTop: 12, fontSize: 13 }}>
+                            {pet.weight_kg && <div><span style={{ color: 'var(--text-light)', fontWeight: 700 }}>⚖️ Gewicht</span><br/>{pet.weight_kg} kg</div>}
+                            {pet.geboortedatum && <div><span style={{ color: 'var(--text-light)', fontWeight: 700 }}>🎂 Geboren</span><br/>{new Date(pet.geboortedatum).toLocaleDateString('nl-BE')}</div>}
+                            {pet.insurance && <div><span style={{ color: 'var(--text-light)', fontWeight: 700 }}>🏥 Verzekering</span><br/>{pet.insurance}</div>}
+                            {pet.chip_number && <div><span style={{ color: 'var(--text-light)', fontWeight: 700 }}>📡 Chip</span><br/>{pet.chip_number}</div>}
+                            <div><span style={{ color: 'var(--text-light)', fontWeight: 700 }}>✂️ Gesteriliseerd</span><br/>{pet.sterilised ? 'Ja' : 'Nee'}</div>
+                            <div><span style={{ color: 'var(--text-light)', fontWeight: 700 }}>📡 Gechipt</span><br/>{pet.chipped ? 'Ja' : 'Nee'}</div>
+                            {pet.allergies && <div style={{ gridColumn: 'span 2' }}><span style={{ color: 'var(--text-light)', fontWeight: 700 }}>🌿 Allergieën</span><br/>{pet.allergies}</div>}
+                            {pet.notes && <div style={{ gridColumn: 'span 2' }}><span style={{ color: 'var(--text-light)', fontWeight: 700 }}>📝 Notities</span><br/>{pet.notes}</div>}
+                          </div>
+                          <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+                            <button className="btn btn-ghost btn-sm" onClick={() => openPetForm(pet)}>✏️ Bewerken</button>
+                            <button className="btn btn-ghost btn-sm" style={{ color: 'var(--red)' }} onClick={() => deletePet(pet.id)}>🗑️</button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )
                 })}
