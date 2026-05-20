@@ -84,6 +84,9 @@ function AccountPage() {
   const [petFotoUrl, setPetFotoUrl] = useState('')
   const [petSaving, setPetSaving] = useState(false)
   const [uploadingPetFoto, setUploadingPetFoto] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [deleting, setDeleting] = useState(false)
   // Berichten state
   const [inbox, setInbox] = useState<any[]>([])
   const [activeConv, setActiveConv] = useState<string | null>(null)
@@ -221,6 +224,28 @@ function AccountPage() {
       setPetFotoUrl(url.publicUrl)
     }
     setUploadingPetFoto(false)
+  }
+
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== 'VERWIJDEREN') return
+    setDeleting(true)
+    try {
+      // Verwijder alle gebruikersdata via cascade (RLS policies)
+      // Supabase cascade delete regelt: pets, favorites, orders, messages
+      const { error } = await supabase.rpc('delete_user_account')
+      if (error) {
+        // Fallback: sign out en toon melding
+        alert('Er ging iets mis. Contacteer support@kwispelclub.be')
+        setDeleting(false)
+        return
+      }
+      await supabase.auth.signOut()
+      window.location.href = '/?account=deleted'
+    } catch {
+      alert('Er ging iets mis. Contacteer support@kwispelclub.be')
+      setDeleting(false)
+    }
   }
 
   const loadInbox = async (userId: string) => {
@@ -881,7 +906,42 @@ function AccountPage() {
                     ))}
                     <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
                       <a href="#" style={{ color: 'var(--green-main)', fontWeight: 700, fontSize: 14, textDecoration: 'none' }}>Wachtwoord wijzigen →</a>
-                      <a href="#" style={{ color: 'var(--red)', fontWeight: 700, fontSize: 13, textDecoration: 'none' }}>Account verwijderen</a>
+                      <button onClick={() => setShowDeleteConfirm(true)} style={{ background: 'none', border: 'none', color: 'var(--red)', fontWeight: 700, fontSize: 13, cursor: 'pointer', padding: 0, textAlign: 'left' }}>Account verwijderen</button>
+
+                      {/* DELETE CONFIRM MODAL */}
+                      {showDeleteConfirm && (
+                        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={() => setShowDeleteConfirm(false)}>
+                          <div style={{ background: 'white', borderRadius: 20, padding: 32, maxWidth: 440, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,.2)' }} onClick={e => e.stopPropagation()}>
+                            <div style={{ fontSize: 40, textAlign: 'center', marginBottom: 12 }}>⚠️</div>
+                            <h3 style={{ fontFamily: 'Fredoka, sans-serif', fontSize: 22, color: 'var(--red)', textAlign: 'center', marginBottom: 12 }}>Account Verwijderen</h3>
+                            <p style={{ fontSize: 14, color: 'var(--text-mid)', lineHeight: 1.6, marginBottom: 8 }}>
+                              Dit verwijdert <strong>permanent</strong> je account en alle bijhorende gegevens:
+                            </p>
+                            <ul style={{ fontSize: 13, color: 'var(--text-mid)', lineHeight: 2, marginBottom: 16, paddingLeft: 20 }}>
+                              <li>Persoonlijke gegevens en profiel</li>
+                              <li>Huisdieren en favorieten</li>
+                              <li>Bestellingen en berichten</li>
+                            </ul>
+                            <p style={{ fontSize: 13, color: 'var(--text-mid)', marginBottom: 8 }}>
+                              Type <strong>VERWIJDEREN</strong> om te bevestigen:
+                            </p>
+                            <input
+                              value={deleteConfirmText}
+                              onChange={e => setDeleteConfirmText(e.target.value)}
+                              placeholder="VERWIJDEREN"
+                              style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '2px solid var(--cream-dark)', fontFamily: 'Nunito, sans-serif', fontSize: 14, marginBottom: 16, outline: 'none' }}
+                            />
+                            <div style={{ display: 'flex', gap: 10 }}>
+                              <button
+                                onClick={handleDeleteAccount}
+                                disabled={deleteConfirmText !== 'VERWIJDEREN' || deleting}
+                                style={{ flex: 1, padding: '12px', borderRadius: 50, background: deleteConfirmText === 'VERWIJDEREN' ? 'var(--red)' : '#ccc', color: 'white', border: 'none', fontFamily: 'Fredoka, sans-serif', fontSize: 15, fontWeight: 700, cursor: deleteConfirmText === 'VERWIJDEREN' ? 'pointer' : 'not-allowed' }}
+                              >{deleting ? 'Bezig...' : '🗑️ Definitief Verwijderen'}</button>
+                              <button onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmText('') }} style={{ padding: '12px 20px', borderRadius: 50, background: 'var(--cream-dark)', color: 'var(--text-dark)', border: 'none', fontFamily: 'Fredoka, sans-serif', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>Annuleren</button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
