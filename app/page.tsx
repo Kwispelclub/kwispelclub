@@ -14,6 +14,7 @@ export default function HomePage() {
   const [showCookie, setShowCookie] = useState(false)
   const [breedTab, setBreedTab] = useState('honden')
   const [wishlisted, setWishlisted] = useState<Set<number>>(new Set())
+  const [liveStats, setLiveStats] = useState({ verkopers: 0, producten: 0, gebruikers: 0 })
   const [settings, setSettings] = useState<Record<string, any>>({
     demo_webshop: true, demo_verkopers: true, demo_reviews: true,
   })
@@ -324,8 +325,8 @@ export default function HomePage() {
           </div>
           <div className="hero-img">
             <img src="https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=800&q=80" alt="Twee honden spelen samen buiten" />
-            <div className="floating-badge fb1"><div className="fb-icon g">⭐</div><div className="fb-text">4.9 / 5.0<span>12.500+ reviews</span></div></div>
-            <div className="floating-badge fb2"><div className="fb-icon o">🐾</div><div className="fb-text">85+ Verkopers<span>Geverifieerd</span></div></div>
+            <div className="floating-badge fb1"><div className="fb-icon g">🐾</div><div className="fb-text">{liveStats.gebruikers > 0 ? `${liveStats.gebruikers}+ Leden` : 'Groeiende community'}<span>Kwispelclub België</span></div></div>
+            <div className="floating-badge fb2"><div className="fb-icon o">🏪</div><div className="fb-text">{liveStats.verkopers > 0 ? `${liveStats.verkopers} Verkopers` : 'Eerste verkopers'}<span>{liveStats.verkopers > 0 ? 'Geverifieerd actief' : 'Aan boord 🚀'}</span></div></div>
           </div>
         </div>
       </section>
@@ -355,11 +356,22 @@ export default function HomePage() {
 
       <div className="stats-bar fade-up">
         <div className="stats-inner">
-          <div style={{position:'absolute',top:12,right:16,background:'rgba(255,255,255,.15)',padding:'4px 14px',borderRadius:50,fontSize:11,fontWeight:700,color:'rgba(255,255,255,.7)'}}>🎯 Onze doelen</div>
-          {[['1250','Producten (gepland)'],['85','Verkopers (gepland)'],['12500','Klanten (doel)']].map(([target,label]) => (
-            <div key={label} className="stat-item"><h3 data-target={target}>{target}+</h3><p>{label}</p></div>
-          ))}
-          <div className="stat-item"><h3 data-target="4.9" data-decimal="true">4.9</h3><p>Streefcijfer</p></div>
+          <div className="stat-item">
+            <h3>{liveStats.verkopers || '—'}</h3>
+            <p>Actieve Verkopers</p>
+          </div>
+          <div className="stat-item">
+            <h3>{liveStats.producten || '—'}</h3>
+            <p>Producten</p>
+          </div>
+          <div className="stat-item">
+            <h3>{liveStats.gebruikers || '—'}</h3>
+            <p>Leden</p>
+          </div>
+          <div className="stat-item">
+            <h3>🇧🇪</h3>
+            <p>Made in België</p>
+          </div>
         </div>
       </div>
 
