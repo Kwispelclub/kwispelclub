@@ -1,11 +1,12 @@
 'use client'
+import React from 'react'
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { SettingsPanel } from '@/components/AdminSettingsPanel'
 
-type Tab = 'dashboard' | 'kapsalons' | 'verkopers' | 'academy' | 'gebruikers' | 'listings' | 'bestellingen' | 'team' | 'instellingen' | 'banners'
+type Tab = 'dashboard' | 'kapsalons' | 'verkopers' | 'academy' | 'gebruikers' | 'listings' | 'bestellingen' | 'uitbetalingen' | 'team' | 'instellingen' | 'banners'
 
 const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || ''
 // ===== BANNERS TAB (plak dit in de main content sectie) =====
@@ -180,6 +181,11 @@ export default function AdminPage() {
   const [gebruikers, setGebruikers] = useState<any[]>([])
   const [listings, setListings] = useState<any[]>([])
   const [bestellingen, setBestellingen] = useState<any[]>([])
+  const [uitbetalingen, setUitbetalingen] = useState<any[]>([])
+  const [uitbetaalLoading, setUitbetaalLoading] = useState(false)
+  const [uitbetaalFilter, setUitbetaalFilter] = useState<'te_betalen' | 'uitbetaald' | 'alle'>('te_betalen')
+  const prevTab = React.useRef<Tab>('dashboard')
+  React.useEffect(() => { if (tab === 'uitbetalingen') loadUitbetalingen() }, [tab])
   const [verkopers, setVerkopers] = useState<any[]>([])
   const [academyTrainers, setAcademyTrainers] = useState<any[]>([])
   const [teamleden, setTeamleden] = useState<any[]>([])
@@ -218,6 +224,83 @@ const [bannerSaving, setBannerSaving] = useState(false)
       setPwError(true)
       setPwInput('')
     }
+  }
+
+
+  const loadUitbetalingen = async () => {
+    setUitbetaalLoading(true)
+    // Haal alle betaalde/verzonden/geleverde orders op met verkoper info
+    const { data: orders } = await supabase
+      .from('orders')
+      .select('*, order_items(*)')
+      .in('status', ['paid', 'shipped', 'delivered'])
+      .order('created_at', { ascending: false })
+
+    if (!orders) { setUitbetaalLoading(false); return }
+
+    // Haal verkopers op met IBAN
+    const { data: verkopers } = await supabase
+      .from('verkopers')
+      .select('profile_id, shop_naam, iban, rekening_naam, btw_nummer, commissie_pct, slug')
+
+    const verkopersMap: Record<string, any> = {}
+    verkopers?.forEach((v: any) => { verkopersMap[v.profile_id] = v })
+
+    // Groepeer per verkoper
+    const groepen: Record<string, any> = {}
+    const herroepingsDagen = 14
+
+    orders.forEach((order: any) => {
+      const dagOud = Math.floor((Date.now() - new Date(order.created_at).getTime()) / (1000 * 60 * 60 * 24))
+      const uitbetaalbaar = dagOud >= herroepingsDagen
+      const sellerId = order.seller_id
+      if (!sellerId) return
+      const verkoper = verkopersMap[sellerId] || { shop_naam: 'Onbekend', iban: null }
+      const commissiePct = verkoper.commissie_pct || 15
+      const totaal = parseFloat(order.total_amount || 0)
+      const commissie = totaal * commissiePct / 100
+      const uitTeBetalenBedrag = totaal - commissie
+
+      if (!groepen[sellerId]) {
+        groepen[sellerId] = {
+          seller_id: sellerId,
+          shop_naam: verkoper.shop_naam,
+          iban: verkoper.iban,
+          rekening_naam: verkoper.rekening_naam,
+          btw_nummer: verkoper.btw_nummer,
+          commissie_pct: commissiePct,
+          orders_uitbetaalbaar: [],
+          orders_wachten: [],
+          totaal_uitbetaalbaar: 0,
+          totaal_wachten: 0,
+          totaal_commissie: 0,
+        }
+      }
+
+      if (uitbetaalbaar && order.status !== 'uitbetaald') {
+        groepen[sellerId].orders_uitbetaalbaar.push(order)
+        groepen[sellerId].totaal_uitbetaalbaar += uitTeBetalenBedrag
+        groepen[sellerId].totaal_commissie += commissie
+      } else if (!uitbetaalbaar) {
+        groepen[sellerId].orders_wachten.push(order)
+        groepen[sellerId].totaal_wachten += uitTeBetalenBedrag
+      }
+    })
+
+    setUitbetalingen(Object.values(groepen))
+    setUitbetaalLoading(false)
+  }
+
+  const markeerUitbetaald = async (sellerId: string, orderIds: string[]) => {
+    if (!confirm('Bevestig: je hebt alle openstaande bedragen aan deze verkoper uitbetaald?')) return
+    await supabase.from('orders').update({ status: 'uitbetaald' }).in('id', orderIds)
+    // Stuur bevestigingsmail via API
+    await fetch('/api/uitbetaling-bevestiging', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sellerId, orderIds })
+    }).catch(() => {})
+    loadUitbetalingen()
   }
 
   const loadData = async () => {
@@ -546,6 +629,7 @@ supabase.from('page_banners').select('*').order('pagina'),      ])
     gebruikers: { title: 'Gebruikers', desc: `${stats.gebruikers} geregistreerde accounts` },
     listings: { title: '2de Hands Listings', desc: `${stats.listings} advertenties` },
     bestellingen: { title: 'Bestellingen', desc: `${stats.bestellingen} bestellingen` },
+    uitbetalingen: { title: 'Uitbetalingen 💶', desc: 'Overzicht openstaande uitbetalingen aan verkopers' },
     team: { title: 'Team', desc: `${teamleden.length} teamleden` },
     instellingen: { title: 'Site Instellingen', desc: 'Beheer demo-data en site-instellingen' },
     banners: { title: 'Pagina Banners', desc: 'Beheer aankondigingsbanner per pagina' },
@@ -575,6 +659,7 @@ supabase.from('page_banners').select('*').order('pagina'),      ])
               ['gebruikers', '👥', 'Gebruikers', null],
               ['listings', '♻️', '2de Hands', null],
               ['bestellingen', '📦', 'Bestellingen', null],
+              ['uitbetalingen', '💶', 'Uitbetalingen', uitbetalingen.filter((u:any) => u.totaal_uitbetaalbaar > 0).length || null],
               ['instellingen', '⚙️', 'Instellingen', null],
               ['banners', '📢', 'Banners', null],
             ] as [Tab, string, string, number | null][]).map(([id, icon, label, badge]) => (
@@ -995,6 +1080,129 @@ supabase.from('page_banners').select('*').order('pagina'),      ])
             )}
 
             {/* TEAM */}
+            {tab === 'uitbetalingen' && (
+              <div>
+                {uitbetaalLoading ? (
+                  <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-light)' }}>⏳ Laden...</div>
+                ) : (
+                  <>
+                    {/* Samenvatting */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 }}>
+                      <div style={{ background: 'white', borderRadius: 16, padding: 20, boxShadow: '0 2px 8px rgba(0,0,0,.06)', textAlign: 'center' }}>
+                        <div style={{ fontFamily: 'Fredoka, sans-serif', fontSize: 28, fontWeight: 700, color: 'var(--red)' }}>
+                          €{uitbetalingen.reduce((s, u) => s + u.totaal_uitbetaalbaar, 0).toFixed(2)}
+                        </div>
+                        <div style={{ fontSize: 13, color: 'var(--text-mid)', marginTop: 4 }}>Direct uit te betalen</div>
+                      </div>
+                      <div style={{ background: 'white', borderRadius: 16, padding: 20, boxShadow: '0 2px 8px rgba(0,0,0,.06)', textAlign: 'center' }}>
+                        <div style={{ fontFamily: 'Fredoka, sans-serif', fontSize: 28, fontWeight: 700, color: 'var(--orange-main)' }}>
+                          €{uitbetalingen.reduce((s, u) => s + u.totaal_wachten, 0).toFixed(2)}
+                        </div>
+                        <div style={{ fontSize: 13, color: 'var(--text-mid)', marginTop: 4 }}>In herroepingstermijn</div>
+                      </div>
+                      <div style={{ background: 'white', borderRadius: 16, padding: 20, boxShadow: '0 2px 8px rgba(0,0,0,.06)', textAlign: 'center' }}>
+                        <div style={{ fontFamily: 'Fredoka, sans-serif', fontSize: 28, fontWeight: 700, color: 'var(--green-main)' }}>
+                          €{uitbetalingen.reduce((s, u) => s + u.totaal_commissie, 0).toFixed(2)}
+                        </div>
+                        <div style={{ fontSize: 13, color: 'var(--text-mid)', marginTop: 4 }}>Jouw commissie</div>
+                      </div>
+                    </div>
+
+                    {/* Filter */}
+                    <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+                      {(['te_betalen', 'wachten', 'alle'] as const).map(f => (
+                        <button key={f} onClick={() => setUitbetaalFilter(f as any)}
+                          style={{ padding: '8px 18px', borderRadius: 50, border: '2px solid', borderColor: uitbetaalFilter === f ? 'var(--green-dark)' : 'var(--cream-dark)', background: uitbetaalFilter === f ? 'var(--green-dark)' : 'white', color: uitbetaalFilter === f ? 'white' : 'var(--text-mid)', fontFamily: 'Fredoka, sans-serif', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+                          {f === 'te_betalen' ? '🔴 Te betalen' : f === 'wachten' ? '🟡 In wachttijd' : '📋 Alle'}
+                        </button>
+                      ))}
+                      <button onClick={loadUitbetalingen} style={{ marginLeft: 'auto', padding: '8px 18px', borderRadius: 50, border: '2px solid var(--cream-dark)', background: 'white', color: 'var(--text-mid)', fontFamily: 'Fredoka, sans-serif', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+                        🔄 Vernieuwen
+                      </button>
+                    </div>
+
+                    {/* Verkoper kaarten */}
+                    {uitbetalingen.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-light)' }}>
+                        <div style={{ fontSize: 48, marginBottom: 16 }}>💶</div>
+                        <div style={{ fontFamily: 'Fredoka, sans-serif', fontSize: 20 }}>Geen openstaande uitbetalingen</div>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                        {uitbetalingen
+                          .filter(u => uitbetaalFilter === 'alle' || (uitbetaalFilter === 'te_betalen' ? u.totaal_uitbetaalbaar > 0 : u.totaal_wachten > 0))
+                          .map(u => (
+                          <div key={u.seller_id} style={{ background: 'white', borderRadius: 16, padding: 24, boxShadow: '0 2px 8px rgba(0,0,0,.06)', border: u.totaal_uitbetaalbaar > 0 ? '2px solid #FFE0E0' : '2px solid var(--cream-dark)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
+                              <div>
+                                <div style={{ fontFamily: 'Fredoka, sans-serif', fontSize: 20, fontWeight: 700, color: 'var(--text-dark)' }}>🏪 {u.shop_naam}</div>
+                                <div style={{ fontSize: 13, color: 'var(--text-mid)', marginTop: 2 }}>Commissie: {u.commissie_pct}%</div>
+                              </div>
+                              {u.totaal_uitbetaalbaar > 0 && (
+                                <div style={{ textAlign: 'right' }}>
+                                  <div style={{ fontFamily: 'Fredoka, sans-serif', fontSize: 24, fontWeight: 700, color: 'var(--red)' }}>€{u.totaal_uitbetaalbaar.toFixed(2)}</div>
+                                  <div style={{ fontSize: 11, color: 'var(--text-light)' }}>uit te betalen ({u.orders_uitbetaalbaar.length} orders)</div>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* IBAN info */}
+                            <div style={{ background: 'var(--cream)', borderRadius: 10, padding: '12px 16px', marginBottom: 16, fontSize: 13 }}>
+                              {u.iban ? (
+                                <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+                                  <div><span style={{ color: 'var(--text-light)', fontWeight: 700 }}>Naam:</span> {u.rekening_naam || '—'}</div>
+                                  <div><span style={{ color: 'var(--text-light)', fontWeight: 700 }}>IBAN:</span> <span style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--green-dark)' }}>{u.iban.replace(/(.{4})/g, '$1 ').trim()}</span></div>
+                                  {u.btw_nummer && <div><span style={{ color: 'var(--text-light)', fontWeight: 700 }}>BTW:</span> {u.btw_nummer}</div>}
+                                </div>
+                              ) : (
+                                <div style={{ color: 'var(--red)', fontWeight: 700 }}>⚠️ Geen IBAN ingevuld door verkoper</div>
+                              )}
+                            </div>
+
+                            {/* Orders lijst */}
+                            {u.orders_uitbetaalbaar.length > 0 && (
+                              <table className="table" style={{ marginBottom: 16 }}>
+                                <thead><tr><th>Order #</th><th>Datum</th><th>Totaal</th><th>Commissie ({u.commissie_pct}%)</th><th>Uit te betalen</th></tr></thead>
+                                <tbody>
+                                  {u.orders_uitbetaalbaar.map((o: any) => {
+                                    const totaal = parseFloat(o.total_amount || 0)
+                                    const comm = totaal * u.commissie_pct / 100
+                                    return (
+                                      <tr key={o.id}>
+                                        <td><strong>{o.order_number || o.id?.slice(0, 8)}</strong></td>
+                                        <td>{new Date(o.created_at).toLocaleDateString('nl-BE')}</td>
+                                        <td>€{totaal.toFixed(2)}</td>
+                                        <td style={{ color: 'var(--green-main)' }}>€{comm.toFixed(2)}</td>
+                                        <td><strong>€{(totaal - comm).toFixed(2)}</strong></td>
+                                      </tr>
+                                    )
+                                  })}
+                                </tbody>
+                              </table>
+                            )}
+
+                            {u.totaal_wachten > 0 && (
+                              <div style={{ fontSize: 13, color: 'var(--text-mid)', marginBottom: 12 }}>
+                                🕐 €{u.totaal_wachten.toFixed(2)} nog in herroepingstermijn ({u.orders_wachten.length} orders)
+                              </div>
+                            )}
+
+                            {u.totaal_uitbetaalbaar > 0 && u.iban && (
+                              <button
+                                onClick={() => markeerUitbetaald(u.seller_id, u.orders_uitbetaalbaar.map((o: any) => o.id))}
+                                style={{ padding: '12px 24px', borderRadius: 50, background: 'var(--green-main)', color: 'white', border: 'none', fontFamily: 'Fredoka, sans-serif', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+                                ✓ Markeer als uitbetaald — €{u.totaal_uitbetaalbaar.toFixed(2)}
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+
             {tab === 'team' && (
               <div className="section-card">
                 <div className="section-card-header">
