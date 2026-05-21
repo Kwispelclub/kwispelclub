@@ -32,6 +32,10 @@ export default function VerkoperDashboard() {
 
   const [shopNaam, setShopNaam] = useState('')
   const [beschrijving, setBeschrijving] = useState('')
+  const [iban, setIban] = useState('')
+  const [btwNummer, setBtwNummer] = useState('')
+  const [rekeningNaam, setRekeningNaam] = useState('')
+  const [ibanError, setIbanError] = useState('')
   const [website, setWebsite] = useState('')
   const [instagram, setInstagram] = useState('')
   const [saveMsg, setSaveMsg] = useState('Opslaan')
@@ -70,6 +74,9 @@ export default function VerkoperDashboard() {
       setWebsite(v.website || '')
       setInstagram(v.instagram || '')
       setLogoUrl(v.logo_url || '')
+      setIban(v.iban || '')
+      setBtwNummer(v.btw_nummer || '')
+      setRekeningNaam(v.rekening_naam || '')
       setBannerUrl(v.banner_url || '')
       fetch('/api/admin-settings').then(r => r.json()).then(d => {
         setMollieMode(d.settings?.mollie_mode || process.env.NEXT_PUBLIC_MOLLIE_MODE || 'test')
@@ -189,10 +196,22 @@ export default function VerkoperDashboard() {
     setSendingMsg(false)
   }
 
+  const validateIban = (val: string) => {
+    const clean = val.replace(/\s/g, '').toUpperCase()
+    if (!clean) return ''
+    if (!/^[A-Z]{2}[0-9]{2}[A-Z0-9]+$/.test(clean)) return 'Ongeldig IBAN formaat'
+    if (clean.startsWith('BE') && clean.length !== 16) return 'Belgisch IBAN heeft 16 tekens (BE + 14 cijfers)'
+    if (clean.startsWith('NL') && clean.length !== 18) return 'Nederlands IBAN heeft 18 tekens'
+    return ''
+  }
+
   const handleSaveInstellingen = async () => {
     setSaveMsg('Bezig...')
     await supabase.from('verkopers').update({
       shop_naam: shopNaam, beschrijving,
+      iban: iban.replace(/\s/g, '').toUpperCase() || null,
+      btw_nummer: btwNummer.trim() || null,
+      rekening_naam: rekeningNaam.trim() || null,
       website: website || null, instagram: instagram || null,
       logo_url: logoUrl || null, banner_url: bannerUrl || null,
       verzendkosten: parseFloat(verzendkosten) || 4.95,
@@ -885,7 +904,43 @@ export default function VerkoperDashboard() {
                     {parseFloat(gratisVanaf) > 0 && `, gratis vanaf €${gratisVanaf}`}
                   </div>
                 </div>
-                <button className="btn btn-green" onClick={handleSaveInstellingen} style={{ width: '100%', justifyContent: 'center', padding: 14, fontSize: 15 }}>
+                <div className="card">
+                  <div className="card-header"><h2>🏦 Uitbetalingsgegevens</h2></div>
+                  <div style={{ padding: '12px 16px', background: '#FFF3E0', borderRadius: 10, fontSize: 13, color: '#7D4E00', marginBottom: 16, borderLeft: '4px solid var(--orange-main)' }}>
+                    ⚠️ Deze gegevens worden gebruikt voor uitbetaling van jouw verkopen. Ze zijn <strong>versleuteld opgeslagen</strong> en nooit zichtbaar voor kopers.
+                  </div>
+                  <div className="fg">
+                    <label>Naam rekeninghouder *</label>
+                    <input
+                      value={rekeningNaam}
+                      onChange={e => setRekeningNaam(e.target.value)}
+                      placeholder="Bijv. Marc Janssen of Janssen BV"
+                    />
+                  </div>
+                  <div className="fg">
+                    <label>IBAN rekeningnummer *</label>
+                    <input
+                      value={iban}
+                      onChange={e => { setIban(e.target.value); setIbanError(validateIban(e.target.value)) }}
+                      placeholder="BE68 5390 0754 7034"
+                      style={{ fontFamily: 'monospace', letterSpacing: 1 }}
+                    />
+                    {ibanError && <div style={{ fontSize: 12, color: 'var(--red)', marginTop: 4 }}>⚠️ {ibanError}</div>}
+                    {!ibanError && iban && <div style={{ fontSize: 12, color: 'var(--green-main)', marginTop: 4 }}>✓ IBAN formaat correct</div>}
+                  </div>
+                  <div className="fg">
+                    <label>BTW-nummer <span style={{ fontWeight: 400, color: 'var(--text-light)' }}>(optioneel — verplicht als je BTW-plichtig bent)</span></label>
+                    <input
+                      value={btwNummer}
+                      onChange={e => setBtwNummer(e.target.value)}
+                      placeholder="BE 0123.456.789"
+                    />
+                  </div>
+                  <div style={{ padding: '12px 16px', background: 'var(--green-pale)', borderRadius: 10, fontSize: 13, color: 'var(--green-dark)' }}>
+                    💡 Uitbetalingen gebeuren <strong>wekelijks op vrijdag</strong>, na aftrek van {verkoper?.commissie_pct || 15}% commissie en na het verstrijken van de 14-daagse herroepingstermijn.
+                  </div>
+                </div>
+                                <button className="btn btn-green" onClick={handleSaveInstellingen} style={{ width: '100%', justifyContent: 'center', padding: 14, fontSize: 15 }}>
                   {saveMsg}
                 </button>
               </>
