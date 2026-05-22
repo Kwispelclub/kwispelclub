@@ -94,7 +94,7 @@ export default function WinkelPage() {
       .eq('seller_id', sellerId)
       .order('created_at', { ascending: false })
     if (data && data.length > 0) {
-      const reviewerIds = [...new Set(data.map((r: any) => r.reviewer_id))]
+      const reviewerIds = Array.from(new Set(data.map((r: any) => r.reviewer_id)))
       const { data: profiles } = await supabase
         .from('profiles')
         .select('id, first_name, last_name')
