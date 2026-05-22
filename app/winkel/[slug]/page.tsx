@@ -25,6 +25,8 @@ export default function WinkelPage() {
   const [reviewComment, setReviewComment] = useState('')
   const [reviewSaving, setReviewSaving] = useState(false)
   const [reviewSuccess, setReviewSuccess] = useState<string | null>(null)
+  const [reviewedIds, setReviewedIds] = useState<Set<string>>(new Set())
+  const [reviewMap, setReviewMap] = useState<Record<string, any>>({})
 
   useEffect(() => {
     loadVerkoper()
@@ -82,6 +84,17 @@ export default function WinkelPage() {
         o.order_items?.forEach((i: any) => { if (i.product_id) gekochteIds[i.product_id] = true })
       })
       setHeeftGekocht(gekochteIds)
+      // Laad al gereviewed producten
+      const { data: bestaandeReviews } = await supabase
+        .from('reviews')
+        .select('id, product_id, rating, comment')
+        .eq('reviewer_id', u.id)
+      if (bestaandeReviews) {
+        setReviewedIds(new Set(bestaandeReviews.map((r: any) => r.product_id)))
+        const map: Record<string, any> = {}
+        bestaandeReviews.forEach((r: any) => { map[r.product_id] = r })
+        setReviewMap(map)
+      }
     }
   }
 
@@ -111,15 +124,31 @@ export default function WinkelPage() {
   const submitReview = async (productId: string) => {
     if (!user || reviewSaving) return
     setReviewSaving(true)
-    const { error } = await supabase.from('reviews').insert({
-      reviewer_id: user.id,
-      product_id: productId,
-      seller_id: verkoper?.profile_id,
-      rating: reviewRating,
-      comment: reviewComment.trim() || null,
-    })
+    const bestaande = reviewMap[productId]
+    let error = null
+    if (bestaande) {
+      // Update bestaande review
+      const res = await supabase.from('reviews').update({
+        rating: reviewRating,
+        comment: reviewComment.trim() || null,
+      }).eq('id', bestaande.id)
+      error = res.error
+      if (!error) setReviewMap(prev => ({ ...prev, [productId]: { ...bestaande, rating: reviewRating, comment: reviewComment.trim() || null } }))
+    } else {
+      // Nieuwe review
+      const res = await supabase.from('reviews').insert({
+        reviewer_id: user.id,
+        product_id: productId,
+        seller_id: verkoper?.profile_id,
+        rating: reviewRating,
+        comment: reviewComment.trim() || null,
+      }).select('id, product_id, rating, comment').single()
+      error = res.error
+      if (!error && res.data) setReviewMap(prev => ({ ...prev, [productId]: res.data }))
+    }
     if (!error) {
       setReviewSuccess(productId)
+      setReviewedIds(prev => new Set(prev).add(productId))
       setShowReviewForm(null)
       setReviewComment('')
       setReviewRating(5)
@@ -475,6 +504,20 @@ export default function WinkelPage() {
                       <div style={{fontWeight:700,fontSize:14,marginBottom:8}}>{p.name}</div>
                       {reviewSuccess === p.id ? (
                         <div style={{color:'var(--green-main)',fontWeight:700,fontSize:13}}>✓ Review geplaatst!</div>
+                      ) : reviewedIds.has(p.id) && showReviewForm !== p.id ? (
+                        <div style={{display:'flex',alignItems:'center',gap:8}}>
+                          <span style={{color:'var(--green-main)',fontWeight:700,fontSize:13}}>
+                            {'★'.repeat(reviewMap[p.id]?.rating || 0)} Jouw review
+                          </span>
+                          <button onClick={() => {
+                            const b = reviewMap[p.id]
+                            setShowReviewForm(p.id)
+                            setReviewRating(b?.rating || 5)
+                            setReviewComment(b?.comment || '')
+                          }} style={{fontSize:12,padding:'3px 10px',borderRadius:50,background:'var(--cream)',border:'2px solid var(--cream-dark)',color:'var(--text-mid)',fontFamily:'Fredoka,sans-serif',fontWeight:700,cursor:'pointer'}}>
+                            ✏️ Aanpassen
+                          </button>
+                        </div>
                       ) : showReviewForm === p.id ? (
                         <div className="review-form">
                           <div style={{marginBottom:10}}>
@@ -500,7 +543,7 @@ export default function WinkelPage() {
                           <div style={{display:'flex',gap:8}}>
                             <button onClick={() => submitReview(p.id)} disabled={reviewSaving}
                               style={{flex:1,padding:'10px',borderRadius:50,background:'var(--green-main)',color:'white',border:'none',fontFamily:'Fredoka,sans-serif',fontSize:13,fontWeight:700,cursor:'pointer'}}>
-                              {reviewSaving ? '...' : '✓ Plaatsen'}
+                              {reviewSaving ? '...' : reviewMap[showReviewForm || ''] ? '✓ Aanpassen' : '✓ Plaatsen'}
                             </button>
                             <button onClick={() => setShowReviewForm(null)}
                               style={{padding:'10px 14px',borderRadius:50,background:'var(--cream-dark)',color:'var(--text-mid)',border:'none',fontFamily:'Fredoka,sans-serif',fontSize:13,fontWeight:700,cursor:'pointer'}}>
@@ -509,7 +552,12 @@ export default function WinkelPage() {
                           </div>
                         </div>
                       ) : (
-                        <button onClick={() => { setShowReviewForm(p.id); setReviewRating(5); setReviewComment('') }}
+                        <button onClick={() => {
+                          const bestaande = reviewMap[p.id]
+                          setShowReviewForm(p.id)
+                          setReviewRating(bestaande?.rating || 5)
+                          setReviewComment(bestaande?.comment || '')
+                        }}
                           style={{padding:'8px 16px',borderRadius:50,background:'var(--green-pale)',color:'var(--green-dark)',border:'2px solid var(--green-main)',fontFamily:'Fredoka,sans-serif',fontSize:13,fontWeight:700,cursor:'pointer'}}>
                           ⭐ Review schrijven
                         </button>
