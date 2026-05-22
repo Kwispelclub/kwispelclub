@@ -769,6 +769,7 @@ function AccountPage() {
             >
               💬 Vraag stellen
             </button>
+            </div>
           </div>
         </div>
       ))}
