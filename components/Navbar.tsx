@@ -15,6 +15,9 @@ export default function Navbar() {
   const [hasSalon, setHasSalon] = useState(false)
   const [hasAcademy, setHasAcademy] = useState(false)
   const [ddOpen, setDdOpen] = useState(false)
+  const [notifs, setNotifs] = useState<any[]>([])
+  const [notifOpen, setNotifOpen] = useState(false)
+  const unreadCount = notifs.filter(n => !n.read).length
   const pathname = usePathname()
   const supabase = createClient()
 
@@ -24,6 +27,29 @@ export default function Navbar() {
       const u = session?.user ?? null
       setUser(u)
       if (!u) return
+
+      // Laad notificaties
+      const loadNotifs = async () => {
+        const { data } = await supabase
+          .from('notifications')
+          .select('*')
+          .eq('user_id', u.id)
+          .order('created_at', { ascending: false })
+          .limit(20)
+        setNotifs(data || [])
+      }
+      loadNotifs()
+
+      // Realtime updates
+      const channel = supabase
+        .channel('notifications')
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${u.id}`
+        }, () => loadNotifs())
+        .subscribe()
       const role = u.user_metadata?.role
       if (role === 'admin') {
         setDashboardUrl('/admin'); setDashboardLabel('⚙️ Admin'); return
@@ -94,6 +120,19 @@ export default function Navbar() {
         .kw-user{display:flex;align-items:center;gap:6px;padding:5px 12px 5px 5px;border-radius:50px;background:white;border:2px solid #F5EDE0;cursor:pointer;text-decoration:none;flex-shrink:0}
         .kw-ua{width:30px;height:30px;border-radius:50%;background:#4A7C3F;color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0}
         .kw-user-name{font-size:13px;font-weight:700;color:#2C2C2C;white-space:nowrap}
+        .kw-notif-btn{position:relative;width:38px;height:38px;border-radius:50%;background:white;border:2px solid #F5EDE0;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;transition:all .2s;flex-shrink:0}
+        .kw-notif-btn:hover{border-color:#4A7C3F;background:#E8F0E4}
+        .kw-notif-badge{position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;background:#E84E4E;color:white;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid white}
+        .kw-notif-dd{position:absolute;right:0;top:calc(100% + 8px);background:white;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.15);width:320px;z-index:200;border:1px solid #F0F0F0;overflow:hidden}
+        .kw-notif-header{padding:14px 16px;border-bottom:1px solid #F5EDE0;display:flex;justify-content:space-between;align-items:center}
+        .kw-notif-header h4{font-family:Fredoka,sans-serif;font-size:16px;color:#2D5A27}
+        .kw-notif-item{padding:12px 16px;border-bottom:1px solid #F5EDE0;cursor:pointer;transition:background .15s;text-decoration:none;display:block;color:inherit}
+        .kw-notif-item:hover{background:#F5F5F5}
+        .kw-notif-item.unread{background:#FFF9F0}
+        .kw-notif-title{font-size:13px;font-weight:700;color:#2C2C2C;margin-bottom:2px}
+        .kw-notif-msg{font-size:12px;color:#8A8A8A;line-height:1.4}
+        .kw-notif-time{font-size:11px;color:#AAAAAA;margin-top:4px}
+        .kw-notif-empty{padding:32px 16px;text-align:center;color:#8A8A8A;font-size:13px}
         .kw-login{padding:8px 16px;border-radius:50px;background:#4A7C3F;color:white;font-family:Fredoka,sans-serif;font-size:14px;font-weight:600;text-decoration:none;transition:all .2s;box-shadow:0 2px 8px rgba(74,124,63,.25);white-space:nowrap}
         .kw-login:hover{background:#2D5A27}
         .kw-ham{display:none;background:none;border:none;font-size:24px;cursor:pointer;padding:6px;flex-shrink:0}
@@ -142,6 +181,53 @@ export default function Navbar() {
                   <div className="kw-dd">
                     <a href="/kapsalons/dashboard" onClick={() => setDdOpen(false)}>✂️ Salon Dashboard</a>
                     <a href="/verkoper/dashboard" className="orange" onClick={() => setDdOpen(false)}>🏪 Verkoper Dashboard</a>
+                  </div>
+                )}
+              </div>
+            )}
+            {user && (
+              <div className="kw-dd-wrap" style={{position:'relative'}}>
+                <button className="kw-notif-btn" onClick={() => {
+                  setNotifOpen(!notifOpen)
+                  setDdOpen(false)
+                }}>
+                  🔔
+                  {unreadCount > 0 && <span className="kw-notif-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>}
+                </button>
+                {notifOpen && (
+                  <div className="kw-notif-dd">
+                    <div className="kw-notif-header">
+                      <h4>Notificaties</h4>
+                      {unreadCount > 0 && (
+                        <button onClick={async () => {
+                          await supabase.from('notifications').update({ read: true }).eq('user_id', user.id).eq('read', false)
+                          setNotifs(prev => prev.map(n => ({ ...n, read: true })))
+                        }} style={{fontSize:11,color:'#4A7C3F',fontWeight:700,background:'none',border:'none',cursor:'pointer'}}>
+                          Alles gelezen
+                        </button>
+                      )}
+                    </div>
+                    {notifs.length === 0 ? (
+                      <div className="kw-notif-empty">🔔 Geen notificaties</div>
+                    ) : (
+                      notifs.slice(0, 8).map(n => (
+                        <a key={n.id} href={n.link || '/account'} className={`kw-notif-item ${!n.read ? 'unread' : ''}`}
+                          onClick={async () => {
+                            if (!n.read) {
+                              await supabase.from('notifications').update({ read: true }).eq('id', n.id)
+                              setNotifs(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x))
+                            }
+                            setNotifOpen(false)
+                          }}>
+                          <div className="kw-notif-title">{!n.read && '● '}{n.title}</div>
+                          {n.message && <div className="kw-notif-msg">{n.message}</div>}
+                          <div className="kw-notif-time">{new Date(n.created_at).toLocaleDateString('nl-BE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
+                        </a>
+                      ))
+                    )}
+                    <a href="/account?panel=berichten" style={{display:'block',padding:'10px',textAlign:'center',fontSize:12,color:'#4A7C3F',fontWeight:700,borderTop:'1px solid #F5EDE0'}} onClick={() => setNotifOpen(false)}>
+                      Alle notificaties →
+                    </a>
                   </div>
                 )}
               </div>

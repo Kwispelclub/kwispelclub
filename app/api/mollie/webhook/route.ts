@@ -1,4 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
+
+async function createNotification(userId: string, type: string, title: string, message?: string, link?: string) {
+  await supabase.from('notifications').insert({ user_id: userId, type, title, message: message || null, link: link || null })
+}
 import { createClient } from '@supabase/supabase-js'
 import createMollieClient from '@mollie/api-client'
 
@@ -83,6 +87,17 @@ export async function POST(req: NextRequest) {
 
     const leveradres = order.leveradres || order.shipping_address || {}
 
+    // Notificatie aan koper
+    if (order.buyer_id) {
+      await createNotification(
+        order.buyer_id,
+        'bestelling_betaald',
+        '✅ Bestelling bevestigd!',
+        `Je bestelling ${order.order_number} is betaald en wordt verwerkt.`,
+        '/account?panel=orders'
+      )
+    }
+
     if (meta?.customerEmail) {
       await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/send-email`, {
         method: 'POST',
@@ -117,6 +132,16 @@ export async function POST(req: NextRequest) {
 
       const sellerItems = order.order_items.filter((i: any) => i.verkoper_id === sellerId)
       const sellerEmail = (verkoper as any)?.profiles?.email
+
+      // Notificatie aan verkoper
+      await createNotification(
+        sellerId as string,
+        'nieuwe_bestelling',
+        '📦 Nieuwe bestelling!',
+        `Je hebt een nieuwe bestelling ontvangen: ${order.order_number}`,
+        '/verkoper/dashboard'
+      )
+
       if (!sellerEmail) continue
 
       await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/send-email`, {

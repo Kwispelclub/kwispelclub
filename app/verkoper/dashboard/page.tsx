@@ -121,6 +121,19 @@ export default function VerkoperDashboard() {
     await supabase.from('orders').update(updateData).eq('id', orderId)
 
     // Stuur mail naar koper bij verzending
+    // Notificatie aan koper bij verzending
+    if (status === 'shipped') {
+      const { data: orderData } = await supabase.from('orders').select('buyer_id, order_number').eq('id', orderId).single()
+      if (orderData?.buyer_id) {
+        await supabase.from('notifications').insert({
+          user_id: orderData.buyer_id,
+          type: 'bestelling_verzonden',
+          title: '🚚 Bestelling verzonden!',
+          message: `Je bestelling ${orderData.order_number} is onderweg${trackingNumber ? ` — tracking: ${trackingNumber}` : ''}.`,
+          link: '/account?panel=orders'
+        })
+      }
+    }
     if (status === 'shipped') {
       const bestelling = bestellingen.find(b => b.id === orderId)
       const buyerId = bestelling?.buyer_id
