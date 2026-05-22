@@ -1,20 +1,54 @@
 import type { Metadata } from 'next'
-import Navbar from '@/components/Navbar'
-import KwispelChat from '@/components/KwispelChat'
-import AnnounceBanner from '@/components/AnnounceBanner'
-import CookieBanner from '@/components/CookieBanner'
 
 export const metadata: Metadata = {
-  title: 'Kwispelclub — Voor elke baas & elk huisdier',
-  description: 'Kwispelclub is het Belgische platform voor huisdiereigenaren. Shop, Academy, Kapsalons & 2de Hands marktplaats.',
-  manifest: '/manifest.json',
+  metadataBase: new URL('https://kwispelclub.be'),
+  title: {
+    default: 'Kwispelclub — Hondenshop, Kapsalons & Academy in België',
+    template: '%s | Kwispelclub',
+  },
+  description: 'Kwispelclub is het Belgische platform voor huisdiereigenaren. Ontdek onze webshop, vind een hondenkapsalon bij jou in de buurt, en leer alles over de verzorging van je huisdier.',
+  keywords: ['hondenshop België', 'hondenkapsalon', 'puppy training', 'huisdieren België', 'dierenwinkel', 'hond verzorging', 'kat verzorging'],
+  authors: [{ name: 'Kwispelclub', url: 'https://kwispelclub.be' }],
+  creator: 'Kwispelclub',
+  publisher: 'Kwispelclub',
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
   openGraph: {
-    title: 'Kwispelclub — Voor elke baas & elk huisdier',
-    description: 'Voor elke baas & elk huisdier 🐾',
-    url: 'https://www.kwispelclub.be',
-    siteName: 'Kwispelclub',
-    locale: 'nl_BE',
     type: 'website',
+    locale: 'nl_BE',
+    url: 'https://kwispelclub.be',
+    siteName: 'Kwispelclub',
+    title: 'Kwispelclub — Hondenshop, Kapsalons & Academy in België',
+    description: 'Het Belgische platform voor huisdiereigenaren. Webshop, kapsalons, puppy training en meer.',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'Kwispelclub — Voor jouw huisdier',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Kwispelclub — Hondenshop, Kapsalons & Academy in België',
+    description: 'Het Belgische platform voor huisdiereigenaren.',
+    images: ['/og-image.png'],
+  },
+  alternates: {
+    canonical: 'https://kwispelclub.be',
+  },
+  verification: {
+    google: '', // Vul in na Google Search Console verificatie
   },
 }
 
@@ -22,22 +56,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="nl">
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-        <meta name="theme-color" content="#2D5A27" />
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="Kwispelclub" />
-        <link rel="apple-touch-icon" href="/icons/icon-152x152.png" />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="manifest" href="/manifest.json" />
       </head>
-      <body suppressHydrationWarning>
-        <AnnounceBanner />
-        <Navbar />
-        {children}
-        <KwispelChat />
-        <CookieBanner />
-      </body>
+      <body>{children}</body>
     </html>
   )
 }

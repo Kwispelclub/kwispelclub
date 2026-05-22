@@ -1,11 +1,22 @@
-User-agent: *
-Allow: /
+import { MetadataRoute } from 'next'
 
-# Blokkeer privé pagina's
-Disallow: /admin
-Disallow: /verkoper/dashboard
-Disallow: /api/
-Disallow: /auth
-
-# Sitemap
-Sitemap: https://www.kwispelclub.be/sitemap.xml
+export default function robots(): MetadataRoute.Robots {
+  return {
+    rules: [
+      {
+        userAgent: '*',
+        allow: '/',
+        disallow: [
+          '/account',
+          '/admin',
+          '/verkoper/dashboard',
+          '/kapsalons/dashboard',
+          '/checkout',
+          '/auth',
+          '/api/',
+        ],
+      },
+    ],
+    sitemap: 'https://kwispelclub.be/sitemap.xml',
+  }
+}
