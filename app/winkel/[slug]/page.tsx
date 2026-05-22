@@ -134,6 +134,7 @@ export default function WinkelPage() {
           aantal: 1,
           emoji: '🐾',
           img: getFotoUrl(p),
+          seller_id: p.seller_id || verkoper?.profile_id || null,
         })
       }
       localStorage.setItem('kc_cart', JSON.stringify(cart))
