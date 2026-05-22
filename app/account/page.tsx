@@ -93,6 +93,11 @@ function AccountPage() {
   const [petSaving, setPetSaving] = useState(false)
   const [uploadingPetFoto, setUploadingPetFoto] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showReviewForm, setShowReviewForm] = useState<string | null>(null) // product_id
+  const [reviewRating, setReviewRating] = useState(5)
+  const [reviewComment, setReviewComment] = useState('')
+  const [reviewSaving, setReviewSaving] = useState(false)
+  const [reviewedIds, setReviewedIds] = useState<Set<string>>(new Set())
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [deleting, setDeleting] = useState(false)
   // Berichten state
@@ -131,6 +136,7 @@ function AccountPage() {
       loadInbox(user.id)
       loadFavorites(user.id)
       loadPets(user.id)
+      loadReviewedIds(user.id)
     })
 
     // Check URL params voor directe berichten navigatie
@@ -278,6 +284,31 @@ function AccountPage() {
     if (!confirm('Bevestig dat je je bestelling hebt ontvangen?')) return
     const { error } = await supabase.from('orders').update({ status: 'delivered' }).eq('id', orderId)
     if (!error) setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'delivered' } : o))
+  }
+
+
+  const loadReviewedIds = async (userId: string) => {
+    const { data } = await supabase.from('reviews').select('product_id').eq('reviewer_id', userId)
+    if (data) setReviewedIds(new Set(data.map((r: any) => r.product_id)))
+  }
+
+  const submitAccountReview = async (productId: string, sellerId: string) => {
+    if (!user || reviewSaving) return
+    setReviewSaving(true)
+    const { error } = await supabase.from('reviews').insert({
+      reviewer_id: user.id,
+      product_id: productId,
+      seller_id: sellerId,
+      rating: reviewRating,
+      comment: reviewComment.trim() || null,
+    })
+    if (!error) {
+      setReviewedIds(prev => new Set(prev).add(productId))
+      setShowReviewForm(null)
+      setReviewComment('')
+      setReviewRating(5)
+    }
+    setReviewSaving(false)
   }
 
   const loadInbox = async (userId: string) => {
@@ -730,9 +761,53 @@ function AccountPage() {
             )
           })()}
           {(o.order_items||[]).map((item:any) => (
-            <div key={item.id} style={{display:'flex',justifyContent:'space-between',fontSize:14,color:'var(--text-mid)'}}>
-              <span>{item.naam||item.product_name} × {item.aantal||item.quantity}</span>
-              <span>€{((item.prijs||item.unit_price)*(item.aantal||item.quantity)).toFixed(2)}</span>
+            <div key={item.id}>
+              <div style={{display:'flex',justifyContent:'space-between',fontSize:14,color:'var(--text-mid)'}}>
+                <span>{item.naam||item.product_name} × {item.aantal||item.quantity}</span>
+                <span>€{((item.prijs||item.unit_price)*(item.aantal||item.quantity)).toFixed(2)}</span>
+              </div>
+              {/* Review knop per product — alleen bij betaalde/geleverde orders */}
+              {item.product_id && ['paid','shipped','delivered','uitbetaald'].includes(o.status) && (
+                <div style={{marginTop:6}}>
+                  {reviewedIds.has(item.product_id) ? (
+                    <span style={{fontSize:12,color:'var(--green-main)',fontWeight:700}}>⭐ Review geplaatst</span>
+                  ) : showReviewForm === item.product_id ? (
+                    <div style={{background:'var(--cream)',borderRadius:10,padding:12,marginTop:6,border:'2px solid var(--green-pale)'}}>
+                      <div style={{display:'flex',gap:2,marginBottom:8}}>
+                        {[1,2,3,4,5].map(s => (
+                          <button key={s} onClick={() => setReviewRating(s)}
+                            style={{background:'none',border:'none',fontSize:22,cursor:'pointer',padding:0,lineHeight:1}}>
+                            {s <= reviewRating ? '★' : '☆'}
+                          </button>
+                        ))}
+                      </div>
+                      <textarea
+                        value={reviewComment}
+                        onChange={e => setReviewComment(e.target.value)}
+                        placeholder="Optioneel commentaar..."
+                        rows={2}
+                        style={{width:'100%',padding:'8px 12px',borderRadius:8,border:'2px solid var(--cream-dark)',fontFamily:'Nunito,sans-serif',fontSize:13,outline:'none',resize:'none',marginBottom:8}}
+                      />
+                      <div style={{display:'flex',gap:8}}>
+                        <button onClick={() => submitAccountReview(item.product_id, item.verkoper_id || o.order_items?.[0]?.verkoper_id)}
+                          disabled={reviewSaving}
+                          style={{padding:'7px 16px',borderRadius:50,background:'var(--green-main)',color:'white',border:'none',fontFamily:'Fredoka,sans-serif',fontSize:13,fontWeight:700,cursor:'pointer'}}>
+                          {reviewSaving ? '...' : '✓ Plaatsen'}
+                        </button>
+                        <button onClick={() => { setShowReviewForm(null); setReviewComment(''); setReviewRating(5) }}
+                          style={{padding:'7px 14px',borderRadius:50,background:'var(--cream-dark)',color:'var(--text-mid)',border:'none',fontFamily:'Fredoka,sans-serif',fontSize:13,fontWeight:700,cursor:'pointer'}}>
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button onClick={() => { setShowReviewForm(item.product_id); setReviewRating(5); setReviewComment('') }}
+                      style={{fontSize:12,padding:'4px 12px',borderRadius:50,background:'var(--cream)',border:'2px solid var(--green-pale)',color:'var(--green-dark)',fontFamily:'Fredoka,sans-serif',fontWeight:700,cursor:'pointer',marginTop:2}}>
+                      ⭐ Review schrijven
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           ))}
           <div style={{display:'flex',justifyContent:'space-between',paddingTop:10,borderTop:'1px solid var(--cream-dark)',fontFamily:'Fredoka,sans-serif',fontSize:16,fontWeight:700,color:'var(--green-dark)'}}>
