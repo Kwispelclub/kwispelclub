@@ -273,6 +273,13 @@ function AccountPage() {
     }
   }
 
+
+  const markeerOntvangen = async (orderId: string) => {
+    if (!confirm('Bevestig dat je je bestelling hebt ontvangen?')) return
+    const { error } = await supabase.from('orders').update({ status: 'delivered' }).eq('id', orderId)
+    if (!error) setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'delivered' } : o))
+  }
+
   const loadInbox = async (userId: string) => {
     setInboxLoading(true)
     try {
@@ -736,7 +743,18 @@ function AccountPage() {
             <div style={{fontSize:12,color:'var(--text-light)'}}>
               {new Date(o.created_at).toLocaleDateString('nl-BE',{day:'2-digit',month:'long',year:'numeric'})}
             </div>
-            <button
+            <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
+              {o.status === 'shipped' && (
+                <button
+                  onClick={() => markeerOntvangen(o.id)}
+                  style={{display:'flex',alignItems:'center',gap:6,padding:'7px 16px',borderRadius:50,border:'none',background:'var(--green-main)',color:'white',fontFamily:'Fredoka,sans-serif',fontSize:13,fontWeight:700,cursor:'pointer',transition:'all .2s'}}
+                  onMouseOver={e=>(e.currentTarget.style.background='var(--green-dark)')}
+                  onMouseOut={e=>(e.currentTarget.style.background='var(--green-main)')}
+                >
+                  ✓ Ontvangen
+                </button>
+              )}
+              <button
               onClick={() => {
                 const sellerId = o.order_items?.[0]?.verkoper_id
                 if (sellerId) {
