@@ -90,10 +90,21 @@ export default function WinkelPage() {
     setReviewsLoading(true)
     const { data } = await supabase
       .from('reviews')
-      .select('*, profiles(first_name, last_name, avatar_url)')
+      .select('*')
       .eq('seller_id', sellerId)
       .order('created_at', { ascending: false })
-    setReviews(data || [])
+    if (data && data.length > 0) {
+      const reviewerIds = [...new Set(data.map((r: any) => r.reviewer_id))]
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name')
+        .in('id', reviewerIds)
+      const profileMap: Record<string, any> = {}
+      profiles?.forEach((p: any) => { profileMap[p.id] = p })
+      setReviews(data.map((r: any) => ({ ...r, profiles: profileMap[r.reviewer_id] || null })))
+    } else {
+      setReviews(data || [])
+    }
     setReviewsLoading(false)
   }
 
