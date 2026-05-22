@@ -16,6 +16,15 @@ export default function WinkelPage() {
   const [selectedProduct, setSelectedProduct] = useState<any>(null)
   const [modalAantal, setModalAantal] = useState(1)
   const [modalAdded, setModalAdded] = useState(false)
+  const [user, setUser] = useState<any>(null)
+  const [reviews, setReviews] = useState<any[]>([])
+  const [reviewsLoading, setReviewsLoading] = useState(false)
+  const [heeftGekocht, setHeeftGekocht] = useState<Record<string, boolean>>({})
+  const [showReviewForm, setShowReviewForm] = useState<string | null>(null)
+  const [reviewRating, setReviewRating] = useState(5)
+  const [reviewComment, setReviewComment] = useState('')
+  const [reviewSaving, setReviewSaving] = useState(false)
+  const [reviewSuccess, setReviewSuccess] = useState<string | null>(null)
 
   useEffect(() => {
     loadVerkoper()
@@ -54,6 +63,59 @@ export default function WinkelPage() {
     if (user && v.profile_id === user.id) setIsEigenaar(true)
 
     await supabase.from('verkopers').update({ views: (v.views || 0) + 1 }).eq('id', v.id)
+
+    // Laad reviews voor deze verkoper
+    loadReviews(v.profile_id)
+
+    // Check of user ingelogd is + heeft gekocht
+    const { data: { user: u } } = await supabase.auth.getUser()
+    if (u) {
+      setUser(u)
+      // Check welke producten deze user gekocht heeft
+      const { data: orders } = await supabase
+        .from('orders')
+        .select('order_items(product_id)')
+        .eq('user_id', u.id)
+        .in('status', ['paid', 'shipped', 'delivered', 'uitbetaald'])
+      const gekochteIds: Record<string, boolean> = {}
+      orders?.forEach((o: any) => {
+        o.order_items?.forEach((i: any) => { if (i.product_id) gekochteIds[i.product_id] = true })
+      })
+      setHeeftGekocht(gekochteIds)
+    }
+  }
+
+
+  const loadReviews = async (sellerId: string) => {
+    setReviewsLoading(true)
+    const { data } = await supabase
+      .from('reviews')
+      .select('*, profiles(first_name, last_name, avatar_url)')
+      .eq('seller_id', sellerId)
+      .order('created_at', { ascending: false })
+    setReviews(data || [])
+    setReviewsLoading(false)
+  }
+
+  const submitReview = async (productId: string) => {
+    if (!user || reviewSaving) return
+    setReviewSaving(true)
+    const { error } = await supabase.from('reviews').insert({
+      reviewer_id: user.id,
+      product_id: productId,
+      seller_id: verkoper?.profile_id,
+      rating: reviewRating,
+      comment: reviewComment.trim() || null,
+    })
+    if (!error) {
+      setReviewSuccess(productId)
+      setShowReviewForm(null)
+      setReviewComment('')
+      setReviewRating(5)
+      if (verkoper?.profile_id) loadReviews(verkoper.profile_id)
+      setTimeout(() => setReviewSuccess(null), 3000)
+    }
+    setReviewSaving(false)
   }
 
   // ✅ Voeg product toe aan winkelwagen (localStorage)
@@ -133,6 +195,15 @@ export default function WinkelPage() {
     .empty-products .ei{font-size:40px;margin-bottom:12px;opacity:.4}
     .not-found{text-align:center;padding:80px 20px;max-width:400px;margin:0 auto}
     .not-found .ni{font-size:56px;margin-bottom:16px}
+
+    .reviews-section{margin-top:40px;padding-top:32px;border-top:2px solid var(--cream-dark)}
+    .review-card{background:var(--white);border-radius:14px;padding:16px 20px;margin-bottom:12px;box-shadow:0 2px 6px rgba(0,0,0,.05)}
+    .review-stars{color:#F5A623;font-size:18px;letter-spacing:2px;margin-bottom:6px}
+    .review-text{font-size:14px;color:var(--text-mid);line-height:1.6;margin-bottom:8px}
+    .review-meta{font-size:12px;color:var(--text-light);font-weight:600}
+    .star-btn{background:none;border:none;font-size:28px;cursor:pointer;padding:2px;transition:transform .1s;line-height:1}
+    .star-btn:hover{transform:scale(1.2)}
+    .review-form{background:var(--cream);border-radius:14px;padding:20px;margin-top:12px;border:2px solid var(--green-pale)}
     @media(max-width:768px){.shop-body{grid-template-columns:1fr}}
     .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s ease}
     .modal{background:white;border-radius:24px;max-width:680px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.2);animation:slideUp .3s ease}
@@ -338,6 +409,114 @@ export default function WinkelPage() {
           </div>
         </div>
       )}
+
+      {/* REVIEWS SECTIE */}
+      {!loading && !notFound && (
+        <div style={{maxWidth:1320,margin:'0 auto',padding:'0 clamp(16px,4vw,48px) 60px'}}>
+          <div className="reviews-section">
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:24,flexWrap:'wrap',gap:12}}>
+              <div>
+                <h2 style={{fontFamily:'Fredoka,sans-serif',fontSize:26,color:'var(--text-dark)',marginBottom:4}}>
+                  Reviews ⭐ {reviews.length > 0 && `(${reviews.length})`}
+                </h2>
+                {reviews.length > 0 && (
+                  <div style={{fontSize:14,color:'var(--text-mid)'}}>
+                    Gemiddeld: <strong style={{color:'var(--orange-main)',fontSize:18}}>
+                      {(reviews.reduce((s,r) => s + r.rating, 0) / reviews.length).toFixed(1)}
+                    </strong> / 5
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {reviewsLoading ? (
+              <div style={{color:'var(--text-light)',fontSize:14}}>⏳ Reviews laden...</div>
+            ) : reviews.length === 0 ? (
+              <div style={{background:'var(--cream)',borderRadius:14,padding:'24px',textAlign:'center',color:'var(--text-light)'}}>
+                <div style={{fontSize:32,marginBottom:8}}>⭐</div>
+                <div style={{fontWeight:700}}>Nog geen reviews</div>
+                <div style={{fontSize:13,marginTop:4}}>Wees de eerste om een review achter te laten!</div>
+              </div>
+            ) : (
+              <div>
+                {reviews.map(r => (
+                  <div key={r.id} className="review-card">
+                    <div className="review-stars">{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</div>
+                    {r.comment && <div className="review-text">{r.comment}</div>}
+                    <div className="review-meta">
+                      {r.profiles?.first_name || 'Klant'} · {new Date(r.created_at).toLocaleDateString('nl-BE')}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Review schrijven — alleen voor kopers */}
+            {user && products.some(p => heeftGekocht[p.id]) && (
+              <div style={{marginTop:28}}>
+                <h3 style={{fontFamily:'Fredoka,sans-serif',fontSize:18,color:'var(--green-dark)',marginBottom:16}}>
+                  Jouw review schrijven ✏️
+                </h3>
+                <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))',gap:12}}>
+                  {products.filter(p => heeftGekocht[p.id]).map(p => (
+                    <div key={p.id} style={{background:'white',borderRadius:14,padding:16,border:'2px solid var(--cream-dark)'}}>
+                      <div style={{fontWeight:700,fontSize:14,marginBottom:8}}>{p.name}</div>
+                      {reviewSuccess === p.id ? (
+                        <div style={{color:'var(--green-main)',fontWeight:700,fontSize:13}}>✓ Review geplaatst!</div>
+                      ) : showReviewForm === p.id ? (
+                        <div className="review-form">
+                          <div style={{marginBottom:10}}>
+                            <div style={{fontSize:12,fontWeight:700,color:'var(--text-mid)',marginBottom:6}}>Beoordeling:</div>
+                            <div style={{display:'flex',gap:2}}>
+                              {[1,2,3,4,5].map(s => (
+                                <button key={s} className="star-btn" onClick={() => setReviewRating(s)}>
+                                  {s <= reviewRating ? '★' : '☆'}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <div style={{marginBottom:10}}>
+                            <div style={{fontSize:12,fontWeight:700,color:'var(--text-mid)',marginBottom:6}}>Commentaar (optioneel):</div>
+                            <textarea
+                              value={reviewComment}
+                              onChange={e => setReviewComment(e.target.value)}
+                              placeholder="Vertel over je ervaring..."
+                              rows={3}
+                              style={{width:'100%',padding:'10px 12px',borderRadius:10,border:'2px solid var(--cream-dark)',fontFamily:'Nunito,sans-serif',fontSize:13,outline:'none',resize:'vertical'}}
+                            />
+                          </div>
+                          <div style={{display:'flex',gap:8}}>
+                            <button onClick={() => submitReview(p.id)} disabled={reviewSaving}
+                              style={{flex:1,padding:'10px',borderRadius:50,background:'var(--green-main)',color:'white',border:'none',fontFamily:'Fredoka,sans-serif',fontSize:13,fontWeight:700,cursor:'pointer'}}>
+                              {reviewSaving ? '...' : '✓ Plaatsen'}
+                            </button>
+                            <button onClick={() => setShowReviewForm(null)}
+                              style={{padding:'10px 14px',borderRadius:50,background:'var(--cream-dark)',color:'var(--text-mid)',border:'none',fontFamily:'Fredoka,sans-serif',fontSize:13,fontWeight:700,cursor:'pointer'}}>
+                              ✕
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button onClick={() => { setShowReviewForm(p.id); setReviewRating(5); setReviewComment('') }}
+                          style={{padding:'8px 16px',borderRadius:50,background:'var(--green-pale)',color:'var(--green-dark)',border:'2px solid var(--green-main)',fontFamily:'Fredoka,sans-serif',fontSize:13,fontWeight:700,cursor:'pointer'}}>
+                          ⭐ Review schrijven
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {!user && (
+              <div style={{marginTop:20,padding:16,background:'var(--cream)',borderRadius:12,fontSize:13,color:'var(--text-mid)',textAlign:'center'}}>
+                <a href="/auth" style={{color:'var(--green-main)',fontWeight:700}}>Inloggen</a> om een review te schrijven.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
     </>
   )
 }
