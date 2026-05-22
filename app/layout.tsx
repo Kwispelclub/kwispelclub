@@ -48,7 +48,7 @@ export const metadata: Metadata = {
     canonical: 'https://kwispelclub.be',
   },
   verification: {
-    google: 'googlebd1de65f9142fee3.html', // Vul in na Google Search Console verificatie
+    google: 'qLySYupmxjYtuWGYIxsaDRIp8XLqKA2-5yXEafQe5UA', // Vul in na Google Search Console verificatie
   },
 }
 
