@@ -233,7 +233,7 @@ const [bannerSaving, setBannerSaving] = useState(false)
     const { data: orders } = await supabase
       .from('orders')
       .select('*, order_items(*)')
-      .in('status', ['paid', 'shipped', 'delivered'])
+      .in('status', ['paid', 'shipped', 'delivered', 'uitbetaald'])
       .order('created_at', { ascending: false })
 
     if (!orders) { setUitbetaalLoading(false); return }
@@ -257,7 +257,7 @@ const [bannerSaving, setBannerSaving] = useState(false)
       if (!sellerId) return
       const verkoper = verkopersMap[sellerId] || { shop_naam: 'Onbekend', iban: null }
       const commissiePct = verkoper.commissie_pct || 15
-      const totaal = parseFloat(order.total_amount || 0)
+      const totaal = parseFloat(order.total || order.total_amount || 0)
       const commissie = totaal * commissiePct / 100
       const uitTeBetalenBedrag = totaal - commissie
 

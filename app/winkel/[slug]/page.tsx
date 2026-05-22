@@ -75,7 +75,7 @@ export default function WinkelPage() {
       const { data: orders } = await supabase
         .from('orders')
         .select('order_items(product_id)')
-        .eq('user_id', u.id)
+        .eq('buyer_id', u.id)
         .in('status', ['paid', 'shipped', 'delivered', 'uitbetaald'])
       const gekochteIds: Record<string, boolean> = {}
       orders?.forEach((o: any) => {
