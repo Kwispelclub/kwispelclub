@@ -85,6 +85,24 @@ export async function POST(req: NextRequest) {
 
     if (!order) return NextResponse.json({ ok: true })
 
+    // Update voorraad per product
+    for (const item of (order.order_items || [])) {
+      if (item.product_id && item.quantity) {
+        const { data: product } = await supabase
+          .from('products')
+          .select('voorraad')
+          .eq('id', item.product_id)
+          .single()
+        if (product && product.voorraad !== null) {
+          const nieuweVoorraad = Math.max(0, (product.voorraad || 0) - item.quantity)
+          await supabase
+            .from('products')
+            .update({ voorraad: nieuweVoorraad })
+            .eq('id', item.product_id)
+        }
+      }
+    }
+
     const leveradres = order.leveradres || order.shipping_address || {}
 
     // Notificatie aan koper

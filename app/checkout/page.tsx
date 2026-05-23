@@ -103,6 +103,25 @@ export default function CheckoutPage() {
     setLoading(true)
 
     try {
+      // 0. Controleer voorraad
+      const productIds = cart.filter(i => i.id).map(i => i.id)
+      if (productIds.length > 0) {
+        const { data: products } = await supabase
+          .from('products')
+          .select('id, naam: name, voorraad')
+          .in('id', productIds)
+        if (products) {
+          for (const item of cart) {
+            const product = products.find((p: any) => p.id === item.id)
+            if (product && product.voorraad !== null && product.voorraad < item.aantal) {
+              alert(`"${item.naam}" heeft nog maar ${product.voorraad} stuks op voorraad. Pas je winkelwagen aan.`)
+              setLoading(false)
+              return
+            }
+          }
+        }
+      }
+
       // 1. Maak order aan in Supabase
       // ✅ was 'bestellingen' → nu 'orders'
       const { data: order, error: orderError } = await supabase
