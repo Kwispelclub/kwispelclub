@@ -9,7 +9,7 @@ import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 type NavbarClientProps = {
   initialUser: {
     id: string;
-    email: string;
+    email: string | null;
     user_metadata: any;
   } | null;
   initialHasSalon: boolean;
@@ -128,7 +128,8 @@ export default function NavbarClient({
   const fullName =
     user.user_metadata?.full_name ||
     user.user_metadata?.name ||
-    user.email;
+    user.email ||
+    "Gebruiker";
 
   const initials = getInitials(fullName);
 
