@@ -35,73 +35,28 @@ export default function NavbarClient({ initialUser, initialHasSalon, initialHasV
   const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
-    // Lees gecachede user info — maar wacht op auth check voor user ID verificatie
-    // (wordt gedaan na getSession hieronder)
-
     window.addEventListener('scroll', () => setScrolled(window.scrollY > 10))
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      const u = session?.user ?? null
-      setUser(u)
-      if (!u) {
-        localStorage.removeItem('kc_user')
-        return
-      }
-
-      // Laad gecachede rol voor deze specifieke user
-      try {
-        const cached = localStorage.getItem(`kc_rol_${u.id}`)
-        if (cached) {
-          const { hasSalon: s, hasVerkoper: v, dashboardUrl: du, dashboardLabel: dl } = JSON.parse(cached)
-          if (s) setHasSalon(true)
-          if (v) setHasVerkoper(true)
-          if (du) setDashboardUrl(du)
-          if (dl) setDashboardLabel(dl)
-        }
-      } catch {}
-
-      // Laad notificaties
+    if (initialUser?.id) {
       const loadNotifs = async () => {
         const { data } = await supabase
           .from('notifications')
           .select('*')
-          .eq('user_id', u.id)
+          .eq('user_id', initialUser.id)
           .order('created_at', { ascending: false })
           .limit(20)
         setNotifs(data || [])
       }
       loadNotifs()
-
-      // Realtime updates
-      const channel = supabase
+      supabase
         .channel('notifications')
         .on('postgres_changes', {
           event: 'INSERT',
           schema: 'public',
           table: 'notifications',
-          filter: `user_id=eq.${u.id}`
+          filter: `user_id=eq.${initialUser.id}`
         }, () => loadNotifs())
         .subscribe()
-      const role = u.user_metadata?.role
-      if (role === 'admin') {
-        setDashboardUrl('/admin'); setDashboardLabel('⚙️ Admin'); return
-      }
-      const [{ data: salon }, { data: verkoper }] = await Promise.all([
-        supabase.from('kapsalons').select('id').eq('owner_id', u.id).maybeSingle(),
-        supabase.from('verkopers').select('id').eq('profile_id', u.id).maybeSingle(),
-      ])
-      if (salon) setHasSalon(true)
-      if (verkoper) setHasVerkoper(true)
-      let newUrl = '/account', newLabel = 'Mijn Account'
-      if (salon && verkoper) {
-        newLabel = 'Dashboards ▾'
-      } else if (salon) {
-        newUrl = '/kapsalons/dashboard'; newLabel = '✂️ Salon Dashboard'
-      } else if (verkoper) {
-        newUrl = '/verkoper/dashboard'; newLabel = '🏪 Verkoper Dashboard'
-      }
-      setDashboardUrl(newUrl); setDashboardLabel(newLabel)
-
-    })
+    }
   }, [])
 
   const links = [
