@@ -25,18 +25,6 @@ export default function Navbar() {
   const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
-    // Laad gecachede rol direct uit localStorage
-    try {
-      // Kan user ID nog niet kennen hier, wordt later overschreven
-      if (cached) {
-        const { hasSalon: s, hasVerkoper: v, dashboardUrl: u, dashboardLabel: l } = JSON.parse(cached)
-        if (s) setHasSalon(true)
-        if (v) setHasVerkoper(true)
-        if (u) setDashboardUrl(u)
-        if (l) setDashboardLabel(l)
-      }
-    } catch {}
-
     window.addEventListener('scroll', () => setScrolled(window.scrollY > 10))
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       const u = session?.user ?? null
