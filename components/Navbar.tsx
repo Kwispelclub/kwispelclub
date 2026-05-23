@@ -98,9 +98,18 @@ export default function Navbar() {
   const isLoggedIn = !!user
   const showWordVerkoper = !isLoggedIn || (!hasVerkoper && !hasSalon)
 
+  if (!mounted) return (
+    <nav style={{position:'sticky',top:0,zIndex:100,background:'rgba(255,249,240,.96)',borderBottom:'1px solid rgba(0,0,0,.04)',padding:'0 16px',height:64,display:'flex',alignItems:'center'}}>
+      <a href="/" style={{display:'flex',alignItems:'center',gap:8,textDecoration:'none'}}>
+        <div style={{width:38,height:38,borderRadius:10,background:'#2D5A27',display:'flex',alignItems:'center',justifyContent:'center',fontSize:20}}>🐾</div>
+        <span style={{fontFamily:'Fredoka,sans-serif',fontSize:20,fontWeight:700,color:'#2D5A27'}}>Kwispelclub</span>
+      </a>
+    </nav>
+  )
+
   return (
     <>
-      <style>{`
+      <style suppressHydrationWarning>{`
         .kw-nav{position:sticky;top:0;z-index:100;background:rgba(255,249,240,.88);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(0,0,0,.04);padding:0 16px;transition:all .3s;font-family:Nunito,sans-serif}
         .kw-nav.scrolled{box-shadow:0 4px 20px rgba(0,0,0,.08);background:rgba(255,249,240,.96)}
         .kw-inner{max-width:1320px;margin:0 auto;display:flex;align-items:center;height:64px;gap:6px}
