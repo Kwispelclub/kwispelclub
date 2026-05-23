@@ -19,7 +19,7 @@ export default function Navbar() {
   const [rolLoaded, setRolLoaded] = useState(false)
   const [notifs, setNotifs] = useState<any[]>([])
   const [notifOpen, setNotifOpen] = useState(false)
-  const [mounted, setMounted] = useState(false)
+  const [mounted, setMounted] = useState(true)
   const unreadCount = notifs.filter(n => !n.read).length
   const pathname = usePathname()
   const supabase = useMemo(() => createClient(), [])
@@ -29,7 +29,6 @@ export default function Navbar() {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       const u = session?.user ?? null
       setUser(u)
-      setMounted(true)
       if (!u) { return }
       // Laad gecachede rol voor deze specifieke user
       try {
