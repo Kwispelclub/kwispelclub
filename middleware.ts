@@ -44,6 +44,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // Stuur user info als header voor de Navbar
+  if (user) {
+    supabaseResponse.headers.set('x-user-id', user.id)
+    supabaseResponse.headers.set('x-user-role', user.user_metadata?.role || 'koper')
+    supabaseResponse.headers.set('x-user-name', user.user_metadata?.first_name || '')
+  }
+
   return supabaseResponse
 }
 
