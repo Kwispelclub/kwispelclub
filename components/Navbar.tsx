@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import type { User } from '@supabase/supabase-js'
@@ -17,12 +17,9 @@ export default function Navbar() {
   const [ddOpen, setDdOpen] = useState(false)
   const [notifs, setNotifs] = useState<any[]>([])
   const [notifOpen, setNotifOpen] = useState(false)
-  const [mounted, setMounted] = useState(false)
   const unreadCount = notifs.filter(n => !n.read).length
   const pathname = usePathname()
-  const supabase = useMemo(() => createClient(), [])
-
-  useEffect(() => { setMounted(true) }, [])
+  const supabase = createClient()
 
   useEffect(() => {
     window.addEventListener('scroll', () => setScrolled(window.scrollY > 10))
@@ -98,18 +95,9 @@ export default function Navbar() {
   const isLoggedIn = !!user
   const showWordVerkoper = !isLoggedIn || (!hasVerkoper && !hasSalon)
 
-  if (!mounted) return (
-    <nav style={{position:'sticky',top:0,zIndex:100,background:'rgba(255,249,240,.96)',borderBottom:'1px solid rgba(0,0,0,.04)',padding:'0 16px',height:64,display:'flex',alignItems:'center'}}>
-      <a href="/" style={{display:'flex',alignItems:'center',gap:8,textDecoration:'none'}}>
-        <div style={{width:38,height:38,borderRadius:10,background:'#2D5A27',display:'flex',alignItems:'center',justifyContent:'center',fontSize:20}}>🐾</div>
-        <span style={{fontFamily:'Fredoka,sans-serif',fontSize:20,fontWeight:700,color:'#2D5A27'}}>Kwispelclub</span>
-      </a>
-    </nav>
-  )
-
   return (
     <>
-      <style suppressHydrationWarning>{`
+      <style>{`
         .kw-nav{position:sticky;top:0;z-index:100;background:rgba(255,249,240,.88);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(0,0,0,.04);padding:0 16px;transition:all .3s;font-family:Nunito,sans-serif}
         .kw-nav.scrolled{box-shadow:0 4px 20px rgba(0,0,0,.08);background:rgba(255,249,240,.96)}
         .kw-inner{max-width:1320px;margin:0 auto;display:flex;align-items:center;height:64px;gap:6px}
@@ -178,13 +166,13 @@ export default function Navbar() {
             ))}
           </ul>
           <div className="kw-right">
-            {mounted && showWordVerkoper && (
+            {showWordVerkoper && (
               <a href="/word-verkoper" className="kw-verkoper-btn">🏪 Word Verkoper</a>
             )}
-            {mounted && user && !isBothRoles && dashboardLabel !== '👤 Mijn Account' && (
+            {user && !isBothRoles && dashboardLabel !== '👤 Mijn Account' && (
               <a href={dashboardUrl} className="kw-dashboard-btn">{dashboardLabel}</a>
             )}
-            {mounted && user && isBothRoles && (
+            {user && isBothRoles && (
               <div className="kw-dd-wrap">
                 <button className="kw-dashboard-btn" onClick={() => setDdOpen(!ddOpen)}>
                   Dashboards ▾
@@ -197,7 +185,7 @@ export default function Navbar() {
                 )}
               </div>
             )}
-            {user && mounted && (
+            {user && (
               <div className="kw-dd-wrap" style={{position:'relative'}}>
                 <button className="kw-notif-btn" onClick={() => {
                   setNotifOpen(!notifOpen)
@@ -244,16 +232,16 @@ export default function Navbar() {
                 )}
               </div>
             )}
-            {mounted && user ? (
+            {user ? (
               <a href="/account" className="kw-user">
                 <div className="kw-ua">
                   {(user.user_metadata?.first_name?.[0] || user.email?.[0] || '?').toUpperCase()}
                 </div>
                 <span className="kw-user-name">{user.user_metadata?.first_name || 'Account'}</span>
               </a>
-            ) : mounted ? (
+            ) : (
               <a href="/auth" className="kw-login">Inloggen →</a>
-            ) : null}
+            )}
           </div>
           <button className="kw-ham" onClick={() => setMobileOpen(!mobileOpen)}>
             {mobileOpen ? '✕' : '☰'}
