@@ -38,11 +38,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  if (request.nextUrl.pathname === '/auth' && user) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/account'
-    return NextResponse.redirect(url)
-  }
+  
 
   // Stuur user info als header voor de Navbar
   if (user) {
