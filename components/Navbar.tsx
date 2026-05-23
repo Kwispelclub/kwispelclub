@@ -17,6 +17,8 @@ export default function Navbar() {
   const [ddOpen, setDdOpen] = useState(false)
   // Cache rol in localStorage voor snelle weergave
   const [rolLoaded, setRolLoaded] = useState(false)
+  // Lees user initieel uit localStorage cache voor instant display
+  const [cachedUser, setCachedUser] = useState<any>(null)
   const [notifs, setNotifs] = useState<any[]>([])
   const [notifOpen, setNotifOpen] = useState(false)
   const [mounted, setMounted] = useState(true)
@@ -25,6 +27,19 @@ export default function Navbar() {
   const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
+    // Lees gecachede user info direct uit localStorage
+    try {
+      const cachedInfo = localStorage.getItem('kc_user')
+      if (cachedInfo) {
+        const info = JSON.parse(cachedInfo)
+        setUser(info.user)
+        if (info.dashboardUrl) setDashboardUrl(info.dashboardUrl)
+        if (info.dashboardLabel) setDashboardLabel(info.dashboardLabel)
+        if (info.hasSalon) setHasSalon(true)
+        if (info.hasVerkoper) setHasVerkoper(true)
+      }
+    } catch {}
+
     window.addEventListener('scroll', () => setScrolled(window.scrollY > 10))
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       const u = session?.user ?? null
@@ -83,11 +98,18 @@ export default function Navbar() {
         newUrl = '/verkoper/dashboard'; newLabel = '🏪 Verkoper Dashboard'
       }
       setDashboardUrl(newUrl); setDashboardLabel(newLabel)
-      // Cache opslaan
+      // Cache opslaan inclusief user info
       try {
         localStorage.setItem(`kc_rol_${u.id}`, JSON.stringify({
           hasSalon: !!salon, hasVerkoper: !!verkoper,
           dashboardUrl: newUrl, dashboardLabel: newLabel
+        }))
+        localStorage.setItem('kc_user', JSON.stringify({
+          user: u,
+          dashboardUrl: newUrl,
+          dashboardLabel: newLabel,
+          hasSalon: !!salon,
+          hasVerkoper: !!verkoper,
         }))
       } catch {}
     })
@@ -307,7 +329,7 @@ export default function Navbar() {
                   {hasSalon && <a href="/kapsalons/dashboard" className="kw-mob-acc-btn" onClick={() => setMobileOpen(false)}>✂️ Salon</a>}
                   {hasVerkoper && <a href="/verkoper/dashboard" className="kw-mob-acc-btn" style={{background:'#E8913A'}} onClick={() => setMobileOpen(false)}>🏪 Verkoper</a>}
                   {!hasSalon && !hasVerkoper && <a href="/account" className="kw-mob-acc-btn" onClick={() => setMobileOpen(false)}>👤 Account</a>}
-                  <button className="kw-mob-out-btn" onClick={async () => { await supabase.auth.signOut(); setMobileOpen(false); window.location.href = '/' }}>Uit</button>
+                  <button className="kw-mob-out-btn" onClick={async () => { await supabase.auth.signOut(); localStorage.removeItem('kc_user'); setMobileOpen(false); window.location.href = '/' }}>Uit</button>
                 </>
               ) : (
                 <a href="/auth" className="kw-mob-acc-btn" onClick={() => setMobileOpen(false)}>→ Inloggen</a>
