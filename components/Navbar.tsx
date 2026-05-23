@@ -27,24 +27,31 @@ export default function Navbar() {
   const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
-    // Lees gecachede user info direct uit localStorage
-    try {
-      const cachedInfo = localStorage.getItem('kc_user')
-      if (cachedInfo) {
-        const info = JSON.parse(cachedInfo)
-        setUser(info.user)
-        if (info.dashboardUrl) setDashboardUrl(info.dashboardUrl)
-        if (info.dashboardLabel) setDashboardLabel(info.dashboardLabel)
-        if (info.hasSalon) setHasSalon(true)
-        if (info.hasVerkoper) setHasVerkoper(true)
-      }
-    } catch {}
+    // Lees gecachede user info — maar wacht op auth check voor user ID verificatie
+    // (wordt gedaan na getSession hieronder)
 
     window.addEventListener('scroll', () => setScrolled(window.scrollY > 10))
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       const u = session?.user ?? null
       setUser(u)
-      if (!u) { return }
+      if (!u) {
+        localStorage.removeItem('kc_user')
+        return
+      }
+      // Laad cache alleen als het voor deze user is
+      try {
+        const cachedInfo = localStorage.getItem('kc_user')
+        if (cachedInfo) {
+          const info = JSON.parse(cachedInfo)
+          if (info.userId === u.id) {
+            setUser(info.user)
+            if (info.dashboardUrl) setDashboardUrl(info.dashboardUrl)
+            if (info.dashboardLabel) setDashboardLabel(info.dashboardLabel)
+            if (info.hasSalon) setHasSalon(true)
+            if (info.hasVerkoper) setHasVerkoper(true)
+          }
+        }
+      } catch {}
       // Laad gecachede rol voor deze specifieke user
       try {
         const cached = localStorage.getItem(`kc_rol_${u.id}`)
@@ -105,6 +112,7 @@ export default function Navbar() {
           dashboardUrl: newUrl, dashboardLabel: newLabel
         }))
         localStorage.setItem('kc_user', JSON.stringify({
+          userId: u.id,
           user: u,
           dashboardUrl: newUrl,
           dashboardLabel: newLabel,
