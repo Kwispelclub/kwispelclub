@@ -15,6 +15,8 @@ export default function Navbar() {
   const [hasSalon, setHasSalon] = useState(false)
   const [hasAcademy, setHasAcademy] = useState(false)
   const [ddOpen, setDdOpen] = useState(false)
+  // Cache rol in localStorage voor snelle weergave
+  const [rolLoaded, setRolLoaded] = useState(false)
   const [notifs, setNotifs] = useState<any[]>([])
   const [notifOpen, setNotifOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
@@ -23,12 +25,24 @@ export default function Navbar() {
   const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
+    // Laad gecachede rol direct uit localStorage
+    try {
+      const cached = localStorage.getItem('kc_rol')
+      if (cached) {
+        const { hasSalon: s, hasVerkoper: v, dashboardUrl: u, dashboardLabel: l } = JSON.parse(cached)
+        if (s) setHasSalon(true)
+        if (v) setHasVerkoper(true)
+        if (u) setDashboardUrl(u)
+        if (l) setDashboardLabel(l)
+      }
+    } catch {}
+
     window.addEventListener('scroll', () => setScrolled(window.scrollY > 10))
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       const u = session?.user ?? null
       setUser(u)
       setMounted(true)
-      if (!u) { setMounted(true); return }
+      if (!u) { localStorage.removeItem('kc_rol'); return }
 
       // Laad notificaties
       const loadNotifs = async () => {
@@ -62,13 +76,22 @@ export default function Navbar() {
       ])
       if (salon) setHasSalon(true)
       if (verkoper) setHasVerkoper(true)
+      let newUrl = '/account', newLabel = 'Mijn Account'
       if (salon && verkoper) {
-        setDashboardLabel('Dashboards ▾')
+        newLabel = 'Dashboards ▾'
       } else if (salon) {
-        setDashboardUrl('/kapsalons/dashboard'); setDashboardLabel('✂️ Salon Dashboard')
+        newUrl = '/kapsalons/dashboard'; newLabel = '✂️ Salon Dashboard'
       } else if (verkoper) {
-        setDashboardUrl('/verkoper/dashboard'); setDashboardLabel('🏪 Verkoper Dashboard')
+        newUrl = '/verkoper/dashboard'; newLabel = '🏪 Verkoper Dashboard'
       }
+      setDashboardUrl(newUrl); setDashboardLabel(newLabel)
+      // Cache opslaan
+      try {
+        localStorage.setItem('kc_rol', JSON.stringify({
+          hasSalon: !!salon, hasVerkoper: !!verkoper,
+          dashboardUrl: newUrl, dashboardLabel: newLabel
+        }))
+      } catch {}
     })
   }, [])
 
