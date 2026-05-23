@@ -17,9 +17,12 @@ export default function Navbar() {
   const [ddOpen, setDdOpen] = useState(false)
   const [notifs, setNotifs] = useState<any[]>([])
   const [notifOpen, setNotifOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const unreadCount = notifs.filter(n => !n.read).length
   const pathname = usePathname()
   const supabase = useMemo(() => createClient(), [])
+
+  useEffect(() => { setMounted(true) }, [])
 
   useEffect(() => {
     window.addEventListener('scroll', () => setScrolled(window.scrollY > 10))
@@ -166,13 +169,13 @@ export default function Navbar() {
             ))}
           </ul>
           <div className="kw-right">
-            {showWordVerkoper && (
+            {mounted && showWordVerkoper && (
               <a href="/word-verkoper" className="kw-verkoper-btn">🏪 Word Verkoper</a>
             )}
-            {user && !isBothRoles && dashboardLabel !== '👤 Mijn Account' && (
+            {mounted && user && !isBothRoles && dashboardLabel !== '👤 Mijn Account' && (
               <a href={dashboardUrl} className="kw-dashboard-btn">{dashboardLabel}</a>
             )}
-            {user && isBothRoles && (
+            {mounted && user && isBothRoles && (
               <div className="kw-dd-wrap">
                 <button className="kw-dashboard-btn" onClick={() => setDdOpen(!ddOpen)}>
                   Dashboards ▾
@@ -185,7 +188,7 @@ export default function Navbar() {
                 )}
               </div>
             )}
-            {user && (
+            {user && mounted && (
               <div className="kw-dd-wrap" style={{position:'relative'}}>
                 <button className="kw-notif-btn" onClick={() => {
                   setNotifOpen(!notifOpen)
@@ -232,16 +235,16 @@ export default function Navbar() {
                 )}
               </div>
             )}
-            {user ? (
+            {mounted && user ? (
               <a href="/account" className="kw-user">
                 <div className="kw-ua">
                   {(user.user_metadata?.first_name?.[0] || user.email?.[0] || '?').toUpperCase()}
                 </div>
                 <span className="kw-user-name">{user.user_metadata?.first_name || 'Account'}</span>
               </a>
-            ) : (
+            ) : mounted ? (
               <a href="/auth" className="kw-login">Inloggen →</a>
-            )}
+            ) : null}
           </div>
           <button className="kw-ham" onClick={() => setMobileOpen(!mobileOpen)}>
             {mobileOpen ? '✕' : '☰'}
