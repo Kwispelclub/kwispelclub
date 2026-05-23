@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import type { User } from '@supabase/supabase-js'
@@ -19,7 +19,7 @@ export default function Navbar() {
   const [notifOpen, setNotifOpen] = useState(false)
   const unreadCount = notifs.filter(n => !n.read).length
   const pathname = usePathname()
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
     window.addEventListener('scroll', () => setScrolled(window.scrollY > 10))
