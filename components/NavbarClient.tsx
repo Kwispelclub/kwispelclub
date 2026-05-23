@@ -46,20 +46,7 @@ export default function NavbarClient({ initialUser, initialHasSalon, initialHasV
         localStorage.removeItem('kc_user')
         return
       }
-      // Laad cache alleen als het voor deze user is
-      try {
-        const cachedInfo = localStorage.getItem('kc_user')
-        if (cachedInfo) {
-          const info = JSON.parse(cachedInfo)
-          if (info.userId === u.id) {
-            setUser(info.user)
-            if (info.dashboardUrl) setDashboardUrl(info.dashboardUrl)
-            if (info.dashboardLabel) setDashboardLabel(info.dashboardLabel)
-            if (info.hasSalon) setHasSalon(true)
-            if (info.hasVerkoper) setHasVerkoper(true)
-          }
-        }
-      } catch {}
+
       // Laad gecachede rol voor deze specifieke user
       try {
         const cached = localStorage.getItem(`kc_rol_${u.id}`)
@@ -113,21 +100,7 @@ export default function NavbarClient({ initialUser, initialHasSalon, initialHasV
         newUrl = '/verkoper/dashboard'; newLabel = '🏪 Verkoper Dashboard'
       }
       setDashboardUrl(newUrl); setDashboardLabel(newLabel)
-      // Cache opslaan inclusief user info
-      try {
-        localStorage.setItem(`kc_rol_${u.id}`, JSON.stringify({
-          hasSalon: !!salon, hasVerkoper: !!verkoper,
-          dashboardUrl: newUrl, dashboardLabel: newLabel
-        }))
-        localStorage.setItem('kc_user', JSON.stringify({
-          userId: u.id,
-          user: u,
-          dashboardUrl: newUrl,
-          dashboardLabel: newLabel,
-          hasSalon: !!salon,
-          hasVerkoper: !!verkoper,
-        }))
-      } catch {}
+
     })
   }, [])
 
@@ -345,7 +318,7 @@ export default function NavbarClient({ initialUser, initialHasSalon, initialHasV
                   {hasSalon && <a href="/kapsalons/dashboard" className="kw-mob-acc-btn" onClick={() => setMobileOpen(false)}>✂️ Salon</a>}
                   {hasVerkoper && <a href="/verkoper/dashboard" className="kw-mob-acc-btn" style={{background:'#E8913A'}} onClick={() => setMobileOpen(false)}>🏪 Verkoper</a>}
                   {!hasSalon && !hasVerkoper && <a href="/account" className="kw-mob-acc-btn" onClick={() => setMobileOpen(false)}>👤 Account</a>}
-                  <button className="kw-mob-out-btn" onClick={async () => { await supabase.auth.signOut(); localStorage.removeItem('kc_user'); setMobileOpen(false); window.location.href = '/' }}>Uit</button>
+                  <button className="kw-mob-out-btn" onClick={async () => { await supabase.auth.signOut(); setMobileOpen(false); window.location.href = '/' }}>Uit</button>
                 </>
               ) : (
                 <a href="/auth" className="kw-mob-acc-btn" onClick={() => setMobileOpen(false)}>→ Inloggen</a>
