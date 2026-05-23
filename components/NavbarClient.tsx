@@ -3,13 +3,31 @@
 import { useEffect, useState } from "react";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 
+// -----------------------------
+// TYPES
+// -----------------------------
+type NavbarClientProps = {
+  initialUser: {
+    id: string;
+    email: string;
+    user_metadata: any;
+  } | null;
+  initialHasSalon: boolean;
+  initialHasVerkoper: boolean;
+  initialDashboardUrl: string;
+  initialDashboardLabel: string;
+};
+
+// -----------------------------
+// COMPONENT
+// -----------------------------
 export default function NavbarClient({
   initialUser,
   initialHasSalon,
   initialHasVerkoper,
   initialDashboardUrl,
   initialDashboardLabel,
-}) {
+}: NavbarClientProps) {
   const supabase = createClientComponentClient();
 
   const [user, setUser] = useState(initialUser);
@@ -18,10 +36,12 @@ export default function NavbarClient({
   const [dashboardUrl, setDashboardUrl] = useState(initialDashboardUrl);
   const [dashboardLabel, setDashboardLabel] = useState(initialDashboardLabel);
 
-  // 🔥 Realtime auth listener
+  // -----------------------------
+  // REALTIME AUTH LISTENER
+  // -----------------------------
   useEffect(() => {
     const { data: listener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (_event, session) => {
         const newUser = session?.user ?? null;
         setUser(newUser);
 
@@ -34,7 +54,7 @@ export default function NavbarClient({
           return;
         }
 
-        // Ingelogd → metadata ophalen
+        // Ingelogd → metadata
         const role = newUser.user_metadata?.role;
 
         if (role === "admin") {
@@ -43,14 +63,14 @@ export default function NavbarClient({
           return;
         }
 
-        // 🔥 Realtime check: is gebruiker salon eigenaar?
+        // Check salon
         const { data: salon } = await supabase
           .from("kapsalons")
           .select("id")
           .eq("owner_id", newUser.id)
           .maybeSingle();
 
-        // 🔥 Realtime check: is gebruiker verkoper?
+        // Check verkoper
         const { data: verkoper } = await supabase
           .from("verkopers")
           .select("id")
@@ -79,19 +99,25 @@ export default function NavbarClient({
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  // Initialen helper
-  const getInitials = (name) =>
+  // -----------------------------
+  // HELPERS
+  // -----------------------------
+  const getInitials = (name: string) =>
     name
       ?.split(" ")
       .map((n) => n[0])
       .join("")
       .toUpperCase() ?? "?";
 
+  // -----------------------------
   // UI
+  // -----------------------------
   if (!user) {
     return (
       <button
-        onClick={() => supabase.auth.signInWithOAuth({ provider: "google" })}
+        onClick={() =>
+          supabase.auth.signInWithOAuth({ provider: "google" })
+        }
         className="px-4 py-2 rounded bg-orange-500 text-white"
       >
         Inloggen
@@ -99,7 +125,11 @@ export default function NavbarClient({
     );
   }
 
-  const fullName = user.user_metadata?.full_name || user.email;
+  const fullName =
+    user.user_metadata?.full_name ||
+    user.user_metadata?.name ||
+    user.email;
+
   const initials = getInitials(fullName);
 
   return (
@@ -110,7 +140,10 @@ export default function NavbarClient({
 
       <div className="flex flex-col">
         <span className="font-medium">{fullName}</span>
-        <a href={dashboardUrl} className="text-sm text-gray-500 hover:underline">
+        <a
+          href={dashboardUrl}
+          className="text-sm text-gray-500 hover:underline"
+        >
           {dashboardLabel}
         </a>
       </div>
