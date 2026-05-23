@@ -27,7 +27,7 @@ export default function Navbar() {
   useEffect(() => {
     // Laad gecachede rol direct uit localStorage
     try {
-      const cached = localStorage.getItem('kc_rol')
+      // Kan user ID nog niet kennen hier, wordt later overschreven
       if (cached) {
         const { hasSalon: s, hasVerkoper: v, dashboardUrl: u, dashboardLabel: l } = JSON.parse(cached)
         if (s) setHasSalon(true)
@@ -42,7 +42,18 @@ export default function Navbar() {
       const u = session?.user ?? null
       setUser(u)
       setMounted(true)
-      if (!u) { localStorage.removeItem('kc_rol'); return }
+      if (!u) { return }
+      // Laad gecachede rol voor deze specifieke user
+      try {
+        const cached = localStorage.getItem(`kc_rol_${u.id}`)
+        if (cached) {
+          const { hasSalon: s, hasVerkoper: v, dashboardUrl: du, dashboardLabel: dl } = JSON.parse(cached)
+          if (s) setHasSalon(true)
+          if (v) setHasVerkoper(true)
+          if (du) setDashboardUrl(du)
+          if (dl) setDashboardLabel(dl)
+        }
+      } catch {}
 
       // Laad notificaties
       const loadNotifs = async () => {
@@ -87,7 +98,7 @@ export default function Navbar() {
       setDashboardUrl(newUrl); setDashboardLabel(newLabel)
       // Cache opslaan
       try {
-        localStorage.setItem('kc_rol', JSON.stringify({
+        localStorage.setItem(`kc_rol_${u.id}`, JSON.stringify({
           hasSalon: !!salon, hasVerkoper: !!verkoper,
           dashboardUrl: newUrl, dashboardLabel: newLabel
         }))
