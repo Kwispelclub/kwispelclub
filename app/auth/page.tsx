@@ -11,6 +11,7 @@ function AuthPageInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
+  const [alIngelogd, setAlIngelogd] = useState<any>(null)
 
   const [tab, setTab] = useState<Tab>('register')
   const [role, setRole] = useState<Role>('koper')
@@ -41,9 +42,8 @@ function AuthPageInner() {
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
-    // Check if user already logged in
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) router.push('/account')
+      if (user) setAlIngelogd(user)
     })
   }, [])
 
