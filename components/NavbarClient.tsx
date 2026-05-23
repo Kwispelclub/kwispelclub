@@ -1,22 +1,34 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createClientComponentClient, User } from "@supabase/auth-helpers-nextjs";
 
 // -----------------------------
 // TYPES
 // -----------------------------
+type CleanUser = {
+  id: string;
+  email: string | null;
+  user_metadata: any;
+} | null;
+
 type NavbarClientProps = {
-  initialUser: {
-    id: string;
-    email: string | null;
-    user_metadata: any;
-  } | null;
+  initialUser: CleanUser;
   initialHasSalon: boolean;
   initialHasVerkoper: boolean;
   initialDashboardUrl: string;
   initialDashboardLabel: string;
 };
+
+// Helper: Supabase User → CleanUser
+function normalizeUser(u: User | null): CleanUser {
+  if (!u) return null;
+  return {
+    id: u.id,
+    email: u.email ?? null,
+    user_metadata: u.user_metadata,
+  };
+}
 
 // -----------------------------
 // COMPONENT
@@ -30,7 +42,7 @@ export default function NavbarClient({
 }: NavbarClientProps) {
   const supabase = createClientComponentClient();
 
-  const [user, setUser] = useState(initialUser);
+  const [user, setUser] = useState<CleanUser>(initialUser);
   const [hasSalon, setHasSalon] = useState(initialHasSalon);
   const [hasVerkoper, setHasVerkoper] = useState(initialHasVerkoper);
   const [dashboardUrl, setDashboardUrl] = useState(initialDashboardUrl);
@@ -42,7 +54,7 @@ export default function NavbarClient({
   useEffect(() => {
     const { data: listener } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
-        const newUser = session?.user ?? null;
+        const newUser = normalizeUser(session?.user ?? null);
         setUser(newUser);
 
         if (!newUser) {
@@ -54,7 +66,6 @@ export default function NavbarClient({
           return;
         }
 
-        // Ingelogd → metadata
         const role = newUser.user_metadata?.role;
 
         if (role === "admin") {
