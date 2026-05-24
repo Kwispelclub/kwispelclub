@@ -205,10 +205,12 @@ const [bannerSaving, setBannerSaving] = useState(false)
   const [userActionLoading, setUserActionLoading] = useState<string | null>(null)
 
   useEffect(() => {
-    const adminSession = sessionStorage.getItem('kw_admin')
-    if (adminSession === 'true') setAuthed(true)
-   supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session?.user) { router.push('/auth?redirect=/admin'); return }
+      const role = session.user.user_metadata?.role
+      if (role === 'admin') {
+        setAuthed(true)
+      }
       setLoading(false)
     })
   }, [])
@@ -218,7 +220,6 @@ const [bannerSaving, setBannerSaving] = useState(false)
   const handlePasswordCheck = () => {
     if (pwInput === ADMIN_PASSWORD) {
       setAuthed(true)
-      sessionStorage.setItem('kw_admin', 'true')
       setPwError(false)
     } else {
       setPwError(true)
