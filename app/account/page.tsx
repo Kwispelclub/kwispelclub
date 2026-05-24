@@ -386,7 +386,10 @@ function AccountPage() {
   const fullName = user?.user_metadata?.full_name || `${firstName} ${lastName}`.trim()
   const initials = `${firstName[0] || '?'}${lastName[0] || ''}`.toUpperCase()
   const role = user?.user_metadata?.role || 'koper'
-  const roleLabel = role === 'koper' ? 'Koper' : role === 'verkoper' ? 'Verkoper' : 'Kapsalon'
+  const roleLabel = role === 'admin' ? 'Admin'
+    : role === 'verkoper' ? 'Verkoper'
+    : role === 'kapsalon' ? 'Kapsalon'
+    : 'Koper'
   const memberSince = user?.created_at
     ? new Date(user.created_at).toLocaleDateString('nl-BE', { month: 'long', year: 'numeric' })
     : ''
