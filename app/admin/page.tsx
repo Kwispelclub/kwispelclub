@@ -205,11 +205,19 @@ const [bannerSaving, setBannerSaving] = useState(false)
   const [userActionLoading, setUserActionLoading] = useState<string | null>(null)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session?.user) { router.push('/auth?redirect=/admin'); return }
-      const role = session.user.user_metadata?.role
-      if (role === 'admin') {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) { router.push('/auth?redirect=/admin'); return }
+      // Haal rol op uit database (niet uit JWT — die kan verouderd zijn)
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+      if (profile?.role === 'admin') {
         setAuthed(true)
+      } else {
+        router.push('/account')
+        return
       }
       setLoading(false)
     })
@@ -217,14 +225,10 @@ const [bannerSaving, setBannerSaving] = useState(false)
 
   useEffect(() => { if (authed) loadData() }, [authed])
 
+  // Wachtwoord-check verwijderd — toegang enkel via admin rol in database
   const handlePasswordCheck = () => {
-    if (pwInput === ADMIN_PASSWORD) {
-      setAuthed(true)
-      setPwError(false)
-    } else {
-      setPwError(true)
-      setPwInput('')
-    }
+    setPwError(true)
+    setPwInput('')
   }
 
 
