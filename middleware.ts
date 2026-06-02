@@ -38,7 +38,15 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  
+  // 🔒 Admin routes: alleen toegankelijk voor admins
+  if (request.nextUrl.pathname.startsWith('/admin')) {
+    const role = user?.user_metadata?.role
+    if (role !== 'admin') {
+      const url = request.nextUrl.clone()
+      url.pathname = '/account'
+      return NextResponse.redirect(url)
+    }
+  }
 
   // Stuur user info als header voor de Navbar
   if (user) {
