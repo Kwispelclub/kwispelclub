@@ -15,9 +15,9 @@ export async function GET(request: NextRequest) {
       {
         cookies: {
           getAll() { return cookieStore.getAll() },
-          setAll(cookiesToSet) {
+          setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
             cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
+              cookieStore.set(name, value, options as Parameters<typeof cookieStore.set>[2])
             )
           },
         },
@@ -27,15 +27,12 @@ export async function GET(request: NextRequest) {
     const { error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (!error) {
-      // Wachtwoord reset → stuur naar reset pagina
       if (type === 'recovery') {
         return NextResponse.redirect(`${origin}/account/reset-password`)
       }
-      // Email bevestiging of andere flows → stuur naar account
       return NextResponse.redirect(`${origin}/account`)
     }
   }
 
-  // Iets ging fout
   return NextResponse.redirect(`${origin}/auth?error=invalid_link`)
 }
