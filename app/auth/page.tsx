@@ -146,7 +146,7 @@ function AuthPageInner() {
     }
     setLoading(true)
     await supabase.auth.resetPasswordForEmail(loginEmail, {
-      redirectTo: `${window.location.origin}/account/reset-password`,
+      redirectTo: `${window.location.origin}/auth/callback?type=recovery`,
     })
     setError('') 
     alert('Wachtwoord reset link verzonden naar ' + loginEmail)
