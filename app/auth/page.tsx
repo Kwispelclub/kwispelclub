@@ -121,14 +121,28 @@ function AuthPageInner() {
     })
 
     if (authError) {
-      setError('Onjuist e-mailadres of wachtwoord')
+  setError('Onjuist e-mailadres of wachtwoord')
+} else {
+  setSuccess('login')
+  setTimeout(async () => {
+    const redirect = searchParams.get('redirect')
+    if (redirect) { router.push(redirect); return }
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+      const role = profile?.role
+      if (role === 'admin') router.push('/admin')
+      else if (role === 'verkoper') router.push('/verkoper/dashboard')
+      else router.push('/account')
     } else {
-      setSuccess('login')
-      setTimeout(() => {
-        const redirect = searchParams.get('redirect') || '/account'
-        router.push(redirect)
-      }, 1500)
+      router.push('/account')
     }
+  }, 1500)
+}
     setLoading(false)
   }
 
