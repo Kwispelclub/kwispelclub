@@ -16,22 +16,16 @@ function ResetPasswordInner() {
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    // Supabase zet de sessie via de URL hash (access_token)
-    // onAuthStateChange vangt PASSWORD_RECOVERY event op
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'PASSWORD_RECOVERY') {
+    // Callback route heeft de sessie al opgezet via exchangeCodeForSession
+    // Gewoon checken of er een geldige sessie is
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
         setReady(true)
-      } else if (event === 'SIGNED_IN' && session) {
-        setReady(true)
+      } else {
+        // Geen sessie — link is verlopen of al gebruikt
+        router.push('/auth?error=link_expired')
       }
     })
-
-    // Check ook direct of er al een sessie is
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) setReady(true)
-    })
-
-    return () => subscription.unsubscribe()
   }, [])
 
   const handleReset = async () => {
