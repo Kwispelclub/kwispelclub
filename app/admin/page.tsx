@@ -677,7 +677,7 @@ supabase.from('page_banners').select('*').order('pagina'),      ])
           </nav>
           <div className="sidebar-footer">
             <a href="/" target="_blank">🌐 Bekijk site</a>
-            <a href="#" onClick={() => { sessionStorage.removeItem('kw_admin'); setAuthed(false) }}>🚪 Uitloggen</a>
+            <a href="#" onClick={async (e) => { e.preventDefault(); await supabase.auth.signOut(); router.push('/auth') }}>🚪 Uitloggen</a>
           </div>
         </aside>
 
